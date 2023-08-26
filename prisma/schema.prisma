@@ -6,6 +6,104 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
+}
+
+model User {
+  id Int @id @default(autoincrement())
+  username String @db.VarChar(100)
+  email String @unique @db.VarChar(100)
+  hashedPassword String @db.VarChar(100)
+  profile Profile?
+  role Role @default(user)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  followedBy User[]  @relation("UserFollows")
+  following  User[]  @relation("UserFollows")
+  posts Post[]
+  comments Comment[]
+
+  @@map("users")
+}
+
+model Profile {
+  id Int @id @default(autoincrement()) 
+  profileDescription String? @db.Text
+  avatarImage Image? @relation(name: "ProfileImage")
+  // coverImage Image? @relation(name: "ProfileCoverImage")
+  userId String @unique @db.VarChar(100)
+
+  user User @relation(fields: [userId], references: [email], onDelete: Cascade)
+
+  @@map("profiles")
+}
+
+model Post {
+  id Int @id @default(autoincrement())
+  authorId Int
+  images Image[] @relation(name: "PostImages")
+  title String? @db.VarChar(80)
+  content String? @db.Text
+  comments Comment[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  postReaction Reaction[]
+
+  author User @relation(fields: [authorId] , references: [id], onDelete: Cascade)
+
+  @@map("posts")
+}
+
+model Comment {
+  id Int @id @default(autoincrement())
+  postId Int
+  userId Int
+  image Image? @relation(name: "CommentImage")
+  comment String @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt 
+  parentId Int?
+  parentComment Comment? @relation("ReplyComment",fields: [parentId],  references: [id], onDelete: Cascade)
+  childrenComment Comment[] @relation("ReplyComment")
+
+  post Post @relation(fields: [postId],  references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId],  references: [id],  onDelete: Cascade)
+
+  @@map("comments")
+}
+
+model Reaction {
+  id Int @id @default(autoincrement())
+  postId Int @unique
+  like Int @default(0)
+  wow Int @default(0)
+  angry Int @default(0)
+  sad Int @default(0)
+  love Int @default(0)
+  funny Int @default(0)
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  @@map("reactions")
+}
+
+enum Role {
+admin
+user
+}
+
+model Image {
+  id Int @id @default(autoincrement())
+  src String
+  postId Int?
+  profileId Int? @unique
+  commentId Int? @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  // profileCover Profile? @relation("ProfileCoverImage", fields: [profileId], references: [id], onDelete: Cascade, map: "profile_cover_image")
+  profile Profile? @relation("ProfileImage",fields: [profileId],  references: [id], onDelete: Cascade)
+  comment Comment? @relation("CommentImage",fields: [commentId],  references: [id], onDelete: Cascade)
+  post Post? @relation("PostImages",fields: [postId],  references: [id],onDelete: Cascade)
+
+  @@map("images")
 }

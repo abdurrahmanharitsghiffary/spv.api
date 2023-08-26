@@ -1,0 +1,135 @@
+// sign in
+POST http://localhost:5000/api/auth/signin HTTP/1.1
+Content-Type: application/json
+
+{
+    "email" : "abdmanhrwp@gmail.com",
+    "password":"akukesaldenganjarak"
+}
+
+###
+// register
+POST http://localhost:5000/api/auth/signup HTTP/1.1
+Content-Type: application/json
+
+{
+    "email":"abdmanhrwp5@gmail.com",
+    "password":"akukesaldenganjarak",
+    "username":"abeedul"
+    
+}
+
+###
+GET http://localhost:5000/api/user/2
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MywiZW1haWwiOiJhYmRtYW5ocndwQGdtYWlsLmNvbSIsImltYWdlIjoiaHR0cHM6Ly9pbWFnZXMudW5zcGxhc2guY29tL3Bob3RvLTE2ODI2ODc5ODE5MjItN2I1NWRiYjMwODkyP2l4bGliPXJiLTQuMC4zJml4aWQ9TTN3eE1qQTNmREY4TUh4d2FHOTBieTF3WVdkbGZIeDhmR1Z1ZkRCOGZIeDhmQSUzRCUzRCZhdXRvPWZvcm1hdCZmaXQ9Y3JvcCZ3PTg3MSZxPTgwIiwidXNlcm5hbWUiOiJCRURVTEJSQUhNQU4iLCJpYXQiOjE2OTI5ODMzMTQsImV4cCI6MTY5Mjk4NjkxNH0.kxX5INwMeP4cS624B3513fmwhLxMErgdf3cvixeXgyM
+
+### 
+GET http://localhost:5000/api/user
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MywiZW1haWwiOiJhYmRtYW5ocndwQGdtYWlsLmNvbSIsImltYWdlIjoiaHR0cHM6Ly9pbWFnZXMudW5zcGxhc2guY29tL3Bob3RvLTE2ODI2ODc5ODE5MjItN2I1NWRiYjMwODkyP2l4bGliPXJiLTQuMC4zJml4aWQ9TTN3eE1qQTNmREY4TUh4d2FHOTBieTF3WVdkbGZIeDhmR1Z1ZkRCOGZIeDhmQSUzRCUzRCZhdXRvPWZvcm1hdCZmaXQ9Y3JvcCZ3PTg3MSZxPTgwIiwidXNlcm5hbWUiOiJCRURVTEJSQUhNQU4iLCJpYXQiOjE2OTI5ODM0NTcsImV4cCI6MTY5Mjk4NzA1N30.X7gOtdekS_bf5cGBR3xHvglhX3b0y1a2OZKW6k79XfM
+
+### 
+DELETE  http://localhost:5000/api/user/2
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MywiZW1haWwiOiJhYmRtYW5ocndwQGdtYWlsLmNvbSIsImltYWdlIjoiaHR0cHM6Ly9pbWFnZXMudW5zcGxhc2guY29tL3Bob3RvLTE2ODI2ODc5ODE5MjItN2I1NWRiYjMwODkyP2l4bGliPXJiLTQuMC4zJml4aWQ9TTN3eE1qQTNmREY4TUh4d2FHOTBieTF3WVdkbGZIeDhmR1Z1ZkRCOGZIeDhmQSUzRCUzRCZhdXRvPWZvcm1hdCZmaXQ9Y3JvcCZ3PTg3MSZxPTgwIiwidXNlcm5hbWUiOiJCRURVTEJSQUhNQU4iLCJpYXQiOjE2OTI5ODM0NTcsImV4cCI6MTY5Mjk4NzA1N30.X7gOtdekS_bf5cGBR3xHvglhX3b0y1a2OZKW6k79XfM
+
+### 
+PATCH http://localhost:5000/api/user/2
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MywiZW1haWwiOiJhYmRtYW5ocndwQGdtYWlsLmNvbSIsImltYWdlIjoiaHR0cHM6Ly9pbWFnZXMudW5zcGxhc2guY29tL3Bob3RvLTE2ODI2ODc5ODE5MjItN2I1NWRiYjMwODkyP2l4bGliPXJiLTQuMC4zJml4aWQ9TTN3eE1qQTNmREY4TUh4d2FHOTBieTF3WVdkbGZIeDhmR1Z1ZkRCOGZIeDhmQSUzRCUzRCZhdXRvPWZvcm1hdCZmaXQ9Y3JvcCZ3PTg3MSZxPTgwIiwidXNlcm5hbWUiOiJCRURVTEJSQUhNQU4iLCJpYXQiOjE2OTI5ODM0NTcsImV4cCI6MTY5Mjk4NzA1N30.X7gOtdekS_bf5cGBR3xHvglhX3b0y1a2OZKW6k79XfM
+Content-Type: application/json
+
+{
+    "username":"yahaha wahyoue",
+    "image":"https://images.unsplash.com/photo-1682687981922-7b55dbb30892?ixlib=rb-4.0.3&ixid=M3wxMjA3fDF8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=871&q=80",
+    "description":"nama saya abedul"
+}
+
+### 
+GET http://localhost:5000/api/account/me
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MywiZW1haWwiOiJhYmRtYW5ocndwQGdtYWlsLmNvbSIsImltYWdlIjpudWxsLCJ1c2VybmFtZSI6ImFiZWVkdWwiLCJpYXQiOjE2OTI5NzU1MTcsImV4cCI6MTY5Mjk3OTExN30.LNp39_Y5cbkzYicXew4xt_Tg20JsUjn78SR0_GrsWCM
+
+### 
+PATCH http://localhost:5000/api/account/me HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MywiZW1haWwiOiJhYmRtYW5
+
+{
+    "username":"BEDULBRAHMAN",
+    "image":"https://images.unsplash.com/photo-1682687981922-7b55dbb30892?ixlib=rb-4.0.3&ixid=M3wxMjA3fDF8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=871&q=80",
+    "description":"yahaha whayouee"
+}
+
+###
+DELETE http://localhost:5000/api/account/me
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFiZG1hbmhyeHNhQGdtYWlsLmNvbSIsInVzZXJuYW1lIjoiYWJlZWR1bCIsImlhdCI6MTY5Mjg4NzQ0MCwiZXhwIjoxNjkyODkxMDQwfQ.B8EqIo-QWyBkl2GxH6iTi6M6lS_72InJNVqwShFmFJg
+
+###
+GET http://localhost:5000/api/post
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MywiZW1haWwiOiJhYmRtYW5ocndwQGdtYWlsLmNvbSIsImltYWdlIjoiaHR0cHM6Ly9pbWFnZXMudW5zcGxhc2guY29tL3Bob3RvLTE2ODI2ODc5ODE5MjItN2I1NWRiYjMwODkyP2l4bGliPXJiLTQuMC4zJml4aWQ9TTN3eE1qQTNmREY4TUh4d2FHOTBieTF3WVdkbGZIeDhmR1Z1ZkRCOGZIeDhmQSUzRCUzRCZhdXRvPWZvcm1hdCZmaXQ9Y3JvcCZ3PTg3MSZxPTgwIiwidXNlcm5hbWUiOiJCRURVTEJSQUhNQU4iLCJpYXQiOjE2OTI5ODE5MTcsImV4cCI6MTY5Mjk4NTUxN30.ZknykwOb7rq0j0VyKu9qNgP55RMoPoKgLFfK8K_sdXo
+
+###
+GET http://localhost:5000/api/post/5
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MywiZW1haWwiOiJhYmRtYW5ocndwQGdtYWlsLmNvbSIsImltYWdlIjoiaHR0cHM6Ly9pbWFnZXMudW5zcGxhc2guY29tL3Bob3RvLTE2ODI2ODc5ODE5MjItN2I1NWRiYjMwODkyP2l4bGliPXJiLTQuMC4zJml4aWQ9TTN3eE1qQTNmREY4TUh4d2FHOTBieTF3WVdkbGZIeDhmR1Z1ZkRCOGZIeDhmQSUzRCUzRCZhdXRvPWZvcm1hdCZmaXQ9Y3JvcCZ3PTg3MSZxPTgwIiwidXNlcm5hbWUiOiJCRURVTEJSQUhNQU4iLCJpYXQiOjE2OTI5ODE5MTcsImV4cCI6MTY5Mjk4NTUxN30.ZknykwOb7rq0j0VyKu9qNgP55RMoPoKgLFfK8K_sdXo
+
+### 
+POST http://localhost:5000/api/post HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MywiZW1haWwiOiJhYmRtYW5ocndwQGdtYWlsLmNvbSIsImltYWdlIjoiaHR0cHM6Ly9pbWFnZXMudW5zcGxhc2guY29tL3Bob3RvLTE2ODI2ODc5ODE5MjItN2I1NWRiYjMwODkyP2l4bGliPXJiLTQuMC4zJml4aWQ9TTN3eE1qQTNmREY4TUh4d2FHOTBieTF3WVdkbGZIeDhmR1Z1ZkRCOGZIeDhmQSUzRCUzRCZhdXRvPWZvcm1hdCZmaXQ9Y3JvcCZ3PTg3MSZxPTgwIiwidXNlcm5hbWUiOiJCRURVTEJSQUhNQU4iLCJpYXQiOjE2OTI5ODE5MTcsImV4cCI6MTY5Mjk4NTUxN30.ZknykwOb7rq0j0VyKu9qNgP55RMoPoKgLFfK8K_sdXo
+
+{
+    "title":"YAHAHA HAYUK",
+    "content":"ahmad turuk"
+}
+
+###
+DELETE http://localhost:5000/api/post/1 
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MywiZW1haWwiOiJhYmRtYW5ocndwQGdtYWlsLmNvbSIsImltYWdlIjoiaHR0cHM6Ly9pbWFnZXMudW5zcGxhc2guY29tL3Bob3RvLTE2ODI2ODc5ODE5MjItN2I1NWRiYjMwODkyP2l4bGliPXJiLTQuMC4zJml4aWQ9TTN3eE1qQTNmREY4TUh4d2FHOTBieTF3WVdkbGZIeDhmR1Z1ZkRCOGZIeDhmQSUzRCUzRCZhdXRvPWZvcm1hdCZmaXQ9Y3JvcCZ3PTg3MSZxPTgwIiwidXNlcm5hbWUiOiJCRURVTEJSQUhNQU4iLCJpYXQiOjE2OTI5Nzg0MzUsImV4cCI6MTY5Mjk4MjAzNX0.6ZBeehmcyWFtPEmTz25Zxn3tLH3Dm62ZtyfXEEDj0T0
+
+### 
+PATCH http://localhost:5000/api/post/2 HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MywiZW1haWwiOiJhYmRtYW5ocndwQGdtYWlsLmNvbSIsImltYWdlIjoiaHR0cHM6Ly9pbWFnZXMudW5zcGxhc2guY29tL3Bob3RvLTE2ODI2ODc5ODE5MjItN2I1NWRiYjMwODkyP2l4bGliPXJiLTQuMC4zJml4aWQ9TTN3eE1qQTNmREY4TUh4d2FHOTBieTF3WVdkbGZIeDhmR1Z1ZkRCOGZIeDhmQSUzRCUzRCZhdXRvPWZvcm1hdCZmaXQ9Y3JvcCZ3PTg3MSZxPTgwIiwidXNlcm5hbWUiOiJCRURVTEJSQUhNQU4iLCJpYXQiOjE2OTI5Nzg0MzUsImV4cCI6MTY5Mjk4MjAzNX0.6ZBeehmcyWFtPEmTz25Zxn3tLH3Dm62ZtyfXEEDj0T0
+
+{
+    "title":"new title",
+    "content":"new content"
+}
+
+###
+POST http://localhost:5000/api/comment HTTP/1.1
+Content-Type: application/json 
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MywiZW1haWwiOiJhYmRtYW5ocndwQGdtYWlsLmNvbSIsImltYWdlIjoiaHR0cHM6Ly9pbWFnZXMudW5zcGxhc2guY29tL3Bob3RvLTE2ODI2ODc5ODE5MjItN2I1NWRiYjMwODkyP2l4bGliPXJiLTQuMC4zJml4aWQ9TTN3eE1qQTNmREY4TUh4d2FHOTBieTF3WVdkbGZIeDhmR1Z1ZkRCOGZIeDhmQSUzRCUzRCZhdXRvPWZvcm1hdCZmaXQ9Y3JvcCZ3PTg3MSZxPTgwIiwidXNlcm5hbWUiOiJCRURVTEJSQUhNQU4iLCJpYXQiOjE2OTI5ODE5MTcsImV4cCI6MTY5Mjk4NTUxN30.ZknykwOb7rq0j0VyKu9qNgP55RMoPoKgLFfK8K_sdXo
+
+{
+    "postId":5,"parentId":1,
+    "comment":"nest yahaha hayuk"
+}
+
+###
+GET http://localhost:5000/api/comment/1
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MywiZW1haWwiOiJhYmRtYW5ocndwQGdtYWlsLmNvbSIsImltYWdlIjoiaHR0cHM6Ly9pbWFnZXMudW5zcGxhc2guY29tL3Bob3RvLTE2ODI2ODc5ODE5MjItN2I1NWRiYjMwODkyP2l4bGliPXJiLTQuMC4zJml4aWQ9TTN3eE1qQTNmREY4TUh4d2FHOTBieTF3WVdkbGZIeDhmR1Z1ZkRCOGZIeDhmQSUzRCUzRCZhdXRvPWZvcm1hdCZmaXQ9Y3JvcCZ3PTg3MSZxPTgwIiwidXNlcm5hbWUiOiJCRURVTEJSQUhNQU4iLCJpYXQiOjE2OTI5ODE5MTcsImV4cCI6MTY5Mjk4NTUxN30.ZknykwOb7rq0j0VyKu9qNgP55RMoPoKgLFfK8K_sdXo
+
+### 
+GET http://localhost:5000/api/post/me
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NSwiZW1haWwiOiJhYmRtYW5ocndwM0BnbWFpbC5jb20iLCJ1c2VybmFtZSI6ImFiZWVkdWwiLCJpYXQiOjE2OTI5Nzk4MTcsImV4cCI6MTY5Mjk4MzQxN30.atKlMRcBqimokf1KE1Hz6r7KlSFhfqueAN1aZazLhS8
+
+###
+DELETE http://localhost:5000/api/comment/1
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NiwiZW1haWwiOiJhYmRtYW5ocndwNEBnbWFpbC5jb20iLCJ1c2VybmFtZSI6ImFiZWVkdWwiLCJpYXQiOjE2OTI5ODIxNzUsImV4cCI6MTY5Mjk4NTc3NX0.08PjqS4qJQeVkdjp_66iFlnh6q4x8yyp0FYKy02Ensk
+
+###
+
+PATCH http://localhost:5000/api/comment/1 HTTP/1.1
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MywiZW1haWwiOiJhYmRtYW5ocndwQGdtYWlsLmNvbSIsImltYWdlIjoiaHR0cHM6Ly9pbWFnZXMudW5zcGxhc2guY29tL3Bob3RvLTE2ODI2ODc5ODE5MjItN2I1NWRiYjMwODkyP2l4bGliPXJiLTQuMC4zJml4aWQ9TTN3eE1qQTNmREY4TUh4d2FHOTBieTF3WVdkbGZIeDhmR1Z1ZkRCOGZIeDhmQSUzRCUzRCZhdXRvPWZvcm1hdCZmaXQ9Y3JvcCZ3PTg3MSZxPTgwIiwidXNlcm5hbWUiOiJCRURVTEJSQUhNQU4iLCJpYXQiOjE2OTI5ODIzNTcsImV4cCI6MTY5Mjk4NTk1N30.BTuWdu1QZ_7LTq9CxOn3NRuqFnkY1GsESOdIeYFnNLE
+Content-Type: application/json
+
+{
+    "comment":"bukiolapak"
+}
+
+###
+POST http://localhost:5000/api/comment/1 HTTP/1.1
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NywiZW1haWwiOiJhYmRtYW5ocndwNUBnbWFpbC5jb20iLCJ1c2VybmFtZSI6ImFiZWVkdWwiLCJpYXQiOjE2OTI5ODI0MjgsImV4cCI6MTY5Mjk4NjAyOH0.TQNIln2aaSrVVOKuP2ZxXLrVIoiPr8NSJv2fOMUIJRU
+Content-Type: application/json
+
+{
+    "comment":"yahaha"
+}
