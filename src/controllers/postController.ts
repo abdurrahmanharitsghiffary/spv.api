@@ -1,96 +1,95 @@
 import express from "express";
 import Post from "../models/post";
-import { RequestError } from "../lib/error";
 import { ExpressRequestExtended } from "../types/request";
-
-const postSelect = {
-  id: true,
-  authorId: true,
-  content: true,
-  title: true,
-  author: {
-    select: {
-      id: true,
-      username: true,
-    },
-  },
-};
-
-export const checkPost = async (postId: string) => {
-  const post = await Post.findUnique({
-    where: {
-      id: Number(postId),
-    },
-  });
-  return post;
-};
+import { baseUrl } from "../lib/baseUrl";
+import {
+  findAllPosts,
+  findPostById,
+  findPostsByAuthorId,
+} from "../utils/findPost";
+import { findCommentsByPostId } from "../utils/findComment";
+import Image from "../models/image";
+import { getFileDest } from "../utils/getFileDest";
+import { getPagingObject } from "../utils/getPagingObject";
 
 export const getAllMyPosts = async (
   req: express.Request,
   res: express.Response
 ) => {
-  const posts = await Post.findMany({
-    where: {
-      authorId: Number((req as ExpressRequestExtended).userId),
-    },
-    select: postSelect,
+  let { offset = 0, limit = 20 } = req.query;
+  const { userId } = req as ExpressRequestExtended;
+
+  offset = Number(offset);
+  limit = Number(limit);
+
+  const posts = await findPostsByAuthorId({
+    authorId: Number(userId),
+    limit,
+    offset,
   });
 
-  return res.status(200).json(posts);
+  return res.status(200).json(
+    getPagingObject({
+      data: posts,
+      dataKey: "posts",
+      limit,
+      offset,
+      path: `${baseUrl}/api/me/posts`,
+    })
+  );
 };
 
 export const getAllPosts = async (
   req: express.Request,
   res: express.Response
 ) => {
-  const posts = await Post.findMany({
-    select: postSelect,
-  });
+  let { limit = 20, offset = 0 } = req.query;
 
-  return res.status(200).json(posts);
+  limit = Number(limit);
+  offset = Number(offset);
+
+  const posts = await findAllPosts({ limit, offset });
+
+  return res.status(200).json(
+    getPagingObject({
+      data: posts,
+      dataKey: "posts",
+      limit,
+      offset,
+      path: `${baseUrl}/api/posts`,
+    })
+  );
+};
+
+export const getPostCommentsById = async (
+  req: express.Request,
+  res: express.Response
+) => {
+  let { offset = 0, limit = 20 } = req.query;
+  const { postId } = req.params;
+
+  offset = Number(offset);
+  limit = Number(limit);
+
+  await findPostById(postId);
+
+  const comments = await findCommentsByPostId(Number(postId), offset, limit);
+
+  return res.status(200).json(
+    getPagingObject({
+      data: comments,
+      dataKey: "comments",
+      limit,
+      offset,
+      path: `${baseUrl}/api/comment/posts/${postId}`,
+    })
+  );
 };
 
 export const getPost = async (req: express.Request, res: express.Response) => {
   const { postId } = req.params;
 
-  const post = await Post.findUnique({
-    where: {
-      id: Number(postId),
-    },
-    include: {
-      postReaction: true,
-      author: {
-        select: {
-          username: true,
-        },
-      },
-      comments: {
-        where: {
-          parentId: null,
-        },
-        select: {
-          id: true,
-          comment: true,
-          createdAt: true,
-          user: {
-            select: { id: true, username: true },
-          },
-          childrenComment: {
-            select: {
-              id: true,
-              comment: true,
-              createdAt: true,
-              user: {
-                select: { id: true, username: true },
-              },
-            },
-          },
-        },
-      },
-    },
-  });
-
-  if (!post) throw new RequestError("Post not found!", 404);
+  const post = await findPostById(postId);
 
   return res.status(200).json(post);
 };
@@ -116,6 +115,7 @@ export const updatePost = async (
 ) => {
   const { title, content } = req.body;
   const { postId } = req.params;
+  const images = req.files ?? [];
 
   await Post.update({
     where: {
@@ -127,6 +127,24 @@ export const updatePost = async (
     },
   });
 
+  if ((images.length as number) > 0) {
+    const imagesDest = ((images as Express.Multer.File[]) ?? [])?.map(
+      (image) => ({
+        src: getFileDest(image) as string,
+        postId: Number(postId),
+      })
+    );
+
+    imagesDest.forEach(async (image) => {
+      await Image.create({
+        data: {
+          postId: Number(postId),
+          src: image.src,
+        },
+      });
+    });
+  }
+
   return res.status(204).json();
 };
 
@@ -134,15 +152,27 @@ export const createPost = async (
   req: express.Request,
   res: express.Response
 ) => {
+  const images = req.files ?? [];
+  const { userId } = req as ExpressRequestExtended;
   const { title, content } = req.body;
 
-  await Post.create({
+  const post = await Post.create({
     data: {
       content,
       title,
-      authorId: Number((req as ExpressRequestExtended).userId),
+      authorId: Number(userId),
     },
   });
 
-  return res.status(204).json();
+  await Image.createMany({
+    data: [
+      // @ts-ignore
+      ...images?.map((image: Express.Multer.File) => ({
+        src: getFileDest(image),
+        postId: post.id,
+      })),
+    ],
+  });
+
+  return res.status(201).json(post);
 };

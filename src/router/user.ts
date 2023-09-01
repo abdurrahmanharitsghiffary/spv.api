@@ -7,16 +7,20 @@ import {
 } from "../controllers/userController";
 import { tryCatch } from "../middlewares/tryCatch";
 import { verifyToken, isAdmin } from "../middlewares/auth";
+import {
+  getFollowedUsersById,
+  getUserFollowersById,
+} from "../controllers/followController";
 
 const router = express.Router();
 
-router.use(verifyToken);
-
-router.route("/").get(isAdmin, tryCatch(getAllUsers));
+router.route("/").get(verifyToken, isAdmin, tryCatch(getAllUsers));
 router
   .route("/:userId")
   .get(tryCatch(getUser))
-  .patch(isAdmin, tryCatch(updateUser))
-  .delete(isAdmin, deleteUser);
+  .patch(verifyToken, isAdmin, tryCatch(updateUser))
+  .delete(verifyToken, isAdmin, tryCatch(deleteUser));
+router.route("/:userId/following").get(tryCatch(getFollowedUsersById));
+router.route("/:userId/followers").get(tryCatch(getUserFollowersById));
 
 export default router;

@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const userValidationSchema = z.object({
+export const userValidationSignUpSchema = z.object({
   body: z.object({
     username: z
       .string({ required_error: "Username is required" })
@@ -22,4 +22,12 @@ export const userValidationSchema = z.object({
   }),
 });
 
-export type UserValidationSchema = z.infer<typeof userValidationSchema>;
+export const userValidationSignInSchema = z.object({
+  body: z.object({
+    email: z
+      .string({ required_error: "Email is required" })
+      .email({ message: "Invalid email format" }),
+  }),
+});
+
+export type UserValidationSchema = z.infer<typeof userValidationSignUpSchema>;

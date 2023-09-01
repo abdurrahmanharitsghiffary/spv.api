@@ -22,10 +22,10 @@ router(app);
 
 app.post(
   "/upload/image",
-  uploadImage.single("image"),
+  uploadImage.array("image"),
   (req: ExpressRequest, res: ExpressResponse) => {
-    console.log(req.file);
-    console.log(req.file?.path.split("\\").join("/"));
+    // @ts-ignore
+    req.files?.map((e) => console.log(e));
     res.status(200).json(req.file);
   }
 );
@@ -33,6 +33,8 @@ app.post(
 app.use(notFound);
 app.use(error);
 
-app.listen(process.env.PORT, () => {
-  console.log(`listening on http://localhost:${process.env.PORT}`);
-});
+// app.listen(process.env.PORT, () => {
+//   console.log(`listening on http://localhost:${process.env.PORT}`);
+// });
+
+export default app;

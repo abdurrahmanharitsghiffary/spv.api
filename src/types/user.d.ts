@@ -1,5 +1,28 @@
 import { Post } from "./post";
 
+export interface UserAccountPublic {
+  id: number;
+  username: string;
+  createdAt: Date;
+  profile?: {
+    profileDescription: string | null;
+    avatarImage?: {
+      id: number;
+      src: string;
+    } | null;
+  } | null;
+
+  followedBy: number[];
+  following: number[];
+  postIds: number[];
+}
+
+export interface UserAccount extends UserAccountPublic {
+  email: string;
+  role: $Enums.Role;
+  updatedAt: Date;
+}
+
 export interface User {
   id: number;
   username: string;

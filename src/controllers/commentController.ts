@@ -1,17 +1,9 @@
 import express from "express";
 import Comment from "../models/comment";
-import { RequestError } from "../lib/error";
 import { ExpressRequestExtended } from "../types/request";
-
-export const checkComment = async (commentId: string) => {
-  const comment = await Comment.findUnique({
-    where: { id: Number(commentId) },
-  });
-
-  if (!comment) throw new RequestError("Comment not found", 404);
-
-  return comment;
-};
+import { findCommmentById } from "../utils/findComment";
+import { getFileDest } from "../utils/getFileDest";
+import Image from "../models/image";
 
 export const getComment = async (
   req: express.Request,
@@ -19,35 +11,7 @@ export const getComment = async (
 ) => {
   const { commentId } = req.params;
 
-  const comment = await Comment.findUnique({
-    where: {
-      id: Number(commentId),
-    },
-    select: {
-      id: true,
-      comment: true,
-      createdAt: true,
-      user: { select: { id: true, username: true } },
-      childrenComment: {
-        select: {
-          id: true,
-          comment: true,
-          createdAt: true,
-          user: { select: { id: true, username: true } },
-          childrenComment: {
-            select: {
-              id: true,
-              comment: true,
-              createdAt: true,
-              user: { select: { id: true, username: true } },
-            },
-          },
-        },
-      },
-    },
-  });
-
-  if (!comment) throw new RequestError("Comment not found!", 404);
+  const comment = await findCommmentById(commentId);
 
   return res.status(200).json(comment);
 };
@@ -74,6 +38,8 @@ export const updateComment = async (
   const { comment } = req.body;
   const { commentId } = req.params;
 
+  await findCommmentById(commentId);
+
   await Comment.update({
     where: {
       id: Number(commentId),
@@ -90,37 +56,59 @@ export const createComment = async (
   req: express.Request,
   res: express.Response
 ) => {
+  const image = req.file;
+  const { userId } = req as ExpressRequestExtended;
   const { comment, postId, parentId } = req.body;
-  await Comment.create({
+
+  const createdComment = await Comment.create({
     data: {
-      userId: Number((req as ExpressRequestExtended).userId),
+      userId: Number(userId),
       comment,
-      postId,
-      parentId,
+      postId: Number(postId),
+      parentId: Number(parentId),
     },
   });
 
-  return res.status(204).json();
+  if (image) {
+    await Image.create({
+      data: {
+        src: getFileDest(image) as string,
+        commentId: createdComment.id,
+      },
+    });
+  }
+
+  return res.status(201).json(createdComment);
 };
 
 export const createReplyComment = async (
   req: express.Request,
   res: express.Response
 ) => {
+  const image = req.file;
   const { userId } = req as ExpressRequestExtended;
   const { commentId } = req.params;
   const { comment } = req.body;
 
-  const currentComment = await checkComment(commentId);
+  const currentComment = await findCommmentById(commentId);
 
-  await Comment.create({
+  const createdComment = await Comment.create({
     data: {
       comment,
       parentId: Number(commentId),
-      postId: currentComment.postId,
+      postId: Number(currentComment.postId),
       userId: Number(userId),
     },
   });
 
-  return res.status(204).json();
+  if (image) {
+    await Image.create({
+      data: {
+        src: getFileDest(image) as string,
+        commentId: createdComment.id,
+      },
+    });
+  }
+
+  return res.status(201).json(createdComment);
 };

@@ -7,7 +7,18 @@ const storage = multer.diskStorage({
     callback(null, "src/public/assets/uploads");
   },
   filename(req, file, callback) {
-    callback(null, `${Date.now().toString()}-${file.originalname}`);
+    const typeImage = req.url.includes("comments")
+      ? "COMMENT"
+      : req.url.includes("posts")
+      ? "POST"
+      : "";
+
+    callback(
+      null,
+      `${Date.now().toString()}-${typeImage ? `${typeImage}-` : ""}${
+        file.originalname
+      }`
+    );
   },
 });
 

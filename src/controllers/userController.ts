@@ -1,14 +1,9 @@
 import express from "express";
 import User from "../models/user";
-import { RequestError } from "../lib/error";
 import Profile from "../models/profile";
 import { findAllUser, findUserById, findUserPublic } from "../utils/findUser";
-
-const checkUser = async (userId: string) => {
-  const user = await User.findUnique({ where: { id: Number(userId) } });
-  if (user) return true;
-  return false;
-};
+import { baseUrl } from "../lib/baseUrl";
+import { getPagingObject } from "../utils/getPagingObject";
 
 export const getUser = async (req: express.Request, res: express.Response) => {
   const { userId } = req.params;
@@ -21,9 +16,20 @@ export const getAllUsers = async (
   req: express.Request,
   res: express.Response
 ) => {
-  const users = await findAllUser();
+  let { limit = 20, offset = 0 } = req.query;
+  limit = Number(limit);
+  offset = Number(offset);
+  const users = await findAllUser({ limit, offset });
 
-  return res.status(200).json(users);
+  return res.status(200).json(
+    getPagingObject({
+      data: users,
+      dataKey: "users",
+      limit,
+      offset,
+      path: `${baseUrl}/api/users`,
+    })
+  );
 };
 
 export const deleteUser = async (
@@ -31,9 +37,7 @@ export const deleteUser = async (
   res: express.Response
 ) => {
   const { userId } = req.params;
-  const isUserExists = await checkUser(userId);
-
-  if (!isUserExists) throw new RequestError("User not found!", 404);
+  await findUserById(userId);
 
   await User.delete({ where: { id: Number(userId) } });
   return res.status(204).json();
@@ -44,11 +48,9 @@ export const updateUser = async (
   res: express.Response
 ) => {
   const { userId } = req.params;
-  const { username, image, description } = req.body;
+  const { username, description } = req.body;
 
-  const isUserExists = await checkUser(userId);
-
-  if (!isUserExists) throw new RequestError("User not found!", 404);
+  await findUserById(userId);
 
   const user = await User.update({
     where: {
@@ -59,17 +61,17 @@ export const updateUser = async (
     },
   });
 
-  await Profile.update({
+  await Profile.upsert({
     where: {
       userId: user.email,
     },
-    data: {
+    update: {
       profileDescription: description,
-      image,
+    },
+    create: {
+      userId: user.email,
     },
   });
 
   return res.status(204).json();
 };
-
-// BY EMAIL?

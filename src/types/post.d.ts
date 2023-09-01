@@ -1,22 +1,38 @@
 import Comment from "./comment";
-export interface Post {
+import { Image, ProfilePost } from "./profile";
+
+export interface PostAuthor {
   id: number;
-  authorId: number;
-  title: string;
-  content: string;
-  comments: Comment[];
-  createdAt: Date;
-  updatedAt: Date;
-  postReaction: Reaction[];
+  username: string;
+  profilePhoto: { id: number; src: string } | null;
 }
 
-interface Reaction {
+export type Post = {
   id: number;
-  postId: number;
+  title: string;
+  postContent: string;
+  likes: { total: number; likedBy: number[] };
+  media: Image[] | null;
+  author: PostAuthor;
+  createdAt: Date;
+};
+
+type Reaction = {
   like: number;
   wow: number;
   angry: number;
   sad: number;
   love: number;
   funny: number;
-}
+} | null;
+
+export type PostExtended = {
+  commentIds: number[];
+} & Post;
+
+export type PostLikedBy = {
+  userId: number;
+  postId: number;
+  username: string;
+  profilePhoto: { src: string; id: number } | undefined | null;
+};

@@ -3,3 +3,10 @@ node_modules
 .env
 
 dist
+
+__test__/
+coverage/
+jest.config.ts
+bug.txt
+nodemon.json
+http_test/

@@ -3,8 +3,9 @@ import User from "../models/user";
 import { RequestError } from "../lib/error";
 import bcrypt from "bcrypt";
 import JWT from "jsonwebtoken";
+import { tryCatch } from "../middlewares/tryCatch";
 
-export const signIn = async (req: express.Request, res: express.Response) => {
+export const login = async (req: express.Request, res: express.Response) => {
   const { email, password } = req.body;
 
   const user = await User.findUnique({
@@ -30,10 +31,10 @@ export const signIn = async (req: express.Request, res: express.Response) => {
     {
       id: user.id,
       email,
-      image: user.profile,
+      image: user.profile?.avatarImage,
       username: user.username,
     },
-    process.env.JWT_SECRET as string,
+    process.env.ACCESS_TOKEN_SECRET as string,
     {
       expiresIn: 3600,
     }
@@ -48,12 +49,12 @@ export const signIn = async (req: express.Request, res: express.Response) => {
   });
 };
 
-export const signUp = async (req: express.Request, res: express.Response) => {
+export const register = async (req: express.Request, res: express.Response) => {
   const { email, password, username } = req.body;
 
   if (!email || !password || !username)
     throw new RequestError("Missing required fields!", 400);
-  console.log("not pass");
+
   const isUserExists = await User.findUnique({
     where: { email },
   });
@@ -80,7 +81,7 @@ export const signUp = async (req: express.Request, res: express.Response) => {
       email,
       username,
     },
-    process.env.JWT_SECRET as string,
+    process.env.ACCESS_TOKEN_SECRET as string,
     {
       expiresIn: 3600,
     }
@@ -93,3 +94,10 @@ export const signUp = async (req: express.Request, res: express.Response) => {
     username,
   });
 };
+
+export const refreshToken = tryCatch(
+  async (req: express.Request, res: express.Response) => {
+    const token = req.cookies.token;
+    const refreshToken = token.split(" ")[1];
+  }
+);

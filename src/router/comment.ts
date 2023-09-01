@@ -8,24 +8,27 @@ import {
 } from "../controllers/commentController";
 import { verifyToken } from "../middlewares/auth";
 import { tryCatch, tryCatchMiddleware } from "../middlewares/tryCatch";
-import { checkCommentBelong } from "../middlewares/checkCommentBelong";
+import { protectComment } from "../middlewares/protectComment";
+import { uploadImage } from "../utils/uploadImage";
 
 const router = express.Router();
 
 router
+  .route("/")
+  .post(verifyToken, uploadImage.single("image"), tryCatch(createComment));
+router
   .route("/:commentId")
-  .post(verifyToken, tryCatch(createReplyComment))
+  .post(verifyToken, uploadImage.single("image"), tryCatch(createReplyComment))
   .get(tryCatch(getComment))
   .patch(
     verifyToken,
-    tryCatchMiddleware(checkCommentBelong),
+    tryCatchMiddleware(protectComment),
     tryCatch(updateComment)
   )
   .delete(
     verifyToken,
-    tryCatchMiddleware(checkCommentBelong),
+    tryCatchMiddleware(protectComment),
     tryCatch(deleteComment)
   );
-router.route("/").post(verifyToken, tryCatch(createComment));
 
 export default router;
