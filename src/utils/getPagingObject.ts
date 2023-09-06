@@ -1,3 +1,5 @@
+import { limitErrorTrigger } from "../lib/error";
+import { Chat } from "../types/chat";
 import { Comment } from "../types/comment";
 import { PostExtended } from "../types/post";
 import { PagingObject } from "../types/response";
@@ -37,13 +39,15 @@ export const getPagingObject = ({
 }: {
   offset?: number;
   limit?: number;
-  data: PostExtended[] | Comment[] | UserAccount[];
+  data: PostExtended[] | Comment[] | UserAccount[] | Chat[];
   path: string;
-  dataKey?: "comments" | "posts" | "results" | "users";
+  dataKey?: "comments" | "posts" | "results" | "users" | "chats";
 }): PagingObject<PostExtended[] | Comment[] | UserAccount[]> => {
+  limitErrorTrigger(limit);
+
   return {
     [dataKey]: data,
-    next: getNextUrl({ path, limit, offset }),
+    next: data.length < limit ? null : getNextUrl({ path, limit, offset }),
     prev: getPrevUrl({ path, limit, offset }),
     offset,
     limit,

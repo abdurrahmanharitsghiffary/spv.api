@@ -10,3 +10,5 @@ jest.config.ts
 bug.txt
 nodemon.json
 http_test/
+todo.txt
+spec.txt

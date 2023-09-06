@@ -4,6 +4,7 @@ import { ExpressRequestExtended } from "../types/request";
 import { baseUrl } from "../lib/baseUrl";
 import {
   findAllPosts,
+  findPostByFollowedUserIds,
   findPostById,
   findPostsByAuthorId,
 } from "../utils/findPost";
@@ -11,6 +12,9 @@ import { findCommentsByPostId } from "../utils/findComment";
 import Image from "../models/image";
 import { getFileDest } from "../utils/getFileDest";
 import { getPagingObject } from "../utils/getPagingObject";
+import { findFollowUserByUserId } from "../utils/findUser";
+import User from "../models/user";
+import { deleteUploadedImage } from "../utils/deleteUploadedImage";
 
 export const getAllMyPosts = async (
   req: express.Request,
@@ -35,6 +39,41 @@ export const getAllMyPosts = async (
       limit,
       offset,
       path: `${baseUrl}/api/me/posts`,
+    })
+  );
+};
+
+export const getFollowedUserPost = async (
+  req: express.Request,
+  res: express.Response
+) => {
+  const { limit = 20, offset = 0 } = req.query;
+  const { userId } = req as ExpressRequestExtended;
+
+  const followedUser = await User.findUnique({
+    where: {
+      id: Number(userId),
+    },
+    select: {
+      following: true,
+    },
+  });
+
+  const posts = await findPostByFollowedUserIds({
+    followedUserIds: [
+      ...(followedUser?.following.map((user) => user.id) ?? []),
+    ],
+    limit: Number(limit),
+    offset: Number(offset),
+  });
+
+  return res.status(200).json(
+    getPagingObject({
+      data: posts,
+      dataKey: "posts",
+      limit: Number(limit),
+      offset: Number(offset),
+      path: `${baseUrl}/api/posts/following`,
     })
   );
 };
@@ -175,4 +214,37 @@ export const createPost = async (
   });
 
   return res.status(201).json(post);
+};
+
+export const deletePostImageById = async (
+  req: express.Request,
+  res: express.Response
+) => {
+  const { imageId, postId } = req.params;
+
+  const deletedImage = await Image.delete({
+    where: {
+      id: Number(imageId),
+      postId: Number(postId),
+    },
+  });
+
+  await deleteUploadedImage(deletedImage.src);
+
+  return res.status(204).json();
+};
+
+export const deletePostImagesByPostId = async (
+  req: express.Request,
+  res: express.Response
+) => {
+  const { postId } = req.params;
+
+  await Image.deleteMany({
+    where: {
+      postId: Number(postId),
+    },
+  });
+
+  return res.status(204).json();
 };

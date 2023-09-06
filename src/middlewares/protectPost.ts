@@ -21,11 +21,14 @@ export const protectPost = async (
   next: express.NextFunction
 ) => {
   const { postId } = req.params;
+  const { userId } = req as ExpressRequestExtended;
 
   const postIsExist = await checkPost(postId);
+  console.log(postIsExist);
+
+  console.log(userId);
   if (!postIsExist) throw new RequestError("Post not found", 404);
-  if (postIsExist?.authorId !== Number((req as ExpressRequestExtended).userId))
-    throw new ForbiddenError();
+  if (postIsExist?.authorId !== Number(userId)) throw new ForbiddenError();
 
   return next();
 };

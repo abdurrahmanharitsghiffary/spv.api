@@ -21,7 +21,10 @@ export const verifyToken = tryCatchMiddleware(
 
     if (!token) return res.status(401).json({ message: "No token provided!" });
 
-    const decode = await JWT.verify(token, process.env.JWT_SECRET as string);
+    const decode = await JWT.verify(
+      token,
+      process.env.ACCESS_TOKEN_SECRET as string
+    );
 
     if (typeof decode !== "string") {
       (req as ExpressRequestExtended).userEmail = decode.email;

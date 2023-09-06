@@ -52,3 +52,31 @@ export const findAllPosts = async ({
 
   return normalizePosts(posts);
 };
+
+export const findPostByFollowedUserIds = async ({
+  followedUserIds,
+  limit = 20,
+  offset = 0,
+}: {
+  limit?: number;
+  offset?: number;
+  followedUserIds: number[];
+}) => {
+  const posts = await Post.findMany({
+    where: {
+      authorId: {
+        in: [...followedUserIds],
+      },
+      type: {
+        in: ["friends", "public"],
+      },
+    },
+    orderBy: { createdAt: "desc" },
+    skip: offset,
+    take: limit,
+    distinct: ["authorId"],
+    select: selectPost,
+  });
+
+  return normalizePosts(posts);
+};

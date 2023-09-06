@@ -1,6 +1,7 @@
 import express from "express";
 import { RequestError } from "../types/error";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
+import { MissingFieldError } from "../lib/error";
 
 export const error = async (
   err: RequestError,
@@ -8,9 +9,8 @@ export const error = async (
   res: express.Response,
   next: express.NextFunction
 ) => {
-  // console.log(err);
-  // console.error(err.message.includes("const createdFollow"));
-  // console.error(err.name);
+  console.log(err);
+  console.error(err.name);
   switch (err.name) {
     case "RequestError": {
       return res.status(err.statusCode ?? 500).json({
@@ -35,6 +35,16 @@ export const error = async (
         name: err.name,
       });
     }
+    case "MissingFieldError": {
+      const error = err as MissingFieldError;
+      return res
+        .status(error.statusCode)
+        .json({
+          message: error.message,
+          errors: error.errors,
+          name: error.name,
+        });
+    }
     case "PrismaClientKnownRequestError": {
       switch ((err as RequestError & PrismaClientKnownRequestError).code) {
         case "P2002": {
@@ -54,11 +64,19 @@ export const error = async (
               message: `Post not found`,
             });
           }
-          return res.status(404).json({
-            status: "failed",
-            statusCode: 404,
-            message: `Not found!, Can't found post or comment`,
-          });
+          if (
+            [
+              "Invalid `Post.update()`",
+              "Invalid `Comment.update()`",
+              "Invalid `Comment.create()`",
+              "Invalid `Post.create()`",
+            ].some((message) => err.message.includes(message))
+          )
+            return res.status(404).json({
+              status: "failed",
+              statusCode: 404,
+              message: `Not found!, Can't found post or comment`,
+            });
         }
         case "P2025": {
           if (err.message.includes("const createdFollow")) {

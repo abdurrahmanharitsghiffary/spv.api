@@ -3,7 +3,10 @@ import { tryCatch, tryCatchMiddleware } from "../middlewares/tryCatch";
 import {
   createPost,
   deletePost,
+  deletePostImageById,
+  deletePostImagesByPostId,
   getAllPosts,
+  getFollowedUserPost,
   getPost,
   getPostCommentsById,
   updatePost,
@@ -21,9 +24,13 @@ import { protectLike } from "../middlewares/protectLike";
 const router = express.Router();
 router
   .route("/")
-  .post(verifyToken, uploadImage.array("image"), tryCatch(createPost))
+  .post(verifyToken, uploadImage.array("images"), tryCatch(createPost))
   .get(verifyToken, isAdmin, tryCatch(getAllPosts));
+
+router.route("/following").get(verifyToken, tryCatch(getFollowedUserPost));
+
 router.route("/:postId/comments").get(tryCatch(getPostCommentsById));
+
 router
   .route("/:postId/likes")
   .get(tryCatch(getPostLikesByPostId))
@@ -40,5 +47,20 @@ router
     tryCatch(updatePost)
   )
   .delete(verifyToken, tryCatchMiddleware(protectPost), tryCatch(deletePost));
+
+router
+  .route("/:postId/images/:imageId")
+  .delete(
+    verifyToken,
+    tryCatchMiddleware(protectPost),
+    tryCatch(deletePostImageById)
+  );
+router
+  .route("/:postId/images")
+  .delete(
+    verifyToken,
+    tryCatchMiddleware(protectPost),
+    tryCatch(deletePostImagesByPostId)
+  );
 
 export default router;

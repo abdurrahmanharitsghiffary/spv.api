@@ -16,6 +16,8 @@ import {
   deleteFollow,
 } from "../controllers/followController";
 import { uploadImage } from "../utils/uploadImage";
+import { getAllChatsByUserId } from "../controllers/chatController";
+
 const router = express.Router();
 
 router.use(verifyToken);
@@ -29,6 +31,7 @@ router
   .route("/account/images")
   .delete(tryCatch(deleteAccountImage))
   .patch(uploadImage.single("image"), tryCatch(updateProfileImage));
+router.route("/chats").get(tryCatch(getAllChatsByUserId));
 router.route("/posts").get(tryCatch(getAllMyPosts));
 router.route("/follow").post(tryCatch(createFollowUser));
 router.route("/following").get(tryCatch(getFollowedUser));
