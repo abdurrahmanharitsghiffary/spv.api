@@ -49,12 +49,13 @@ export const findAllUser = async ({
     take: limit,
     skip: offset,
   });
+  const totalUsers = await User.count({});
 
   const normalizedUser: UserAccount[] = users.map((user) =>
     normalizeUser(user)
   );
 
-  return normalizedUser;
+  return { data: normalizedUser, total: totalUsers };
 };
 
 export const findFollowUserByUserEmail = async (
@@ -107,7 +108,6 @@ export const findFollowUserByUserId = async (
       },
     },
   });
-  console.log(user);
 
   return {
     [types]: [...(user?.[types]?.map((user) => user.id) ?? [])],

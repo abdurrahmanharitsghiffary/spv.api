@@ -17,6 +17,7 @@ import {
 } from "../controllers/followController";
 import { uploadImage } from "../utils/uploadImage";
 import { getAllChatsByUserId } from "../controllers/chatController";
+import { sanitizeUpdateAccount } from "../middlewares/validation/sanitizeAccount";
 
 const router = express.Router();
 
@@ -25,7 +26,7 @@ router.use(verifyToken);
 router
   .route("/account")
   .get(tryCatch(getMyAccountInfo))
-  .patch(tryCatch(updateMyAccount))
+  .patch(sanitizeUpdateAccount, tryCatch(updateMyAccount))
   .delete(tryCatch(deleteMyAccount));
 router
   .route("/account/images")

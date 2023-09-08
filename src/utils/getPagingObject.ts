@@ -35,21 +35,32 @@ export const getPagingObject = ({
   limit = 20,
   data,
   path,
-  dataKey = "results",
+  total_records,
+  current,
 }: {
   offset?: number;
   limit?: number;
   data: PostExtended[] | Comment[] | UserAccount[] | Chat[];
   path: string;
-  dataKey?: "comments" | "posts" | "results" | "users" | "chats";
-}): PagingObject<PostExtended[] | Comment[] | UserAccount[]> => {
+  total_records: number;
+  current: string;
+}): PagingObject<PostExtended[] | Comment[] | UserAccount[] | Chat[]> => {
   limitErrorTrigger(limit);
 
   return {
-    [dataKey]: data,
-    next: data.length < limit ? null : getNextUrl({ path, limit, offset }),
-    prev: getPrevUrl({ path, limit, offset }),
-    offset,
-    limit,
+    status: "success",
+    data,
+    pagination: {
+      next: data.length < limit ? null : getNextUrl({ path, limit, offset }),
+      previous: getPrevUrl({ path, limit, offset }),
+      current,
+      result_count: data.length,
+      total_records,
+      offset,
+      limit,
+    },
   };
 };
+// : `${path}${offset || limit ? "?" : ""}${
+//   offset ? `offset=${offset}` : ""
+// }${limit ? `limit=${limit}` : ""}`,

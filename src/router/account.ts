@@ -10,16 +10,28 @@ import {
   sendVerifyToken,
   verifyAccount,
 } from "../controllers/accountController";
+import {
+  resetPasswordLimiter,
+  verifyLimiter,
+} from "../middlewares/rateLimiter";
 
 const router = express.Router();
 
 router
   .route("/resetpassword")
-  .post(validate(emailRequestValidation), tryCatch(sendResetToken));
+  .post(
+    resetPasswordLimiter,
+    validate(emailRequestValidation),
+    tryCatch(sendResetToken)
+  );
 router.route("/resetpassword/:token").post(tryCatch(resetPassword));
 router
   .route("/verify")
-  .post(validate(emailRequestValidation), tryCatch(sendVerifyToken));
+  .post(
+    verifyLimiter,
+    validate(emailRequestValidation),
+    tryCatch(sendVerifyToken)
+  );
 router.route("/verify/:verifyToken").post(tryCatch(verifyAccount));
 
 export default router;

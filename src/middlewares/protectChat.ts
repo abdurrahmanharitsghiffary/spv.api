@@ -12,7 +12,7 @@ export const protectChat = async (
   const { chatId } = req.params;
 
   const chat = await findChatById(Number(chatId));
-  if (chat.sender.id !== Number(userId)) throw new ForbiddenError();
+  if (chat.author.id !== Number(userId)) throw new ForbiddenError();
 
   return next();
 };

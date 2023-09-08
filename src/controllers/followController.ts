@@ -7,6 +7,7 @@ import {
 } from "../utils/findUser";
 import User from "../models/user";
 import { RequestError } from "../lib/error";
+import { jSuccess } from "../utils/jsend";
 
 export const getFollowedUser = async (
   req: express.Request,
@@ -19,11 +20,13 @@ export const getFollowedUser = async (
     "following"
   );
 
-  return res.status(200).json({
-    followedUserIds: followedUserIds.following,
-    // @ts-ignore
-    total: followedUserIds.total.following,
-  });
+  return res.status(200).json(
+    jSuccess({
+      followedUserIds: followedUserIds.following,
+      // @ts-ignore
+      total: followedUserIds.total.following,
+    })
+  );
 };
 
 export const getMyFollowers = async (
@@ -34,11 +37,13 @@ export const getMyFollowers = async (
 
   const followerIds = await findFollowUserByUserEmail(userEmail, "followedBy");
 
-  return res.status(200).json({
-    followerIds: followerIds.followedBy,
-    // @ts-ignore
-    total: followerIds.total.followedBy,
-  });
+  return res.status(200).json(
+    jSuccess({
+      followerIds: followerIds.followedBy,
+      // @ts-ignore
+      total: followerIds.total.followedBy,
+    })
+  );
 };
 
 export const createFollowUser = async (
@@ -69,7 +74,7 @@ export const createFollowUser = async (
     },
   });
 
-  return res.status(201).json(createdFollow);
+  return res.status(201).json(jSuccess(createdFollow));
 };
 
 export const deleteFollow = async (
@@ -94,7 +99,7 @@ export const deleteFollow = async (
     },
   });
 
-  return res.status(204).json();
+  return res.status(204).json(jSuccess(null));
 };
 
 export const getUserFollowersById = async (
@@ -104,12 +109,14 @@ export const getUserFollowersById = async (
   const { userId } = req.params;
   const userFollowers = await findFollowUserByUserId(userId, "followedBy");
 
-  return res.status(200).json({
-    userId: Number(userId),
-    followerIds: userFollowers.followedBy,
-    // @ts-ignore
-    total: userFollowers.total.followedBy,
-  });
+  return res.status(200).json(
+    jSuccess({
+      userId: Number(userId),
+      followerIds: userFollowers.followedBy,
+      // @ts-ignore
+      total: userFollowers.total.followedBy,
+    })
+  );
 };
 
 export const getFollowedUsersById = async (
@@ -119,10 +126,12 @@ export const getFollowedUsersById = async (
   const { userId } = req.params;
   const userFollowers = await findFollowUserByUserId(userId, "following");
 
-  return res.status(200).json({
-    userId: Number(userId),
-    followedUserIds: userFollowers.following,
-    // @ts-ignore
-    total: userFollowers.total.following,
-  });
+  return res.status(200).json(
+    jSuccess({
+      userId: Number(userId),
+      followedUserIds: userFollowers.following,
+      // @ts-ignore
+      total: userFollowers.total.following,
+    })
+  );
 };

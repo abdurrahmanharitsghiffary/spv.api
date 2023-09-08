@@ -11,8 +11,10 @@ import { getPagingObject } from "../utils/getPagingObject";
 import Image from "../models/image";
 import { getFileDest } from "../utils/getFileDest";
 import { findUserById } from "../utils/findUser";
-import { missingFieldsErrorTrigger } from "../lib/error";
+import { fieldsErrorTrigger } from "../lib/error";
 import { baseUrl } from "../lib/baseUrl";
+import { jSuccess } from "../utils/jsend";
+import { getCurrentUrl } from "../utils/getCurrentUrl";
 
 export const getChatsByRecipientId = async (
   req: express.Request,
@@ -36,8 +38,9 @@ export const getChatsByRecipientId = async (
 
   return res.status(200).json(
     getPagingObject({
-      data: chats,
-      dataKey: "chats",
+      data: chats.data,
+      current: getCurrentUrl(req),
+      total_records: chats.total,
       path: `${baseUrl}/api/chats/${recipientId}`,
       limit,
       offset,
@@ -53,7 +56,7 @@ export const deleteChatById = async (
 
   await deleteChatWithId(Number(chatId));
 
-  return res.status(204).json();
+  return res.status(204).json(jSuccess(null));
 };
 
 export const updateChatById = async (
@@ -62,11 +65,10 @@ export const updateChatById = async (
 ) => {
   const { chatId } = req.params;
   const { message } = req.body;
-  missingFieldsErrorTrigger([{ field: message, key: "message" }]);
 
   await updateChatWithId(Number(chatId), message);
 
-  return res.status(204).json();
+  return res.status(204).json(jSuccess(null));
 };
 
 export const createChat = async (
@@ -75,10 +77,6 @@ export const createChat = async (
 ) => {
   const { userId } = req as ExpressRequestExtended;
   const { recipientId, message } = req.body;
-  missingFieldsErrorTrigger([
-    { field: message, key: "message" },
-    { field: recipientId, key: "recipientId" },
-  ]);
 
   const image = req.file ?? null;
 
@@ -97,7 +95,7 @@ export const createChat = async (
     });
   }
 
-  return res.status(201).json();
+  return res.status(201).json(jSuccess(null));
 };
 
 export const getAllChatsByUserId = async (
@@ -115,9 +113,10 @@ export const getAllChatsByUserId = async (
 
   return res.status(200).json(
     getPagingObject({
-      data: chats,
+      data: chats.data,
       path: `${baseUrl}/api/me/chats`,
-      dataKey: "chats",
+      current: getCurrentUrl(req),
+      total_records: chats.total,
       limit: Number(limit),
       offset: Number(offset),
     })

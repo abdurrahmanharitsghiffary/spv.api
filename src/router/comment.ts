@@ -10,19 +10,31 @@ import { verifyToken } from "../middlewares/auth";
 import { tryCatch, tryCatchMiddleware } from "../middlewares/tryCatch";
 import { protectComment } from "../middlewares/protectComment";
 import { uploadImage } from "../utils/uploadImage";
+import { sanitizeComment } from "../middlewares/validation/sanitizeComment";
 
 const router = express.Router();
 
 router
   .route("/")
-  .post(verifyToken, uploadImage.single("image"), tryCatch(createComment));
+  .post(
+    verifyToken,
+    uploadImage.single("image"),
+    sanitizeComment,
+    tryCatch(createComment)
+  );
 router
   .route("/:commentId")
-  .post(verifyToken, uploadImage.single("image"), tryCatch(createReplyComment))
+  .post(
+    verifyToken,
+    uploadImage.single("image"),
+    sanitizeComment,
+    tryCatch(createReplyComment)
+  )
   .get(tryCatch(getComment))
   .patch(
     verifyToken,
     tryCatchMiddleware(protectComment),
+    sanitizeComment,
     tryCatch(updateComment)
   )
   .delete(

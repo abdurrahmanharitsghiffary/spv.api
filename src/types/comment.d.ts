@@ -1,19 +1,24 @@
-export interface Comment {
+import { number } from "zod";
+import { Image } from "./profile";
+import { UserSimplified } from "./user";
+
+interface CommentSimplified {
   id: number;
   postId: number;
   comment: string;
-  image: { src: string; id: number } | null;
-  user: {
-    id: number;
-    username: string;
-    profilePhoto:
-      | {
-          id: number;
-          src: string;
-        }
-      | null
-      | undefined;
-  };
+  image: Image;
+  user: UserSimplified;
   createdAt: Date;
-  commentReplyIds: number[];
+  updateAt: Date;
+}
+
+interface CommentReply extends CommentSimplified {
+  commentReply: {
+    commentIds: number[];
+    total: number;
+  };
+}
+
+export interface Comment extends CommentSimplified {
+  commentReply: { comments: CommentReply[]; total: number };
 }

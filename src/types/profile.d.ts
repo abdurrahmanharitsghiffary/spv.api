@@ -1,13 +1,15 @@
-export type Image = {
-  id: number;
+export type Image =
+  | {
+      src: string;
+    }
+  | null
+  | undefined;
+
+export type ImageV2 = {
   src: string;
-};
+} | null;
 
-export interface ProfilePost {
-  avatarImage: Image;
-}
-
-export interface ProfileSimplified extends ProfilePost {
-  profileDescription: string | null;
-  avatarImage?: Image;
+export interface ProfileSimplified {
+  description: string | null;
+  image: Image;
 }

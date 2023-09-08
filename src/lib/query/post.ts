@@ -5,7 +5,7 @@ export const selectAuthorPost = {
     select: {
       id: true,
       username: true,
-      profile: { select: { avatarImage: { select: { id: true, src: true } } } },
+      profile: { select: { avatarImage: { select: { src: true } } } },
     },
   },
 } satisfies Prisma.PostSelect;
@@ -18,19 +18,25 @@ export const selectPost = {
   id: true,
   title: true,
   content: true,
+  updatedAt: true,
   likes: {
     select: {
       user: {
         select: {
           id: true,
+          username: true,
+          profile: {
+            select: {
+              avatarImage: { select: { src: true } },
+            },
+          },
         },
       },
     },
   },
-  _count: { select: { likes: true } },
+  _count: { select: { likes: true, comments: true } },
   images: {
     select: {
-      id: true,
       src: true,
     },
   },

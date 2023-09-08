@@ -10,7 +10,6 @@ export const selectUserPublic = {
       profileDescription: true,
       avatarImage: {
         select: {
-          id: true,
           src: true,
         },
       },
@@ -28,6 +27,14 @@ export const selectUserPublic = {
       username: true,
     },
   },
+  _count: {
+    select: {
+      followedBy: true,
+      following: true,
+      posts: true,
+    },
+  },
+  updatedAt: true,
   posts: {
     take: 5,
     select: selectPost,
@@ -50,7 +57,6 @@ export const selectUser = {
       profileDescription: true,
       avatarImage: {
         select: {
-          id: true,
           src: true,
         },
       },
@@ -67,6 +73,13 @@ export const selectUser = {
     select: {
       id: true,
       username: true,
+    },
+  },
+  _count: {
+    select: {
+      followedBy: true,
+      following: true,
+      posts: true,
     },
   },
   posts: {

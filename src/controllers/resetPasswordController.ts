@@ -6,6 +6,7 @@ import { baseUrl } from "../lib/baseUrl";
 import { RequestError } from "../lib/error";
 import bcrypt from "bcrypt";
 import { getRandomToken } from "../utils/getRandomToken";
+import { jSuccess } from "../utils/jsend";
 
 export const sendResetToken = async (
   req: express.Request,
@@ -39,9 +40,11 @@ export const sendResetToken = async (
     );
   }
 
-  res.status(200).json({
-    message: `If a matching account was found, an email was sent to ${email} to allow you to reset your password.`,
-  });
+  res.status(200).json(
+    jSuccess({
+      message: `If a matching account was found, an email was sent to ${email} to allow you to reset your password.`,
+    })
+  );
 };
 
 export const resetPassword = async (
@@ -85,5 +88,5 @@ export const resetPassword = async (
     },
   });
 
-  res.status(204).json();
+  res.status(204).json(jSuccess(null));
 };

@@ -1,18 +1,12 @@
+import { Image } from "./profile";
+import { UserSimplified } from "./user";
+
 export type Chat = {
   id: number;
   message: string | null;
-  image: {
-    id: number;
-    src: string;
-  } | null;
-  sender: {
-    id: number;
-    username: string;
-  };
-  receiver: {
-    id: number;
-    username: string;
-  };
+  image: Image;
+  author: UserSimplified;
+  recipient: UserSimplified;
   createdAt: Date;
   updatedAt: Date;
 };

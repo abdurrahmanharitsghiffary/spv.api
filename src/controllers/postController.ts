@@ -12,9 +12,10 @@ import { findCommentsByPostId } from "../utils/findComment";
 import Image from "../models/image";
 import { getFileDest } from "../utils/getFileDest";
 import { getPagingObject } from "../utils/getPagingObject";
-import { findFollowUserByUserId } from "../utils/findUser";
 import User from "../models/user";
 import { deleteUploadedImage } from "../utils/deleteUploadedImage";
+import { jSuccess } from "../utils/jsend";
+import { getCurrentUrl } from "../utils/getCurrentUrl";
 
 export const getAllMyPosts = async (
   req: express.Request,
@@ -34,8 +35,9 @@ export const getAllMyPosts = async (
 
   return res.status(200).json(
     getPagingObject({
-      data: posts,
-      dataKey: "posts",
+      data: posts.data,
+      current: getCurrentUrl(req),
+      total_records: posts.total,
       limit,
       offset,
       path: `${baseUrl}/api/me/posts`,
@@ -69,8 +71,9 @@ export const getFollowedUserPost = async (
 
   return res.status(200).json(
     getPagingObject({
-      data: posts,
-      dataKey: "posts",
+      data: posts.data,
+      current: getCurrentUrl(req),
+      total_records: posts.total,
       limit: Number(limit),
       offset: Number(offset),
       path: `${baseUrl}/api/posts/following`,
@@ -91,10 +94,11 @@ export const getAllPosts = async (
 
   return res.status(200).json(
     getPagingObject({
-      data: posts,
-      dataKey: "posts",
+      data: posts.data,
       limit,
       offset,
+      current: getCurrentUrl(req),
+      total_records: posts.total,
       path: `${baseUrl}/api/posts`,
     })
   );
@@ -116,8 +120,9 @@ export const getPostCommentsById = async (
 
   return res.status(200).json(
     getPagingObject({
-      data: comments,
-      dataKey: "comments",
+      data: comments.data,
+      total_records: comments.total,
+      current: getCurrentUrl(req),
       limit,
       offset,
       path: `${baseUrl}/api/comment/posts/${postId}`,
@@ -130,7 +135,7 @@ export const getPost = async (req: express.Request, res: express.Response) => {
 
   const post = await findPostById(postId);
 
-  return res.status(200).json(post);
+  return res.status(200).json(jSuccess(post));
 };
 
 export const deletePost = async (
@@ -145,7 +150,7 @@ export const deletePost = async (
     },
   });
 
-  return res.status(204).json();
+  return res.status(204).json(jSuccess(null));
 };
 
 export const updatePost = async (
@@ -184,7 +189,7 @@ export const updatePost = async (
     });
   }
 
-  return res.status(204).json();
+  return res.status(204).json(jSuccess(null));
 };
 
 export const createPost = async (
@@ -213,7 +218,7 @@ export const createPost = async (
     ],
   });
 
-  return res.status(201).json(post);
+  return res.status(201).json(jSuccess(post));
 };
 
 export const deletePostImageById = async (
@@ -231,7 +236,7 @@ export const deletePostImageById = async (
 
   await deleteUploadedImage(deletedImage.src);
 
-  return res.status(204).json();
+  return res.status(204).json(jSuccess(null));
 };
 
 export const deletePostImagesByPostId = async (
@@ -246,5 +251,5 @@ export const deletePostImagesByPostId = async (
     },
   });
 
-  return res.status(204).json();
+  return res.status(204).json(jSuccess(null));
 };

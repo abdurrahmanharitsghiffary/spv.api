@@ -28,27 +28,72 @@ export class ForbiddenError extends Error {
   }
 }
 
-export class MissingFieldError extends Error {
+export class FieldError extends Error {
   statusCode: number;
-  errors: { field: string; code: "missing_field" }[];
-  constructor(fields: string[]) {
+  errors: { field: string; code: string }[];
+  constructor(fields: { key: string; code: string }[]) {
     super();
-    this.message = `Missing required ${fields.length > 1 ? "fields" : "field"}`;
-    this.errors = fields.map((field) => ({ field, code: "missing_field" }));
+    this.errors = fields.map((field) => ({
+      field: field.key,
+      code: field.code,
+    }));
     this.statusCode = 422;
-    this.name = "MissingFieldError";
+    this.name = "FieldError";
   }
 }
 
-export const missingFieldsErrorTrigger = (
-  fields: { field: any; key: string }[]
+export const fieldsErrorTrigger = (
+  fields: {
+    field: any;
+    key: string;
+    type?:
+      | "string"
+      | "number"
+      | "bigint"
+      | "boolean"
+      | "symbol"
+      | "undefined"
+      | "object"
+      | "function"
+      | "array"
+      | "skip";
+  }[]
 ) => {
-  if (fields.some((field) => !field.field)) {
-    throw new MissingFieldError(
-      fields.filter(({ field }) => !field).map((field) => field.key)
-    );
+  const errors: { key: string; code: string }[] = [];
+
+  if (fields.some(({ field }) => field === undefined)) {
+    fields
+      .filter(({ field }) => field === undefined)
+      .forEach((field) =>
+        errors.push({ key: field.key, code: "missing_field" })
+      );
+  } else if (
+    fields.some((field) => {
+      if (field.type === "skip") return false;
+      if (
+        field.type === "array"
+          ? !Array.isArray(field.field)
+          : typeof field.field !== field.type
+      ) {
+        return true;
+      }
+    }) &&
+    fields.every(({ field }) => field !== undefined)
+  ) {
+    fields
+      .filter((field) =>
+        field.type === "array"
+          ? !Array.isArray(field.field)
+          : typeof field.field !== field.type
+      )
+      .forEach((field) =>
+        errors.push({
+          key: field.key,
+          code: `Invalid value provided. expected ${field.type} from ${field.key}`,
+        })
+      );
   }
-  return;
+  if (errors.length > 0) throw new FieldError(errors);
 };
 
 export class PagingLimitError extends Error {

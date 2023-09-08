@@ -38,7 +38,14 @@ export const findChatBySenderAndRecipientId = async ({
     skip: offset ?? 0,
   });
 
-  return chats.map((chat) => normalizeChat(chat));
+  const totalChats = await Chat.count({
+    where: {
+      authorId: userId,
+      recipientId: recipientId,
+    },
+  });
+
+  return { data: chats.map((chat) => normalizeChat(chat)), total: totalChats };
 };
 
 export const createChatWithSenderIdAndRecipientId = async (createOptions: {
@@ -112,5 +119,16 @@ export const findAllChatByUserId = async ({
     distinct: ["recipientId"],
   });
 
-  return chats.map((chat) => normalizeChat(chat));
+  const totalChats = await Chat.findMany({
+    where: {
+      authorId: userId,
+    },
+    select: { id: true },
+    distinct: ["recipientId"],
+  });
+
+  return {
+    data: chats.map((chat) => normalizeChat(chat)),
+    total: totalChats.length,
+  };
 };

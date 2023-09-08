@@ -3,6 +3,7 @@ import express from "express";
 import User from "../models/user";
 import { ExpressRequestExtended } from "../types/request";
 import { tryCatchMiddleware } from "./tryCatch";
+import { ForbiddenError, UnauthorizedError } from "../lib/error";
 
 export const generateToken = async (payload: string | object | Buffer) => {
   const token = await JWT.sign(payload, process.env.JWT_SECRET as string, {
@@ -34,19 +35,20 @@ export const verifyToken = tryCatchMiddleware(
           email: decode.email,
         },
       });
-      if (!isUserExist)
-        return res.status(401).json({ message: "Unauthorized" });
+      if (!isUserExist) throw new UnauthorizedError();
       (req as ExpressRequestExtended).role = isUserExist.role;
       next();
     }
   }
 );
 
-export const isAdmin = async (
-  req: express.Request,
-  res: express.Response,
-  next: express.NextFunction
-) => {
-  if ((req as ExpressRequestExtended).role === "admin") return next();
-  return res.status(403).json({ message: "Access Denied" });
-};
+export const isAdmin = tryCatchMiddleware(
+  async (
+    req: express.Request,
+    res: express.Response,
+    next: express.NextFunction
+  ) => {
+    if ((req as ExpressRequestExtended).role === "admin") return next();
+    throw new ForbiddenError();
+  }
+);

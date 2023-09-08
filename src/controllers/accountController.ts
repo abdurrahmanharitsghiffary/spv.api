@@ -4,7 +4,7 @@ import { findUser } from "../utils/findUser";
 import { ExpressRequestExtended } from "../types/request";
 import { getFileDest } from "../utils/getFileDest";
 import Image from "../models/image";
-import { RequestError, missingFieldsErrorTrigger } from "../lib/error";
+import { RequestError, fieldsErrorTrigger } from "../lib/error";
 import { deleteUploadedImage } from "../utils/deleteUploadedImage";
 import Token from "../models/token";
 import { getRandomToken } from "../utils/getRandomToken";
@@ -18,9 +18,27 @@ export const updateProfileImage = async (
 ) => {
   const { userEmail } = req as ExpressRequestExtended;
 
+  let src: string | undefined;
   const image = req.file;
-  missingFieldsErrorTrigger([{ field: image, key: "images" }]);
+  fieldsErrorTrigger([{ field: image, key: "image", type: "skip" }]);
   if (image) {
+    const profileImage = await User.findUnique({
+      where: { email: userEmail },
+      select: {
+        profile: {
+          select: {
+            avatarImage: {
+              select: {
+                src: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    src = profileImage?.profile?.avatarImage?.src;
+
     await User.update({
       where: {
         email: userEmail,
@@ -37,6 +55,8 @@ export const updateProfileImage = async (
         },
       },
     });
+
+    if (src) await deleteUploadedImage(src);
   }
 
   return res.status(204).json(jSuccess(null));
@@ -75,7 +95,7 @@ export const updateMyAccount = async (
     },
   });
 
-  return res.status(204).json({ status: "success", data: null });
+  return res.status(204).json(jSuccess(null));
 };
 
 export const deleteMyAccount = async (
@@ -90,7 +110,7 @@ export const deleteMyAccount = async (
     },
   });
 
-  return res.status(204).json({ status: "success", data: null });
+  return res.status(204).json(jSuccess(null));
 };
 
 export const deleteAccountImage = async (
@@ -123,7 +143,7 @@ export const deleteAccountImage = async (
 
   await deleteUploadedImage(user.profile.avatarImage.src);
 
-  return res.status(204).json();
+  return res.status(204).json(jSuccess(null));
 };
 
 export const verifyAccount = async (
@@ -166,7 +186,7 @@ export const verifyAccount = async (
     data: { verified: true },
   });
 
-  return res.status(204).json();
+  return res.status(204).json(jSuccess(null));
 };
 
 export const sendVerifyToken = async (
@@ -196,7 +216,9 @@ export const sendVerifyToken = async (
     await sendVerifyEmail(email, `${baseUrl}/api/verify/${token}`);
   }
 
-  res.status(200).json({
-    message: `If a matching account was found & email is valid, an email was sent to ${email} to verify your email.`,
-  });
+  res.status(200).json(
+    jSuccess({
+      message: `If a matching account was found & email is valid, an email was sent to ${email} to verify your email.`,
+    })
+  );
 };

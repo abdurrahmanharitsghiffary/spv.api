@@ -23,12 +23,19 @@ export const findCommentsByPostId = async (
 ) => {
   const comments = await Comment.findMany({
     where: {
-      postId: postId,
+      postId,
     },
     take: limit,
     skip: offset,
     select: selectComment,
   });
 
-  return normalizeComments(comments);
+  const totalComments = await Comment.count({
+    where: {
+      postId,
+      parentId: null,
+    },
+  });
+
+  return { data: normalizeComments(comments), total: totalComments };
 };

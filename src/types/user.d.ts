@@ -1,26 +1,32 @@
 import { Post } from "./post";
+import { Image, ImageV2 } from "./profile";
 
 export interface UserAccountPublic {
   id: number;
   username: string;
-  createdAt: Date;
-  profile?: {
-    profileDescription: string | null;
-    avatarImage?: {
-      id: number;
-      src: string;
-    } | null;
+  profile: {
+    description: string | null;
+    image: Image;
   } | null;
-
-  followedBy: number[];
-  following: number[];
-  postIds: number[];
+  followedBy: {
+    followerIds: number[];
+    total: number;
+  };
+  following: {
+    followedUserIds: number[];
+    total: number;
+  };
+  postIds: {
+    postIds: number[];
+    total: number;
+  };
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface UserAccount extends UserAccountPublic {
   email: string;
   role: $Enums.Role;
-  updatedAt: Date;
 }
 
 export interface User {
@@ -36,8 +42,8 @@ export interface User {
   posts: Post[];
 }
 
-export interface Profile {
+export interface UserSimplified {
   id: number;
-  description: string;
-  userId: number;
+  username: string;
+  image: Image;
 }

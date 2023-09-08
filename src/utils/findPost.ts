@@ -12,7 +12,7 @@ export const findPostById = async (postId: string) => {
   });
 
   if (!post) throw new RequestError("Post not found", 404);
-  console.log(post);
+
   return normalizePost(post);
 };
 
@@ -27,14 +27,20 @@ export const findPostsByAuthorId = async ({
 }) => {
   const posts = await Post.findMany({
     where: {
-      authorId: authorId,
+      authorId,
     },
     select: selectPost,
     take: limit ?? 20,
     skip: offset ?? 0,
   });
 
-  return normalizePosts(posts);
+  const totalPosts = await Post.count({
+    where: {
+      authorId,
+    },
+  });
+
+  return { data: normalizePosts(posts), total: totalPosts };
 };
 
 export const findAllPosts = async ({
@@ -50,7 +56,9 @@ export const findAllPosts = async ({
     take: limit ?? 20,
   });
 
-  return normalizePosts(posts);
+  const totalPosts = await Post.count({});
+
+  return { data: normalizePosts(posts), total: totalPosts };
 };
 
 export const findPostByFollowedUserIds = async ({
@@ -78,5 +86,16 @@ export const findPostByFollowedUserIds = async ({
     select: selectPost,
   });
 
-  return normalizePosts(posts);
+  const postsTotal = await Post.count({
+    where: {
+      authorId: {
+        in: [...followedUserIds],
+      },
+      type: {
+        in: ["friends", "public"],
+      },
+    },
+  });
+
+  return { data: normalizePosts(posts), total: postsTotal };
 };

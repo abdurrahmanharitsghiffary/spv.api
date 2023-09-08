@@ -5,6 +5,7 @@ import bcrypt from "bcrypt";
 import JWT, { JwtPayload } from "jsonwebtoken";
 import { tryCatch } from "../middlewares/tryCatch";
 import RefreshToken from "../models/refreshToken";
+import { jSuccess } from "../utils/jsend";
 
 export const login = async (req: express.Request, res: express.Response) => {
   const { email, password } = req.body;
@@ -74,12 +75,14 @@ export const login = async (req: express.Request, res: express.Response) => {
     },
   });
 
-  return res.status(200).json({
-    access_token,
-    refresh_token,
-    token_type: "Bearer",
-    expires_in: 3600,
-  });
+  return res.status(200).json(
+    jSuccess({
+      access_token,
+      refresh_token,
+      token_type: "Bearer",
+      expires_in: 3600,
+    })
+  );
 };
 
 export const signUp = async (req: express.Request, res: express.Response) => {
@@ -99,12 +102,28 @@ export const signUp = async (req: express.Request, res: express.Response) => {
     Number(process.env.BCRYPT_SALT)
   );
 
+  const refresh_token = await JWT.sign(
+    {
+      email,
+      username: username,
+    },
+    process.env.REFRESH_TOKEN_SECRET as string,
+    {
+      expiresIn: "7d",
+    }
+  );
+
   const user = await User.create({
     data: {
       email,
       hashedPassword,
       username,
       profile: { create: { profileDescription: null } },
+      refreshToken: {
+        create: {
+          refreshToken: refresh_token,
+        },
+      },
     },
   });
 
@@ -120,31 +139,21 @@ export const signUp = async (req: express.Request, res: express.Response) => {
     }
   );
 
-  const refresh_token = await JWT.sign(
-    {
-      id: user.id,
-      email,
-      username: user.username,
-    },
-    process.env.REFRESH_TOKEN_SECRET as string,
-    {
-      expiresIn: "7d",
-    }
+  // await RefreshToken.create({
+  //   data: {
+  //     userId: user.id,
+  //     refreshToken: refresh_token,
+  //   },
+  // });
+
+  return res.status(201).json(
+    jSuccess({
+      access_token,
+      refresh_token,
+      token_type: "Bearer",
+      expires_in: 3600,
+    })
   );
-
-  await RefreshToken.create({
-    data: {
-      userId: user.id,
-      refreshToken: refresh_token,
-    },
-  });
-
-  return res.status(201).json({
-    access_token,
-    refresh_token,
-    token_type: "Bearer",
-    expires_in: 3600,
-  });
 };
 
 export const refreshToken = tryCatch(
@@ -180,10 +189,12 @@ export const refreshToken = tryCatch(
       { expiresIn: 3600 }
     );
 
-    return res.status(200).json({
-      access_token,
-      expires_in: 3600,
-    });
+    return res.status(200).json(
+      jSuccess({
+        access_token,
+        expires_in: 3600,
+      })
+    );
   }
 );
 
@@ -198,5 +209,5 @@ export const signOut = async (req: express.Request, res: express.Response) => {
     },
   });
 
-  return res.status(204).json();
+  return res.status(204).json(jSuccess(null));
 };

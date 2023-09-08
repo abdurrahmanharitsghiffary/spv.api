@@ -1,9 +1,9 @@
 import PostLike from "../models/postLike";
 import express from "express";
-import { PostLikedBy } from "../types/post";
 import { ExpressRequestExtended } from "../types/request";
 import { RequestError } from "../lib/error";
 import Post from "../models/post";
+import { jSuccess } from "../utils/jsend";
 
 export const getPostLikesByPostId = async (
   req: express.Request,
@@ -45,7 +45,7 @@ export const getPostLikesByPostId = async (
 
   if (post === null) throw new RequestError("Post not found", 404);
 
-  const normalizedLikes: PostLikedBy[] = likes.map((like) => ({
+  const normalizedLikes = likes.map((like) => ({
     userId: like.userId,
     postId: like.postId,
     username: like.user.username,
@@ -54,7 +54,7 @@ export const getPostLikesByPostId = async (
 
   return res
     .status(200)
-    .json({ likedBy: normalizedLikes, total: likes.length });
+    .json(jSuccess({ likedBy: normalizedLikes, total: likes.length }));
 };
 
 export const createLike = async (
@@ -83,7 +83,7 @@ export const createLike = async (
     },
   });
 
-  return res.status(201).json(createdLike);
+  return res.status(201).json(jSuccess(createdLike));
 };
 
 export const deleteLike = async (
@@ -99,5 +99,5 @@ export const deleteLike = async (
     },
   });
 
-  return res.status(204).json();
+  return res.status(204).json(jSuccess(null));
 };

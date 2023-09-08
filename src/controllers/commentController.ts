@@ -4,6 +4,8 @@ import { ExpressRequestExtended } from "../types/request";
 import { findCommmentById } from "../utils/findComment";
 import { getFileDest } from "../utils/getFileDest";
 import Image from "../models/image";
+import { jSuccess } from "../utils/jsend";
+import { fieldsErrorTrigger } from "../lib/error";
 
 export const getComment = async (
   req: express.Request,
@@ -13,7 +15,7 @@ export const getComment = async (
 
   const comment = await findCommmentById(commentId);
 
-  return res.status(200).json(comment);
+  return res.status(200).json(jSuccess(comment));
 };
 
 export const deleteComment = async (
@@ -28,7 +30,7 @@ export const deleteComment = async (
     },
   });
 
-  return res.status(204).json();
+  return res.status(204).json(jSuccess(null));
 };
 
 export const updateComment = async (
@@ -49,7 +51,7 @@ export const updateComment = async (
     },
   });
 
-  return res.status(204).json();
+  return res.status(204).json(jSuccess(null));
 };
 
 export const createComment = async (
@@ -78,7 +80,7 @@ export const createComment = async (
     });
   }
 
-  return res.status(201).json(createdComment);
+  return res.status(201).json(jSuccess(createdComment));
 };
 
 export const createReplyComment = async (
@@ -110,5 +112,5 @@ export const createReplyComment = async (
     });
   }
 
-  return res.status(201).json(createdComment);
+  return res.status(201).json(jSuccess(createdComment));
 };
