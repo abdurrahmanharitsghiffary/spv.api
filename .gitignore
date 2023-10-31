@@ -4,6 +4,8 @@ node_modules
 
 dist
 
+prisma/migrations
+spec.txt
 __test__/
 coverage/
 jest.config.ts
@@ -12,4 +14,5 @@ nodemon.json
 http_test/
 todo.txt
 spec.txt
+src/public/assets/uploads
 validateBody.ts
