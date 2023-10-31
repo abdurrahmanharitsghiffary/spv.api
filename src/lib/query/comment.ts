@@ -9,6 +9,8 @@ export const selectSingleComment = {
   user: {
     select: {
       id: true,
+      firstName: true,
+      lastName: true,
       username: true,
       profile: {
         select: { avatarImage: { select: { src: true } } },
@@ -22,13 +24,11 @@ export const selectSingleComment = {
 export const selectComment = {
   ...selectSingleComment,
   childrenComment: {
+    orderBy: {
+      createdAt: "desc",
+    },
     select: {
-      ...selectSingleComment,
-      childrenComment: {
-        select: {
-          id: true,
-        },
-      },
+      id: true,
     },
   },
 } satisfies Prisma.CommentSelect;

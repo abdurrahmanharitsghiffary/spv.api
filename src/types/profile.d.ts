@@ -12,4 +12,5 @@ export type ImageV2 = {
 export interface ProfileSimplified {
   description: string | null;
   image: Image;
+  coverImage: Image;
 }

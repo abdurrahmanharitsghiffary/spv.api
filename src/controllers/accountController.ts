@@ -4,63 +4,14 @@ import { findUser } from "../utils/findUser";
 import { ExpressRequestExtended } from "../types/request";
 import { getFileDest } from "../utils/getFileDest";
 import Image from "../models/image";
-import { RequestError, fieldsErrorTrigger } from "../lib/error";
+import { RequestError } from "../lib/error";
 import { deleteUploadedImage } from "../utils/deleteUploadedImage";
 import Token from "../models/token";
 import { getRandomToken } from "../utils/getRandomToken";
 import { sendVerifyEmail } from "../utils/sendEmail";
-import { baseUrl } from "../lib/baseUrl";
 import { jSuccess } from "../utils/jsend";
-
-export const updateProfileImage = async (
-  req: express.Request,
-  res: express.Response
-) => {
-  const { userEmail } = req as ExpressRequestExtended;
-
-  let src: string | undefined;
-  const image = req.file;
-  fieldsErrorTrigger([{ field: image, key: "image", type: "skip" }]);
-  if (image) {
-    const profileImage = await User.findUnique({
-      where: { email: userEmail },
-      select: {
-        profile: {
-          select: {
-            avatarImage: {
-              select: {
-                src: true,
-              },
-            },
-          },
-        },
-      },
-    });
-
-    src = profileImage?.profile?.avatarImage?.src;
-
-    await User.update({
-      where: {
-        email: userEmail,
-      },
-      data: {
-        profile: {
-          update: {
-            avatarImage: {
-              create: {
-                src: getFileDest(image) as string,
-              },
-            },
-          },
-        },
-      },
-    });
-
-    if (src) await deleteUploadedImage(src);
-  }
-
-  return res.status(204).json(jSuccess(null));
-};
+import * as bcrypt from "bcrypt";
+import CoverImage from "../models/coverImage";
 
 export const getMyAccountInfo = async (
   req: express.Request,
@@ -73,13 +24,73 @@ export const getMyAccountInfo = async (
   return res.status(200).json(jSuccess(myAccount));
 };
 
+export const updateAccountImage = async (
+  req: express.Request,
+  res: express.Response
+) => {
+  const { userEmail } = req as ExpressRequestExtended;
+  const { type = "profile" } = req.query;
+
+  let src: string | undefined;
+  const image = req.file;
+  const user = await findUser(userEmail);
+  if (type === "profile") {
+    if (image) {
+      src = user?.profile?.image?.src;
+
+      await User.update({
+        where: {
+          email: userEmail,
+        },
+        data: {
+          profile: {
+            update: {
+              avatarImage: {
+                create: {
+                  src: getFileDest(image) as string,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      if (src) await deleteUploadedImage(src);
+    }
+  } else {
+    if (image) {
+      src = user?.profile?.coverImage?.src;
+
+      await User.update({
+        where: {
+          email: userEmail,
+        },
+        data: {
+          profile: {
+            update: {
+              coverImage: {
+                create: {
+                  src: getFileDest(image) as string,
+                },
+              },
+            },
+          },
+        },
+      });
+      if (src) await deleteUploadedImage(src);
+    }
+  }
+
+  return res.status(204).json(jSuccess(null));
+};
+
 export const updateMyAccount = async (
   req: express.Request,
   res: express.Response
 ) => {
   const { userEmail } = req as ExpressRequestExtended;
 
-  const { username, description } = req.body;
+  const { username, description, firstName, lastName } = req.body;
 
   await User.update({
     where: {
@@ -87,6 +98,8 @@ export const updateMyAccount = async (
     },
     data: {
       username,
+      firstName,
+      lastName,
       profile: {
         update: {
           profileDescription: description,
@@ -103,6 +116,13 @@ export const deleteMyAccount = async (
   res: express.Response
 ) => {
   const { userEmail } = req as ExpressRequestExtended;
+  const { currentPassword } = req.body;
+
+  const user = await User.findUnique({ where: { email: userEmail } });
+  if (!user) throw new RequestError("Something went wrong", 400);
+  const isMatch = await bcrypt.compare(currentPassword, user.hashedPassword);
+  if (!isMatch)
+    throw new RequestError("Incorrect password. Please try again.", 400);
 
   await User.delete({
     where: {
@@ -118,8 +138,8 @@ export const deleteAccountImage = async (
   res: express.Response
 ) => {
   const { userEmail } = req as ExpressRequestExtended;
-
-  const user = await User.findUnique({
+  const { type = "profile" } = req.query;
+  const user = await User.findUniqueOrThrow({
     where: {
       email: userEmail,
     },
@@ -127,21 +147,73 @@ export const deleteAccountImage = async (
       profile: {
         include: {
           avatarImage: true,
+          coverImage: true,
         },
       },
     },
   });
+  if (type === "profile") {
+    if (!user?.profile?.avatarImage)
+      throw new RequestError("Profile image not found", 404);
 
-  if (!user?.profile?.avatarImage)
-    throw new RequestError("Profile image not found", 404);
+    if (user.profile)
+      await Image.delete({
+        where: {
+          profileId: user.profile.id,
+        },
+      });
 
-  await Image.delete({
-    where: {
-      profileId: user.profile.id,
-    },
+    await deleteUploadedImage(user.profile.avatarImage.src);
+  } else {
+    if (!user?.profile?.coverImage)
+      throw new RequestError("Profile image not found", 404);
+
+    if (user.profile)
+      await CoverImage.delete({
+        where: {
+          profileId: user.profile.id,
+        },
+      });
+
+    await deleteUploadedImage(user.profile.coverImage.src);
+  }
+
+  return res.status(204).json(jSuccess(null));
+};
+
+export const changeMyAccountPassword = async (
+  req: express.Request,
+  res: express.Response
+) => {
+  const { userEmail } = req as ExpressRequestExtended;
+  const { currentPassword, password, confirmPassword } = req.body;
+
+  if (confirmPassword !== password)
+    throw new RequestError("Password and confirm password does not match", 401);
+
+  const user = await User.findUnique({
+    where: { email: userEmail },
   });
 
-  await deleteUploadedImage(user.profile.avatarImage.src);
+  if (!user) throw new RequestError("Something went wrong", 400);
+  const isMatch = await bcrypt.compare(currentPassword, user.hashedPassword);
+
+  if (!isMatch)
+    throw new RequestError("Incorrect password. Please try again", 400);
+
+  const hashedPassword = await bcrypt.hash(
+    password,
+    Number(process.env.BCRYPT_SALT)
+  );
+
+  await User.update({
+    where: {
+      email: userEmail,
+    },
+    data: {
+      hashedPassword,
+    },
+  });
 
   return res.status(204).json(jSuccess(null));
 };
@@ -213,7 +285,7 @@ export const sendVerifyToken = async (
       },
     });
 
-    await sendVerifyEmail(email, `${baseUrl}/api/verify/${token}`);
+    await sendVerifyEmail(email, `http://localhost:3000/verify/${token}`);
   }
 
   res.status(200).json(

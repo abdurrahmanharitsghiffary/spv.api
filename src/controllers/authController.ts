@@ -2,10 +2,13 @@ import express from "express";
 import User from "../models/user";
 import { RequestError } from "../lib/error";
 import bcrypt from "bcrypt";
-import JWT, { JwtPayload } from "jsonwebtoken";
 import { tryCatch } from "../middlewares/tryCatch";
-import RefreshToken from "../models/refreshToken";
 import { jSuccess } from "../utils/jsend";
+import {
+  generateAccessToken,
+  generateRefreshToken,
+} from "../utils/generateToken";
+import { ExpressRequestExtended } from "../types/request";
 
 export const login = async (req: express.Request, res: express.Response) => {
   const { email, password } = req.body;
@@ -20,12 +23,7 @@ export const login = async (req: express.Request, res: express.Response) => {
           avatarImage: true,
         },
       },
-      refreshToken: {
-        select: {
-          id: true,
-          refreshToken: true,
-        },
-      },
+      refreshToken: true,
     },
   });
 
@@ -35,50 +33,47 @@ export const login = async (req: express.Request, res: express.Response) => {
 
   if (!passwordIsMatch) throw new RequestError("Invalid Credentials", 401);
 
-  const access_token = await JWT.sign(
-    {
-      id: user.id,
-      email,
-      image: user.profile?.avatarImage,
-      username: user.username,
-    },
-    process.env.ACCESS_TOKEN_SECRET as string,
-    {
-      expiresIn: 3600,
-    }
-  );
+  const access_token = await generateAccessToken({
+    id: user.id,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    email,
+    username: user.username,
+  });
 
-  const refresh_token = await JWT.sign(
-    {
-      id: user.id,
-      email,
-      username: user.username,
-    },
-    process.env.REFRESH_TOKEN_SECRET as string,
-    {
-      expiresIn: "7d",
-    }
-  );
+  const refresh_token = await generateRefreshToken({
+    id: user.id,
+    email,
+    lastName: user.lastName,
+    firstName: user.firstName,
+    username: user.username,
+  });
 
-  await RefreshToken.upsert({
-    where: {
-      refreshToken: user.refreshToken?.refreshToken,
-      userId: user.id,
-    },
-    create: {
-      refreshToken: refresh_token,
-      userId: user.id,
-    },
-    update: {
-      userId: user.id,
-      refreshToken: refresh_token,
-    },
+  // await RefreshToken.upsert({
+  //   where: {
+  //     refreshToken: user.refreshToken?.refreshToken,
+  //     userId: user.id,
+  //   },
+  //   create: {
+  //     refreshToken: refresh_token,
+  //     userId: user.id,
+  //   },
+  //   update: {
+  //     userId: user.id,
+  //     refreshToken: refresh_token,
+  //   },
+  // });
+
+  res.cookie("x.spv.session", refresh_token, {
+    sameSite: "strict",
+    secure: true,
+    httpOnly: true,
+    maxAge: 60000 * 60 * 24 * 7,
   });
 
   return res.status(200).json(
     jSuccess({
       access_token,
-      refresh_token,
       token_type: "Bearer",
       expires_in: 3600,
     })
@@ -86,10 +81,7 @@ export const login = async (req: express.Request, res: express.Response) => {
 };
 
 export const signUp = async (req: express.Request, res: express.Response) => {
-  const { email, password, username } = req.body;
-
-  if (!email || !password || !username)
-    throw new RequestError("Missing required fields!", 400);
+  const { email, password, username, firstName, lastName } = req.body;
 
   const isUserExists = await User.findUnique({
     where: { email },
@@ -102,54 +94,48 @@ export const signUp = async (req: express.Request, res: express.Response) => {
     Number(process.env.BCRYPT_SALT)
   );
 
-  const refresh_token = await JWT.sign(
-    {
-      email,
-      username: username,
-    },
-    process.env.REFRESH_TOKEN_SECRET as string,
-    {
-      expiresIn: "7d",
-    }
-  );
-
   const user = await User.create({
     data: {
+      firstName,
+      lastName,
       email,
       hashedPassword,
       username,
       profile: { create: { profileDescription: null } },
-      refreshToken: {
-        create: {
-          refreshToken: refresh_token,
-        },
-      },
+      // refreshToken: {
+      //   create: {
+      //     refreshToken: refresh_token,
+      //   },
+      // },
     },
   });
 
-  const access_token = await JWT.sign(
-    {
-      id: user.id,
-      email,
-      username,
-    },
-    process.env.ACCESS_TOKEN_SECRET as string,
-    {
-      expiresIn: 3600,
-    }
-  );
+  const refresh_token = await generateRefreshToken({
+    id: user.id,
+    firstName,
+    lastName,
+    email,
+    username,
+  });
 
-  // await RefreshToken.create({
-  //   data: {
-  //     userId: user.id,
-  //     refreshToken: refresh_token,
-  //   },
-  // });
+  const access_token = await generateAccessToken({
+    id: user.id,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    email,
+    username,
+  });
+
+  res.cookie("x.spv.session", refresh_token, {
+    sameSite: "strict",
+    secure: true,
+    httpOnly: true,
+    maxAge: 60000 * 60 * 24 * 7,
+  });
 
   return res.status(201).json(
     jSuccess({
       access_token,
-      refresh_token,
       token_type: "Bearer",
       expires_in: 3600,
     })
@@ -158,36 +144,21 @@ export const signUp = async (req: express.Request, res: express.Response) => {
 
 export const refreshToken = tryCatch(
   async (req: express.Request, res: express.Response) => {
-    const token = req.headers.authorization;
-    const refreshToken =
-      token && token.includes("Basic") ? token.split(" ")[1] : "";
-
-    if (!refreshToken) throw new RequestError("No token provided!", 401);
-
-    const tokenIsExist = await RefreshToken.findUnique({
-      where: {
-        refreshToken,
-      },
-    });
-
-    if (!tokenIsExist) throw new RequestError("Invalid refresh token", 401);
-
-    const decodedToken = await JWT.verify(
-      refreshToken,
-      process.env.REFRESH_TOKEN_SECRET as string
-    );
+    const { userEmail } = req as ExpressRequestExtended;
 
     const user = await User.findUnique({
       where: {
-        email: (decodedToken as JwtPayload).email,
+        email: userEmail,
       },
     });
 
-    const access_token = await JWT.sign(
-      { id: user?.id, username: user?.username, email: user?.email },
-      process.env.ACCESS_TOKEN_SECRET as string,
-      { expiresIn: 3600 }
-    );
+    const access_token = await generateAccessToken({
+      firstName: user?.firstName,
+      lastName: user?.lastName,
+      id: user?.id,
+      username: user?.username,
+      email: user?.email,
+    });
 
     return res.status(200).json(
       jSuccess({
@@ -199,15 +170,23 @@ export const refreshToken = tryCatch(
 );
 
 export const signOut = async (req: express.Request, res: express.Response) => {
-  const token = req.headers.authorization;
-  const refreshToken =
-    token && token.includes("Basic") ? token.split(" ")[1] : "";
+  const token = req.cookies["x.spv.session"];
+  console.log(token, " refresh-token");
+  console.log(req.cookies);
+  console.log(req.signedCookies);
 
-  await RefreshToken.delete({
-    where: {
-      refreshToken,
-    },
+  if (!token) throw new RequestError("You are unauthenticated!", 401);
+
+  // await RefreshToken.delete({
+  //   where: {
+  //     refreshToken: token,
+  //   },
+  // });
+  res.clearCookie("x.spv.session", {
+    sameSite: "strict",
+    secure: true,
+    httpOnly: true,
+    maxAge: 60000 * 60 * 24 * 7,
   });
-
   return res.status(204).json(jSuccess(null));
 };

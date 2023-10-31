@@ -16,12 +16,16 @@ export const selectChat = {
           avatarImage: { select: { src: true } },
         },
       },
+      lastName: true,
+      firstName: true,
       id: true,
       username: true,
     },
   },
   recipient: {
     select: {
+      lastName: true,
+      firstName: true,
       profile: {
         select: {
           avatarImage: { select: { src: true } },

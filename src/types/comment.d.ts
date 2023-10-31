@@ -9,7 +9,8 @@ interface CommentSimplified {
   image: Image;
   user: UserSimplified;
   createdAt: Date;
-  updateAt: Date;
+  updatedAt: Date;
+  total_likes: number;
 }
 
 interface CommentReply extends CommentSimplified {
@@ -20,5 +21,5 @@ interface CommentReply extends CommentSimplified {
 }
 
 export interface Comment extends CommentSimplified {
-  commentReply: { comments: CommentReply[]; total: number };
+  commentReply: { commentIds: number[]; total: number };
 }

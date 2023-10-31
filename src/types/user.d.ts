@@ -3,10 +3,13 @@ import { Image, ImageV2 } from "./profile";
 
 export interface UserAccountPublic {
   id: number;
+  firstName: string;
+  lastName: string;
   username: string;
   profile: {
     description: string | null;
     image: Image;
+    coverImage: Image;
   } | null;
   followedBy: {
     followerIds: number[];
@@ -16,7 +19,7 @@ export interface UserAccountPublic {
     followedUserIds: number[];
     total: number;
   };
-  postIds: {
+  posts: {
     postIds: number[];
     total: number;
   };
@@ -26,11 +29,14 @@ export interface UserAccountPublic {
 
 export interface UserAccount extends UserAccountPublic {
   email: string;
+  verified: boolean;
   role: $Enums.Role;
 }
 
 export interface User {
   id: number;
+  firstName: string;
+  lastName: string;
   username: string;
   email: string;
   hashedPassword: string;
@@ -44,6 +50,16 @@ export interface User {
 
 export interface UserSimplified {
   id: number;
+  firstName: string;
+  lastName: string;
   username: string;
   image: Image;
+}
+
+export interface UserNotification {
+  title: string;
+  content: string;
+  type: $Enums.NotificationType;
+  url: string | null;
+  createdAt: Date;
 }

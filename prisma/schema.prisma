@@ -12,6 +12,8 @@ datasource db {
 
 model User {
   id Int @id @default(autoincrement())
+  firstName String @db.VarChar(125)
+  lastName String @db.VarChar(125)
   username String @db.VarChar(100)
   email String @unique @db.VarChar(100)
   hashedPassword String @db.VarChar(100)
@@ -24,21 +26,33 @@ model User {
   tokens Token[] @relation("Token")
   authoredChats Chat[] @relation("AuthoredChat")
   chats Chat[] @relation("ReceivedChat")
+  blocked User[] @relation("BlockedUsers")
+  blocking User[] @relation("BlockedUsers")
   following  User[] @relation("UserFollows")
   followedBy User[] @relation("UserFollows")
+  followedPost SavedPost[]
+  notifications Notification[]
   posts Post[]
   comments Comment[]
-  likes PostLike[]
+  commentLikes CommentLike[]
+  likes PostLike[] 
 
   @@map("users")
 }
 
+enum Gender {
+  male
+  female
+  null
+}
+
 model Profile {
   id Int @id @default(autoincrement()) 
-  firstName String? @db.VarChar(150)
-  lastName String? @db.VarChar(150)
   profileDescription String? @db.Text
+  birthDate DateTime?
+  gender Gender? @default(null)
   avatarImage Image? @relation(name: "ProfileImage")
+  coverImage CoverImage?
   userId String @unique @db.VarChar(100)
 
   user User @relation(fields: [userId], references: [email], onDelete: Cascade)
@@ -50,17 +64,26 @@ model Post {
   id Int @id @default(autoincrement())
   authorId Int
   images Image[] @relation(name: "PostImages")
-  title String @db.VarChar(255)
+  title String? @db.VarChar(255)
   content String @db.Text
   comments Comment[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   likes PostLike[]
   type PostType @default(public)
-   
+  follower SavedPost[]
   author User @relation(fields: [authorId] , references: [id], onDelete: Cascade)
 
   @@map("posts")
+}
+
+model SavedPost {
+post Post @relation(fields: [postId],references: [id])
+postId Int
+user User @relation(fields: [userId], references: [id])
+userId Int
+assignedAt DateTime @default(now())
+@@id([postId, userId])
 }
 
 enum PostType {
@@ -78,6 +101,7 @@ model Comment {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt 
   parentId Int?
+  likes CommentLike[]
   parentComment Comment? @relation("ReplyComment",fields: [parentId],  references: [id], onDelete: Cascade)
   childrenComment Comment[] @relation("ReplyComment")
 
@@ -87,11 +111,22 @@ model Comment {
   @@map("comments")
 }
 
+model CommentLike {
+  userId Int
+  commentId Int 
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comment Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  @@id([userId,commentId])
+  @@map("comment_likes")
+}
+
 model PostLike {
   userId Int
   postId Int 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
   @@id([userId,postId])
   @@map("post_likes")
 }
@@ -116,6 +151,16 @@ model Image {
   post Post? @relation("PostImages",fields: [postId],  references: [id],onDelete: Cascade)
 
   @@map("images")
+}
+
+model CoverImage {
+  id Int @id @default(autoincrement())
+  src String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  profileId Int? @unique
+
+  profile Profile? @relation(fields: [profileId],  references: [id], onDelete: Cascade)
 }
 
 model RefreshToken {
@@ -156,4 +201,24 @@ model Chat {
 enum TokenType {
 reset_token
 verify_token
+}
+
+model Notification {
+  id Int @id @default(autoincrement())
+  userId Int
+  title String @db.VarChar(255)
+  content String @db.Text
+  type NotificationType
+  url String? @db.VarChar(255)
+  createdAt DateTime @default(now())
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@map("notifications")
+}
+
+enum NotificationType {
+  follow
+  post
+  comment
+  like
 }

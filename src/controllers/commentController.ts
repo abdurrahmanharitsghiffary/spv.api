@@ -1,19 +1,21 @@
 import express from "express";
-import Comment from "../models/comment";
+import Comment, { createOneComment } from "../models/comment";
 import { ExpressRequestExtended } from "../types/request";
-import { findCommmentById } from "../utils/findComment";
-import { getFileDest } from "../utils/getFileDest";
-import Image from "../models/image";
+import {
+  findCommentByIdCustomMessage,
+  findCommentById,
+} from "../utils/findComment";
 import { jSuccess } from "../utils/jsend";
-import { fieldsErrorTrigger } from "../lib/error";
+import { findPostByIdCustomMessage } from "../utils/findPost";
 
 export const getComment = async (
   req: express.Request,
   res: express.Response
 ) => {
+  const { userId } = req as ExpressRequestExtended;
   const { commentId } = req.params;
 
-  const comment = await findCommmentById(commentId);
+  const comment = await findCommentById(Number(commentId), Number(userId));
 
   return res.status(200).json(jSuccess(comment));
 };
@@ -40,8 +42,6 @@ export const updateComment = async (
   const { comment } = req.body;
   const { commentId } = req.params;
 
-  await findCommmentById(commentId);
-
   await Comment.update({
     where: {
       id: Number(commentId),
@@ -60,27 +60,39 @@ export const createComment = async (
 ) => {
   const image = req.file;
   const { userId } = req as ExpressRequestExtended;
-  const { comment, postId, parentId } = req.body;
 
-  const createdComment = await Comment.create({
-    data: {
-      userId: Number(userId),
-      comment,
-      postId: Number(postId),
-      parentId: Number(parentId),
-    },
-  });
+  const { comment, postId, parentId, imageSrc } = req.body as {
+    comment: string;
+    postId: number | string;
+    parentId: number | string;
+    imageSrc?: string;
+  };
 
-  if (image) {
-    await Image.create({
-      data: {
-        src: getFileDest(image) as string,
-        commentId: createdComment.id,
-      },
+  if (parentId) {
+    await findCommentByIdCustomMessage({
+      commentId: Number(parentId),
+      message: "Can't found comment with provided parentId",
+      statusCode: 404,
+      currentUserId: Number(userId),
     });
   }
 
-  return res.status(201).json(jSuccess(createdComment));
+  await findPostByIdCustomMessage({
+    statusCode: 404,
+    message: "Can't found post with provided postId",
+    postId: Number(postId),
+    currentUserId: Number(userId),
+  });
+
+  const result = await createOneComment({
+    comment,
+    postId: Number(postId),
+    userId: Number(userId),
+    image: imageSrc ? imageSrc : image,
+    parentId: parentId || parentId === 0 ? Number(parentId) : null,
+  });
+
+  return res.status(201).json(jSuccess(result));
 };
 
 export const createReplyComment = async (
@@ -90,27 +102,23 @@ export const createReplyComment = async (
   const image = req.file;
   const { userId } = req as ExpressRequestExtended;
   const { commentId } = req.params;
-  const { comment } = req.body;
+  const { comment, imageSrc } = req.body as {
+    comment: string;
+    imageSrc?: string;
+  };
 
-  const currentComment = await findCommmentById(commentId);
+  const currentComment = await findCommentById(
+    Number(commentId),
+    Number(userId)
+  );
 
-  const createdComment = await Comment.create({
-    data: {
-      comment,
-      parentId: Number(commentId),
-      postId: Number(currentComment.postId),
-      userId: Number(userId),
-    },
+  const result = await createOneComment({
+    comment,
+    postId: currentComment.postId,
+    userId: Number(userId),
+    image: imageSrc ? imageSrc : image,
+    parentId: currentComment.id,
   });
 
-  if (image) {
-    await Image.create({
-      data: {
-        src: getFileDest(image) as string,
-        commentId: createdComment.id,
-      },
-    });
-  }
-
-  return res.status(201).json(jSuccess(createdComment));
+  return res.status(201).json(jSuccess(result));
 };

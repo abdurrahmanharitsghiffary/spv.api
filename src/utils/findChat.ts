@@ -1,13 +1,17 @@
 import { RequestError, limitErrorTrigger } from "../lib/error";
 import { selectChat } from "../lib/query/chat";
+import { excludeBlockedUser, excludeBlockingUser } from "../lib/query/user";
 import Chat from "../models/chat";
-import Image from "../models/image";
 import { normalizeChat } from "./normalizeChat";
 
-export const findChatById = async (chatId: number) => {
+export const findChatById = async (chatId: number, currentUserId?: number) => {
   const chat = await Chat.findUnique({
     where: {
       id: chatId,
+      recipient: {
+        ...excludeBlockedUser(currentUserId),
+        ...excludeBlockingUser(currentUserId),
+      },
     },
     select: selectChat,
   });
@@ -48,70 +52,24 @@ export const findChatBySenderAndRecipientId = async ({
   return { data: chats.map((chat) => normalizeChat(chat)), total: totalChats };
 };
 
-export const createChatWithSenderIdAndRecipientId = async (createOptions: {
-  receiverId: number;
-  senderId: number;
-  message: string;
-  imageSrc?: string;
-}) => {
-  const { receiverId, senderId, message } = createOptions;
-
-  const createdChat = await Chat.create({
-    data: {
-      authorId: senderId,
-      recipientId: receiverId,
-      message,
-    },
-    select: selectChat,
-  });
-
-  if (createOptions?.imageSrc) {
-    await Image.create({
-      data: {
-        chatId: createdChat.id,
-        src: createOptions.imageSrc,
-      },
-    });
-  }
-
-  return normalizeChat(createdChat);
-};
-
-export const deleteChatById = async (chatId: number) => {
-  await findChatById(chatId);
-
-  await Chat.delete({
-    where: {
-      id: chatId,
-    },
-  });
-};
-
-export const updateChatById = async (chatId: number, message?: string) => {
-  await findChatById(chatId);
-
-  await Chat.update({
-    where: {
-      id: chatId,
-    },
-    data: {
-      message,
-    },
-  });
-};
-
 export const findAllChatByUserId = async ({
   limit = 20,
   offset = 0,
   userId,
+  currentUserId,
 }: {
   limit?: number;
   offset?: number;
   userId: number;
+  currentUserId?: number;
 }) => {
   const chats = await Chat.findMany({
     where: {
       authorId: userId,
+      recipient: {
+        ...excludeBlockedUser(currentUserId),
+        ...excludeBlockingUser(currentUserId),
+      },
     },
     skip: offset,
     take: limit,
@@ -119,16 +77,20 @@ export const findAllChatByUserId = async ({
     distinct: ["recipientId"],
   });
 
-  const totalChats = await Chat.findMany({
+  // changes here
+  const totalChats = await Chat.count({
     where: {
       authorId: userId,
+      recipient: {
+        ...excludeBlockedUser(currentUserId),
+        ...excludeBlockingUser(currentUserId),
+      },
     },
-    select: { id: true },
     distinct: ["recipientId"],
   });
 
   return {
     data: chats.map((chat) => normalizeChat(chat)),
-    total: totalChats.length,
+    total: totalChats,
   };
 };

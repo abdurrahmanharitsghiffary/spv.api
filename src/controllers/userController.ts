@@ -2,13 +2,16 @@ import express from "express";
 import User from "../models/user";
 import Profile from "../models/profile";
 import { findAllUser, findUserById, findUserPublic } from "../utils/findUser";
-import { baseUrl } from "../lib/baseUrl";
 import { getPagingObject } from "../utils/getPagingObject";
 import { jSuccess } from "../utils/jsend";
+import { findPostsByAuthorId } from "../utils/findPost";
+import { ExpressRequestExtended } from "../types/request";
+import { excludeBlockedUser, excludeBlockingUser } from "../lib/query/user";
 
 export const getUser = async (req: express.Request, res: express.Response) => {
+  const { userId: currentUserId } = req as ExpressRequestExtended;
   const { userId } = req.params;
-  const user = await findUserPublic(userId);
+  const user = await findUserPublic(userId, Number(currentUserId));
 
   return res.status(200).json(jSuccess(user));
 };
@@ -25,11 +28,8 @@ export const getAllUsers = async (
   return res.status(200).json(
     getPagingObject({
       data: users.data,
-      current: `${baseUrl}${req.originalUrl}`,
       total_records: users.total,
-      limit,
-      offset,
-      path: `${baseUrl}/api/users`,
+      req,
     })
   );
 };
@@ -76,4 +76,53 @@ export const updateUser = async (
   });
 
   return res.status(204).json(jSuccess(null));
+};
+
+export const getPostByUserId = async (
+  req: express.Request,
+  res: express.Response
+) => {
+  const { userId: currentUserId } = req as ExpressRequestExtended;
+  let { offset = 0, limit = 20 } = req.query;
+  const { userId } = req.params;
+
+  offset = Number(offset);
+  limit = Number(limit);
+
+  const posts = await findPostsByAuthorId({
+    authorId: Number(userId),
+    limit,
+    offset,
+    currentUserId: Number(currentUserId),
+  });
+
+  return res.status(200).json(
+    getPagingObject({
+      data: posts.data,
+      total_records: posts.total,
+      req,
+    })
+  );
+};
+
+export const getUserIsFollowed = async (
+  req: express.Request,
+  res: express.Response
+) => {
+  const { userId: uId } = req.params;
+  const { userId } = req as ExpressRequestExtended;
+  const isFollowed = await User.findUnique({
+    where: {
+      ...excludeBlockedUser(Number(userId)),
+      ...excludeBlockingUser(Number(userId)),
+      id: Number(uId),
+      followedBy: {
+        some: {
+          id: Number(userId),
+        },
+      },
+    },
+  });
+
+  return res.status(200).json(jSuccess(isFollowed ? true : false));
 };

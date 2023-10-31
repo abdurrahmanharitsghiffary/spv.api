@@ -1,30 +1,30 @@
 import express from "express";
 import { ExpressRequestExtended } from "../types/request";
-import { ForbiddenError, RequestError } from "../lib/error";
-import Comment from "../models/comment";
+import { ForbiddenError } from "../lib/error";
+import { findCommentById } from "../utils/findComment";
 
-const checkComment = async (commentId: string) => {
-  const comment = await Comment.findUnique({
-    where: {
-      id: Number(commentId),
-    },
-  });
+// const checkComment = async (commentId: string) => {
+//   const comment = await Comment.findUnique({
+//     where: {
+//       id: Number(commentId),
+//     },
+//   });
 
-  if (!comment) throw new RequestError("Comment not found", 404);
+//   if (!comment) throw new RequestError("Comment not found", 404);
 
-  return comment;
-};
+//   return comment;
+// };
 
 export const protectComment = async (
   req: express.Request,
   res: express.Response,
   next: express.NextFunction
 ) => {
+  const { userId } = req as ExpressRequestExtended;
   const { commentId } = req.params;
 
-  const comment = await checkComment(commentId);
-  if (comment?.userId !== Number((req as ExpressRequestExtended).userId))
-    throw new ForbiddenError();
+  const comment = await findCommentById(Number(commentId), Number(userId));
+  if (comment?.user.id !== Number(userId)) throw new ForbiddenError();
 
   return next();
 };

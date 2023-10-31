@@ -4,6 +4,8 @@ export const selectAuthorPost = {
   author: {
     select: {
       id: true,
+      firstName: true,
+      lastName: true,
       username: true,
       profile: { select: { avatarImage: { select: { src: true } } } },
     },
@@ -19,24 +21,10 @@ export const selectPost = {
   title: true,
   content: true,
   updatedAt: true,
-  likes: {
-    select: {
-      user: {
-        select: {
-          id: true,
-          username: true,
-          profile: {
-            select: {
-              avatarImage: { select: { src: true } },
-            },
-          },
-        },
-      },
-    },
-  },
   _count: { select: { likes: true, comments: true } },
   images: {
     select: {
+      id: true,
       src: true,
     },
   },

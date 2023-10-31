@@ -1,7 +1,7 @@
 import { Options, rateLimit } from "express-rate-limit";
 
 const apiLimitOptions: Partial<Options> = {
-  max: 100,
+  max: 5000,
   windowMs: 60000 * 5,
   message: {
     status: "error",
@@ -11,8 +11,19 @@ const apiLimitOptions: Partial<Options> = {
   legacyHeaders: false,
 };
 
+const commentLimiterOptions: Partial<Options> = {
+  max: 5000,
+  windowMs: 60000 * 10,
+  message: {
+    status: "error",
+    message: "Rate limit exceeded, please try again after 10 minutes",
+  },
+  standardHeaders: "draft-7",
+  legacyHeaders: true,
+};
+
 const loginLimitOptions: Partial<Options> = {
-  max: 50,
+  max: 5,
   legacyHeaders: false,
   standardHeaders: "draft-7",
   windowMs: 6000 * 60,
@@ -38,7 +49,7 @@ const registerLimitOptions: Partial<Options> = {
 };
 
 const passwordResetLimitOptions: Partial<Options> = {
-  max: 10,
+  max: 5,
   windowMs: 60000 * 10,
   message: {
     status: "error",
@@ -65,6 +76,7 @@ const verifyResetLimitOptions: Partial<Options> = {
 
 export const loginLimiter = rateLimit(loginLimitOptions);
 export const apiLimiter = rateLimit(apiLimitOptions);
+export const commentLimiter = rateLimit(commentLimiterOptions);
 export const registerLimiter = rateLimit(registerLimitOptions);
 export const verifyLimiter = rateLimit(verifyResetLimitOptions);
 export const resetPasswordLimiter = rateLimit(passwordResetLimitOptions);

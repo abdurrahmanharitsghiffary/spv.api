@@ -2,19 +2,18 @@ import express from "express";
 import { ExpressRequestExtended } from "../types/request";
 import {
   findChatBySenderAndRecipientId,
+  findAllChatByUserId,
+} from "../utils/findChat";
+import {
   deleteChatById as deleteChatWithId,
   updateChatById as updateChatWithId,
   createChatWithSenderIdAndRecipientId,
-  findAllChatByUserId,
-} from "../utils/findChat";
+} from "../models/chat";
 import { getPagingObject } from "../utils/getPagingObject";
 import Image from "../models/image";
 import { getFileDest } from "../utils/getFileDest";
 import { findUserById } from "../utils/findUser";
-import { fieldsErrorTrigger } from "../lib/error";
-import { baseUrl } from "../lib/baseUrl";
 import { jSuccess } from "../utils/jsend";
-import { getCurrentUrl } from "../utils/getCurrentUrl";
 
 export const getChatsByRecipientId = async (
   req: express.Request,
@@ -39,11 +38,31 @@ export const getChatsByRecipientId = async (
   return res.status(200).json(
     getPagingObject({
       data: chats.data,
-      current: getCurrentUrl(req),
+      req,
       total_records: chats.total,
-      path: `${baseUrl}/api/chats/${recipientId}`,
-      limit,
-      offset,
+    })
+  );
+};
+
+export const getAllChatsByUserId = async (
+  req: express.Request,
+  res: express.Response
+) => {
+  const { userId } = req as ExpressRequestExtended;
+  const { limit = 20, offset = 0 } = req.query;
+
+  const chats = await findAllChatByUserId({
+    userId: Number(userId),
+    limit: Number(limit),
+    offset: Number(offset),
+    currentUserId: Number(userId),
+  });
+
+  return res.status(200).json(
+    getPagingObject({
+      data: chats.data,
+      total_records: chats.total,
+      req,
     })
   );
 };
@@ -63,10 +82,11 @@ export const updateChatById = async (
   req: express.Request,
   res: express.Response
 ) => {
+  const { userId } = req as ExpressRequestExtended;
   const { chatId } = req.params;
   const { message } = req.body;
 
-  await updateChatWithId(Number(chatId), message);
+  await updateChatWithId(Number(chatId), message, Number(userId));
 
   return res.status(204).json(jSuccess(null));
 };
@@ -95,30 +115,5 @@ export const createChat = async (
     });
   }
 
-  return res.status(201).json(jSuccess(null));
-};
-
-export const getAllChatsByUserId = async (
-  req: express.Request,
-  res: express.Response
-) => {
-  const { userId } = req as ExpressRequestExtended;
-  const { limit = 20, offset = 0 } = req.query;
-
-  const chats = await findAllChatByUserId({
-    userId: Number(userId),
-    limit: Number(limit),
-    offset: Number(offset),
-  });
-
-  return res.status(200).json(
-    getPagingObject({
-      data: chats.data,
-      path: `${baseUrl}/api/me/chats`,
-      current: getCurrentUrl(req),
-      total_records: chats.total,
-      limit: Number(limit),
-      offset: Number(offset),
-    })
-  );
+  return res.status(201).json(jSuccess(createdChat));
 };

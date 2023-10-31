@@ -28,6 +28,19 @@ export class ForbiddenError extends Error {
   }
 }
 
+export class ValidationError extends Error {
+  statusCode: number;
+  status: string;
+  data: any;
+  constructor(errors: any) {
+    super();
+    this.status = "fail";
+    this.statusCode = 422;
+    this.data = errors;
+    this.name = "ValidationError";
+  }
+}
+
 export class FieldError extends Error {
   statusCode: number;
   errors: { field: string; code: string }[];
@@ -42,58 +55,64 @@ export class FieldError extends Error {
   }
 }
 
-export const fieldsErrorTrigger = (
-  fields: {
-    field: any;
-    key: string;
-    type?:
-      | "string"
-      | "number"
-      | "bigint"
-      | "boolean"
-      | "symbol"
-      | "undefined"
-      | "object"
-      | "function"
-      | "array"
-      | "skip";
-  }[]
-) => {
-  const errors: { key: string; code: string }[] = [];
+export type FieldErrorTypeOptions =
+  | "string"
+  | "number"
+  | "bigint"
+  | "boolean"
+  | "symbol"
+  | "object"
+  | "function"
+  | "array";
 
-  if (fields.some(({ field }) => field === undefined)) {
-    fields
-      .filter(({ field }) => field === undefined)
-      .forEach((field) =>
-        errors.push({ key: field.key, code: "missing_field" })
-      );
-  } else if (
-    fields.some((field) => {
-      if (field.type === "skip") return false;
-      if (
-        field.type === "array"
-          ? !Array.isArray(field.field)
-          : typeof field.field !== field.type
-      ) {
-        return true;
-      }
-    }) &&
-    fields.every(({ field }) => field !== undefined)
-  ) {
-    fields
-      .filter((field) =>
-        field.type === "array"
-          ? !Array.isArray(field.field)
-          : typeof field.field !== field.type
-      )
-      .forEach((field) =>
-        errors.push({
-          key: field.key,
-          code: `Invalid value provided. expected ${field.type} from ${field.key}`,
-        })
-      );
-  }
-  if (errors.length > 0) throw new FieldError(errors);
+export interface FieldErrorOptions {
+  field: any;
+  key: string;
+  type?: FieldErrorTypeOptions;
+}
+
+export const fieldsErrorTrigger = (
+  fields: FieldErrorOptions[]
+): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    const errors: { key: string; code: string }[] = [];
+
+    if (fields.some(({ field }) => field === undefined)) {
+      fields
+        .filter(({ field }) => field === undefined)
+        .forEach((field) =>
+          errors.push({ key: field.key, code: "missing_field" })
+        );
+    } else if (
+      fields.some((field) => {
+        if (field.type === undefined) return false;
+        // else if (field.type === "number" && Number(field.field) ) return
+        if (
+          field.type === "array"
+            ? !Array.isArray(field.field)
+            : typeof field.field !== field.type
+        ) {
+          return true;
+        }
+      }) &&
+      fields.every(({ field }) => field !== undefined)
+    ) {
+      fields
+        .filter((field) =>
+          field.type === "array"
+            ? !Array.isArray(field.field)
+            : typeof field.field !== field.type
+        )
+        .forEach((field) =>
+          errors.push({
+            key: field.key,
+            code: `Invalid value provided. expected ${field.type} from ${field.key}`,
+          })
+        );
+    }
+    if (errors.length > 0) reject(new FieldError(errors));
+    resolve();
+  });
 };
 
 export class PagingLimitError extends Error {

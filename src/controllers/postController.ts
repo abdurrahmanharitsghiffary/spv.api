@@ -1,12 +1,12 @@
 import express from "express";
 import Post from "../models/post";
 import { ExpressRequestExtended } from "../types/request";
-import { baseUrl } from "../lib/baseUrl";
 import {
   findAllPosts,
   findPostByFollowedUserIds,
   findPostById,
   findPostsByAuthorId,
+  findSavedPost,
 } from "../utils/findPost";
 import { findCommentsByPostId } from "../utils/findComment";
 import Image from "../models/image";
@@ -15,7 +15,7 @@ import { getPagingObject } from "../utils/getPagingObject";
 import User from "../models/user";
 import { deleteUploadedImage } from "../utils/deleteUploadedImage";
 import { jSuccess } from "../utils/jsend";
-import { getCurrentUrl } from "../utils/getCurrentUrl";
+import prisma from "../config/prismaClient";
 
 export const getAllMyPosts = async (
   req: express.Request,
@@ -31,16 +31,14 @@ export const getAllMyPosts = async (
     authorId: Number(userId),
     limit,
     offset,
+    currentUserId: Number(userId),
   });
 
   return res.status(200).json(
     getPagingObject({
       data: posts.data,
-      current: getCurrentUrl(req),
       total_records: posts.total,
-      limit,
-      offset,
-      path: `${baseUrl}/api/me/posts`,
+      req,
     })
   );
 };
@@ -67,16 +65,18 @@ export const getFollowedUserPost = async (
     ],
     limit: Number(limit),
     offset: Number(offset),
+    currentUserId: Number(userId),
   });
 
   return res.status(200).json(
     getPagingObject({
       data: posts.data,
-      current: getCurrentUrl(req),
+      // current: getCurrentUrl(req),
       total_records: posts.total,
-      limit: Number(limit),
-      offset: Number(offset),
-      path: `${baseUrl}/api/posts/following`,
+      // limit: Number(limit),
+      // offset: Number(offset),
+      // path: `${baseUrl}/api/posts/following`,
+      req,
     })
   );
 };
@@ -95,11 +95,12 @@ export const getAllPosts = async (
   return res.status(200).json(
     getPagingObject({
       data: posts.data,
-      limit,
-      offset,
-      current: getCurrentUrl(req),
+      // limit,
+      // offset,
+      // current: getCurrentUrl(req),
       total_records: posts.total,
-      path: `${baseUrl}/api/posts`,
+      // path: `${baseUrl}/api/posts`,
+      req,
     })
   );
 };
@@ -108,7 +109,8 @@ export const getPostCommentsById = async (
   req: express.Request,
   res: express.Response
 ) => {
-  let { offset = 0, limit = 20 } = req.query;
+  const { userId } = req as ExpressRequestExtended;
+  let { offset = 0, limit = 20, order_by = "" } = req.query;
   const { postId } = req.params;
 
   offset = Number(offset);
@@ -116,26 +118,108 @@ export const getPostCommentsById = async (
 
   await findPostById(postId);
 
-  const comments = await findCommentsByPostId(Number(postId), offset, limit);
+  const comments = await findCommentsByPostId(
+    Number(postId),
+    offset,
+    limit,
+    !order_by ? undefined : (order_by as string).split(","),
+    Number(userId)
+  );
 
   return res.status(200).json(
     getPagingObject({
       data: comments.data,
       total_records: comments.total,
-      current: getCurrentUrl(req),
-      limit,
-      offset,
-      path: `${baseUrl}/api/comment/posts/${postId}`,
+      req,
     })
   );
 };
 
 export const getPost = async (req: express.Request, res: express.Response) => {
+  const { userId } = req as ExpressRequestExtended;
   const { postId } = req.params;
 
-  const post = await findPostById(postId);
+  const post = await findPostById(postId, Number(userId));
 
   return res.status(200).json(jSuccess(post));
+};
+
+export const getSavedPosts = async (
+  req: express.Request,
+  res: express.Response
+) => {
+  const { userId: currentUserId } = req as ExpressRequestExtended;
+  let { offset = 0, limit = 20 } = req.query;
+  offset = Number(offset);
+  limit = Number(limit);
+
+  const { userId } = req as ExpressRequestExtended;
+  const savedPosts = await findSavedPost({
+    limit,
+    offset,
+    userId: Number(userId),
+    currentUserId: Number(currentUserId),
+  });
+
+  return res.status(200).json(
+    getPagingObject({
+      data: savedPosts.data,
+      total_records: savedPosts.total,
+      req,
+    })
+  );
+};
+// NEED BLOCK FEATURE?
+export const getPostIsSaved = async (
+  req: express.Request,
+  res: express.Response
+) => {
+  const { userId } = req as ExpressRequestExtended;
+  const { postId } = req.params;
+
+  const savedPost = await prisma.savedPost.findUnique({
+    where: {
+      postId_userId: {
+        postId: Number(postId),
+        userId: Number(userId),
+      },
+    },
+  });
+
+  return res.status(200).json(jSuccess(savedPost ? true : false));
+};
+
+export const savePost = async (req: express.Request, res: express.Response) => {
+  const { userId } = req as ExpressRequestExtended;
+  const { postId } = req.body;
+  await findPostById(postId);
+
+  await prisma.savedPost.create({
+    data: {
+      postId: Number(postId),
+      userId: Number(userId),
+    },
+  });
+
+  return res.status(200).json(jSuccess(null));
+};
+
+export const deleteSavedPost = async (
+  req: express.Request,
+  res: express.Response
+) => {
+  const { userId } = req as ExpressRequestExtended;
+  const { postId } = req.params;
+  await prisma.savedPost.delete({
+    where: {
+      postId_userId: {
+        userId: Number(userId),
+        postId: Number(postId),
+      },
+    },
+  });
+
+  return res.status(200).json(jSuccess(null));
 };
 
 export const deletePost = async (
@@ -161,33 +245,30 @@ export const updatePost = async (
   const { postId } = req.params;
   const images = req.files ?? [];
 
-  await Post.update({
-    where: {
-      id: Number(postId),
-    },
-    data: {
-      title,
-      content,
-    },
-  });
-
-  if ((images.length as number) > 0) {
-    const imagesDest = ((images as Express.Multer.File[]) ?? [])?.map(
-      (image) => ({
-        src: getFileDest(image) as string,
-        postId: Number(postId),
-      })
-    );
-
-    imagesDest.forEach(async (image) => {
-      await Image.create({
-        data: {
-          postId: Number(postId),
-          src: image.src,
-        },
-      });
+  await prisma.$transaction(async (tx) => {
+    await tx.post.update({
+      where: {
+        id: Number(postId),
+      },
+      data: {
+        title,
+        content,
+      },
     });
-  }
+
+    if ((images.length as number) > 0) {
+      const imagesDest = ((images as Express.Multer.File[]) ?? [])?.map(
+        (image) => ({
+          src: getFileDest(image) as string,
+          postId: Number(postId),
+        })
+      );
+
+      await tx.image.createMany({
+        data: imagesDest,
+      });
+    }
+  });
 
   return res.status(204).json(jSuccess(null));
 };
@@ -197,28 +278,33 @@ export const createPost = async (
   res: express.Response
 ) => {
   const images = req.files ?? [];
+  console.log(images);
   const { userId } = req as ExpressRequestExtended;
   const { title, content } = req.body;
 
-  const post = await Post.create({
-    data: {
-      content,
-      title,
-      authorId: Number(userId),
-    },
+  const result = await prisma.$transaction(async (tx) => {
+    const post = await tx.post.create({
+      data: {
+        content,
+        title,
+        authorId: Number(userId),
+      },
+    });
+
+    await tx.image.createMany({
+      data: [
+        // @ts-ignore
+        ...images?.map((image: Express.Multer.File) => ({
+          src: getFileDest(image),
+          postId: post.id,
+        })),
+      ],
+    });
+
+    return post;
   });
 
-  await Image.createMany({
-    data: [
-      // @ts-ignore
-      ...images?.map((image: Express.Multer.File) => ({
-        src: getFileDest(image),
-        postId: post.id,
-      })),
-    ],
-  });
-
-  return res.status(201).json(jSuccess(post));
+  return res.status(201).json(jSuccess(result));
 };
 
 export const deletePostImageById = async (

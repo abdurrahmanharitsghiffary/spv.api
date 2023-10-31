@@ -36,7 +36,7 @@ export const sendResetToken = async (
 
     await sendResetPasswordEmail(
       email,
-      `${baseUrl}/api/account/resetpassword/${resetToken}`
+      `http://localhost:3000/resetpassword/${resetToken}`
     );
   }
 
@@ -52,7 +52,10 @@ export const resetPassword = async (
   res: express.Response
 ) => {
   const { token } = req.params;
-  const { password } = req.body;
+  const { password, confirmPassword } = req.body;
+
+  if (confirmPassword !== password)
+    throw new RequestError("Password and confirm password does not match", 422);
 
   const resetToken = await Token.findUnique({
     where: {

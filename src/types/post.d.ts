@@ -4,11 +4,11 @@ import { UserSimplified } from "./user";
 
 export type Post = {
   id: number;
-  title: string;
+  title: string | null;
   content: string;
-  likes: { total: number; likedBy: UserSimplified[] };
-  images: Image[] | null;
+  images: (Image & { id: number })[] | null;
   author: UserSimplified;
+  total_likes: number;
   createdAt: Date;
   updatedAt: Date;
 };

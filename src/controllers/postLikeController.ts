@@ -4,28 +4,40 @@ import { ExpressRequestExtended } from "../types/request";
 import { RequestError } from "../lib/error";
 import Post from "../models/post";
 import { jSuccess } from "../utils/jsend";
+import { excludeBlockedUser, excludeBlockingUser } from "../lib/query/user";
 
 export const getPostLikesByPostId = async (
   req: express.Request,
   res: express.Response
 ) => {
+  const { userId } = req as ExpressRequestExtended;
   const { postId } = req.params;
 
   const post = await Post.findUnique({
     where: {
       id: Number(postId),
+      author: {
+        ...excludeBlockedUser(Number(userId)),
+        ...excludeBlockingUser(Number(userId)),
+      },
     },
   });
 
   const likes = await PostLike.findMany({
     where: {
       postId: Number(postId),
+      user: {
+        ...excludeBlockedUser(Number(userId)),
+        ...excludeBlockingUser(Number(userId)),
+      },
     },
     select: {
       userId: true,
       postId: true,
       user: {
         select: {
+          firstName: true,
+          lastName: true,
           id: true,
           username: true,
           profile: {
@@ -43,18 +55,29 @@ export const getPostLikesByPostId = async (
     },
   });
 
+  const count = await PostLike.count({
+    where: {
+      postId: Number(postId),
+    },
+  });
+
   if (post === null) throw new RequestError("Post not found", 404);
 
   const normalizedLikes = likes.map((like) => ({
-    userId: like.userId,
-    postId: like.postId,
+    id: like.userId,
+    firstName: like.user.firstName,
+    lastName: like.user.lastName,
     username: like.user.username,
     profilePhoto: like.user.profile?.avatarImage,
   }));
 
-  return res
-    .status(200)
-    .json(jSuccess({ likedBy: normalizedLikes, total: likes.length }));
+  return res.status(200).json(
+    jSuccess({
+      postId: Number(postId),
+      likedBy: normalizedLikes,
+      total: count,
+    })
+  );
 };
 
 export const createLike = async (
@@ -100,4 +123,21 @@ export const deleteLike = async (
   });
 
   return res.status(204).json(jSuccess(null));
+};
+// NEED BLOCK FEATURE
+export const getPostIsLiked = async (
+  req: express.Request,
+  res: express.Response
+) => {
+  const { userId } = req as ExpressRequestExtended;
+  const { postId } = req.params;
+
+  const isLiked = await PostLike.findFirst({
+    where: {
+      postId: Number(postId),
+      userId: Number(userId),
+    },
+  });
+
+  return res.status(200).json(jSuccess(isLiked ? true : false));
 };
