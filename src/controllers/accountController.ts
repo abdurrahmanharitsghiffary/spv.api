@@ -17,9 +17,9 @@ export const getMyAccountInfo = async (
   req: express.Request,
   res: express.Response
 ) => {
-  const { userEmail } = req as ExpressRequestExtended;
+  const { userId } = req as ExpressRequestExtended;
 
-  const myAccount = await findUser(userEmail);
+  const myAccount = await findUser(Number(userId));
 
   return res.status(200).json(jSuccess(myAccount));
 };
@@ -28,12 +28,13 @@ export const updateAccountImage = async (
   req: express.Request,
   res: express.Response
 ) => {
-  const { userEmail } = req as ExpressRequestExtended;
+  const { userId, userEmail } = req as ExpressRequestExtended;
   const { type = "profile" } = req.query;
 
   let src: string | undefined;
   const image = req.file;
-  const user = await findUser(userEmail);
+  const user = await findUser(Number(userId));
+  if (!user) throw new RequestError("Something went wrong!", 404);
   if (type === "profile") {
     if (image) {
       src = user?.profile?.image?.src;
@@ -119,7 +120,7 @@ export const deleteMyAccount = async (
   const { currentPassword } = req.body;
 
   const user = await User.findUnique({ where: { email: userEmail } });
-  if (!user) throw new RequestError("Something went wrong", 400);
+  if (!user) throw new RequestError("Something went wrong!", 400);
   const isMatch = await bcrypt.compare(currentPassword, user.hashedPassword);
   if (!isMatch)
     throw new RequestError("Incorrect password. Please try again.", 400);
@@ -139,7 +140,8 @@ export const deleteAccountImage = async (
 ) => {
   const { userEmail } = req as ExpressRequestExtended;
   const { type = "profile" } = req.query;
-  const user = await User.findUniqueOrThrow({
+
+  const user = await User.findUnique({
     where: {
       email: userEmail,
     },
@@ -152,6 +154,9 @@ export const deleteAccountImage = async (
       },
     },
   });
+
+  if (!user) throw new RequestError("Something went wrong!", 400);
+
   if (type === "profile") {
     if (!user?.profile?.avatarImage)
       throw new RequestError("Profile image not found", 404);
@@ -186,16 +191,13 @@ export const changeMyAccountPassword = async (
   res: express.Response
 ) => {
   const { userEmail } = req as ExpressRequestExtended;
-  const { currentPassword, password, confirmPassword } = req.body;
-
-  if (confirmPassword !== password)
-    throw new RequestError("Password and confirm password does not match", 401);
+  const { currentPassword, password } = req.body;
 
   const user = await User.findUnique({
     where: { email: userEmail },
   });
 
-  if (!user) throw new RequestError("Something went wrong", 400);
+  if (!user) throw new RequestError("Something went wrong!", 400);
   const isMatch = await bcrypt.compare(currentPassword, user.hashedPassword);
 
   if (!isMatch)
@@ -258,7 +260,11 @@ export const verifyAccount = async (
     data: { verified: true },
   });
 
-  return res.status(204).json(jSuccess(null));
+  return res.status(200).json(
+    jSuccess({
+      message: "Email verification successful. Your account has been verified.",
+    })
+  );
 };
 
 export const sendVerifyToken = async (

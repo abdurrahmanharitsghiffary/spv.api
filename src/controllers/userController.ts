@@ -113,8 +113,6 @@ export const getUserIsFollowed = async (
   const { userId } = req as ExpressRequestExtended;
   const isFollowed = await User.findUnique({
     where: {
-      ...excludeBlockedUser(Number(userId)),
-      ...excludeBlockingUser(Number(userId)),
       id: Number(uId),
       followedBy: {
         some: {

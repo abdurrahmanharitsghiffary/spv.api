@@ -4,6 +4,7 @@ import {
   findFollowUserByUserEmail,
   findFollowUserByUserId,
   findUserById,
+  findUserPublic,
 } from "../utils/findUser";
 import User from "../models/user";
 import { RequestError } from "../lib/error";
@@ -95,20 +96,22 @@ export const getFollowedUsersById = async (
   );
 };
 
-export const createFollowUser = async (
+export const followUser = async (
   req: express.Request,
   res: express.Response
 ) => {
-  const { userId: loggedUserId } = req as ExpressRequestExtended;
+  const { userId: currentUserId } = req as ExpressRequestExtended;
 
   const { userId } = req.body;
 
-  if (loggedUserId === userId)
+  if (currentUserId === userId)
     throw new RequestError("Can't follow yourself", 400);
+
+  await findUserPublic(userId, Number(currentUserId));
 
   const createdFollow = await User.update({
     where: {
-      id: Number(loggedUserId),
+      id: Number(currentUserId),
     },
     data: {
       following: {
@@ -126,7 +129,7 @@ export const createFollowUser = async (
   return res.status(201).json(jSuccess(createdFollow));
 };
 
-export const deleteFollow = async (
+export const unfollowUser = async (
   req: express.Request,
   res: express.Response
 ) => {

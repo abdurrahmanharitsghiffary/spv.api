@@ -31,7 +31,8 @@ model User {
   following  User[] @relation("UserFollows")
   followedBy User[] @relation("UserFollows")
   followedPost SavedPost[]
-  notifications Notification[]
+  sendedNotifications Notification[] @relation("SendedNotifications")
+  notifications Notification[] @relation("ReceivedNotifications")
   posts Post[]
   comments Comment[]
   commentLikes CommentLike[]
@@ -72,6 +73,8 @@ model Post {
   likes PostLike[]
   type PostType @default(public)
   follower SavedPost[]
+
+  notification Notification[]
   author User @relation(fields: [authorId] , references: [id], onDelete: Cascade)
 
   @@map("posts")
@@ -105,6 +108,7 @@ model Comment {
   parentComment Comment? @relation("ReplyComment",fields: [parentId],  references: [id], onDelete: Cascade)
   childrenComment Comment[] @relation("ReplyComment")
 
+notification Notification[]
   post Post? @relation(fields: [postId],  references: [id], onDelete: Cascade)
   user User @relation(fields: [userId],  references: [id],  onDelete: Cascade)
 
@@ -188,6 +192,7 @@ model Chat {
   id Int @id @default(autoincrement())
   message String? @db.Text
   chatImage Image? @relation("ChatImage")
+  isRead Boolean @default(false)
   authorId Int
   author User @relation("AuthoredChat",fields: [authorId], references: [id], onDelete: Cascade)
   recipientId Int
@@ -206,19 +211,25 @@ verify_token
 model Notification {
   id Int @id @default(autoincrement())
   userId Int
-  title String @db.VarChar(255)
-  content String @db.Text
+  receiverId Int
+  isRead Boolean @default(false)
+  postId Int?
+  commentId Int?
   type NotificationType
-  url String? @db.VarChar(255)
   createdAt DateTime @default(now())
-  
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  updatedAt DateTime @updatedAt
+
+  post Post? @relation(fields: [postId],  references: [id], onDelete: Cascade)
+  comment Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  receiver User @relation("ReceivedNotifications",fields: [receiverId], references: [id], onDelete: Cascade)
+  user User @relation("SendedNotifications",fields: [userId], references: [id], onDelete: Cascade)
   @@map("notifications")
 }
 
 enum NotificationType {
-  follow
-  post
-  comment
-  like
+liking_post
+liking_comment
+comment
+follow
+replying_comment
 }

@@ -15,6 +15,7 @@ const allowlist = ["http://localhost:3000", "http://127.0.0.1:3000"];
 const app = express();
 app.use(express.json());
 app.use(express.static("./src"));
+app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser(process.env.COOKIE_SECRET));
 app.use(express.urlencoded({ extended: false }));
 app.use(morgan("dev"));

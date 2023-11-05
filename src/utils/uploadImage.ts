@@ -1,6 +1,8 @@
 import multer from "multer";
+import { RequestError } from "../lib/error";
 
-const fileType = ["image/jpeg", "image/png", "image/jpg"];
+const fileType = ["image/jpeg", "image/png", "image/jpg", "image/webp"];
+const MAX_FILE_SIZE = 300000;
 
 const storage = multer.diskStorage({
   destination(req, file, callback) {
@@ -25,8 +27,24 @@ const storage = multer.diskStorage({
 export const uploadImage = multer({
   storage,
   fileFilter(req, file, callback) {
-    if (fileType.includes(file.mimetype)) {
+    const fileSize = Number(req.headers["content-length"]);
+    console.log(fileSize, " fileSize");
+    if (fileType.includes(file.mimetype) && fileSize <= MAX_FILE_SIZE) {
       callback(null, true);
+    } else if (!fileType.includes(file.mimetype)) {
+      callback(
+        new RequestError(
+          "Invalid file mime types, accepted types: .jpg, .jpeg, .png, .webp",
+          422
+        )
+      );
+    } else if (fileSize >= MAX_FILE_SIZE) {
+      callback(
+        new RequestError(
+          "The file size exceeds the maximum allowed limit. Please upload a file that is equals to 300kb or fewer.",
+          422
+        )
+      );
     } else {
       callback(null, false);
     }

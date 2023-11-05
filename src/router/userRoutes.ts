@@ -13,43 +13,68 @@ import {
   getUserFollowersById,
 } from "../controllers/followController";
 import { getPostByUserId } from "../controllers/userController";
-import { isUserBlockOrBlocked_Params } from "../middlewares/userBlock";
-import { validateBody, validateParamsV2 } from "../middlewares/validate";
+import { isUserBlockOrBlocked_Params } from "../middlewares/block";
+import {
+  validate,
+  validatePagingOptions,
+  validateParamsV2,
+} from "../middlewares/validate";
 import { z } from "zod";
-import { zText, zUsername } from "../schema";
-// DONE
+import { zIntOrStringId, zLimit, zOffset, zText, zUsername } from "../schema";
+import { getAllBlockedUsers } from "../controllers/blockController";
+
 const router = express.Router();
 router.use(verifyToken);
 
-router.route("/").get(isAdmin, tryCatch(getAllUsers));
+router.route("/").get(isAdmin, validatePagingOptions, tryCatch(getAllUsers));
+
+router
+  .route("/blocked")
+  .get(validatePagingOptions, tryCatch(getAllBlockedUsers));
 
 router
   .route("/:userId")
-  .get(isUserBlockOrBlocked_Params("userId"), tryCatch(getUser))
+  .get(validateParamsV2("userId"), tryCatch(getUser))
   .patch(
-    validateBody(
+    isAdmin,
+    validate(
       z.object({
-        username: zUsername.optional(),
-        description: zText.optional(),
+        body: z.object({
+          username: zUsername.optional(),
+          description: zText.optional(),
+        }),
+        params: z.object({
+          userId: zIntOrStringId,
+        }),
       })
     ),
-    isAdmin,
     tryCatch(updateUser)
   )
-  .delete(validateParamsV2("userId"), isAdmin, tryCatch(deleteUser));
+  .delete(isAdmin, validateParamsV2("userId"), tryCatch(deleteUser));
 router
   .route("/:userId/following")
-  .get(isUserBlockOrBlocked_Params("userId"), tryCatch(getFollowedUsersById));
+  .get(validateParamsV2("userId"), tryCatch(getFollowedUsersById));
 router
   .route("/:userId/followers")
-  .get(isUserBlockOrBlocked_Params("userId"), tryCatch(getUserFollowersById));
+  .get(validateParamsV2("userId"), tryCatch(getUserFollowersById));
 
 router
-  .route("/:userId/isfollowed")
-  .get(isUserBlockOrBlocked_Params("userId"), tryCatch(getUserIsFollowed));
+  .route("/:userId/followed")
+  .get(validateParamsV2("userId"), tryCatch(getUserIsFollowed));
 
-router
-  .route("/:userId/posts")
-  .get(isUserBlockOrBlocked_Params("userId"), tryCatch(getPostByUserId));
+router.route("/:userId/posts").get(
+  validate(
+    z.object({
+      params: z.object({
+        userId: zIntOrStringId,
+      }),
+      query: z.object({
+        limit: zLimit,
+        offset: zOffset,
+      }),
+    })
+  ),
+  tryCatch(getPostByUserId)
+);
 
 export default router;

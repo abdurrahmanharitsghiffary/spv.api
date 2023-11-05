@@ -20,10 +20,16 @@ import {
   getPostIsLiked,
   getPostLikesByPostId,
 } from "../controllers/postLikeController";
-import { protectLike } from "../middlewares/protectLike";
-import { validateBody, validateParamsV2 } from "../middlewares/validate";
+import {
+  validate,
+  validateBody,
+  validatePagingOptions,
+  validateParamsV2,
+} from "../middlewares/validate";
 import { z } from "zod";
-import { zText, zTitle } from "../schema";
+import { zIntOrStringId, zfdText, zfdTitle } from "../schema";
+import { postCommentValidationQuery } from "../schema/comments";
+import { zfd } from "zod-form-data";
 
 const router = express.Router();
 
@@ -34,29 +40,40 @@ router
   .post(
     uploadImage.array("images"),
     validateBody(
-      z.object({
-        title: zTitle,
-        content: zText,
-      })
+      zfd.formData(
+        z.object({
+          title: zfdTitle,
+          content: zfdText,
+        })
+      )
     ),
     tryCatch(createPost)
   )
-  .get(isAdmin, tryCatch(getAllPosts));
+  .get(isAdmin, validatePagingOptions, tryCatch(getAllPosts));
 
-router.route("/following").get(tryCatch(getFollowedUserPost));
+router
+  .route("/following")
+  .get(validatePagingOptions, tryCatch(getFollowedUserPost));
 
 router
   .route("/:postId")
-  .get(tryCatch(getPost))
+  .get(validateParamsV2("postId"), tryCatch(getPost))
   .patch(
-    tryCatchMiddleware(protectPost),
     uploadImage.array("images"),
-    validateBody(
+    validate(
       z.object({
-        title: zTitle,
-        content: zText,
+        body: zfd.formData(
+          z.object({
+            title: zfdTitle,
+            content: zfdText,
+          })
+        ),
+        params: z.object({
+          postId: zIntOrStringId,
+        }),
       })
     ),
+    tryCatchMiddleware(protectPost),
     tryCatch(updatePost)
   )
   .delete(
@@ -65,15 +82,25 @@ router
     tryCatch(deletePost)
   );
 
-router.route("/:postId/comments").get(tryCatch(getPostCommentsById));
+router.route("/:postId/comments").get(
+  validate(
+    z.object({
+      query: postCommentValidationQuery,
+    })
+  ),
+  validateParamsV2("postId"),
+  tryCatch(getPostCommentsById)
+);
 
-router.route("/:postId/isliked").get(tryCatch(getPostIsLiked));
+router
+  .route("/:postId/liked")
+  .get(validateParamsV2("postId"), tryCatch(getPostIsLiked));
 
 router
   .route("/:postId/likes")
-  .get(tryCatch(getPostLikesByPostId))
+  .get(validateParamsV2("postId"), tryCatch(getPostLikesByPostId))
   .post(validateParamsV2("postId"), tryCatch(createLike))
-  .delete(tryCatchMiddleware(protectLike), tryCatch(deleteLike));
+  .delete(validateParamsV2("postId"), tryCatch(deleteLike));
 
 router
   .route("/:postId/images")
@@ -83,12 +110,17 @@ router
     tryCatch(deletePostImagesByPostId)
   );
 
-router
-  .route("/:postId/images/:imageId")
-  .delete(
-    validateParamsV2("postId"),
-    tryCatchMiddleware(protectPost),
-    tryCatch(deletePostImageById)
-  );
+router.route("/:postId/images/:imageId").delete(
+  validate(
+    z.object({
+      params: z.object({
+        postId: zIntOrStringId,
+        imageId: zIntOrStringId,
+      }),
+    })
+  ),
+  tryCatchMiddleware(protectPost),
+  tryCatch(deletePostImageById)
+);
 
 export default router;

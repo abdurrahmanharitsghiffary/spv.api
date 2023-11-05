@@ -91,5 +91,10 @@ export const resetPassword = async (
     },
   });
 
-  res.status(204).json(jSuccess(null));
+  res.status(200).json(
+    jSuccess({
+      message:
+        "Password successfully reset. You can now use the new password to log in.",
+    })
+  );
 };

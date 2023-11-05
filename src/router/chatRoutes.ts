@@ -12,15 +12,21 @@ import { protectChat } from "../middlewares/protectChat";
 import {
   isUserBlockOrBlocked_Body,
   isUserBlockOrBlocked_Params,
-} from "../middlewares/userBlock";
+} from "../middlewares/block";
 import {
   validate,
   validateBody,
   validateParamsV2,
 } from "../middlewares/validate";
+import { zfd } from "zod-form-data";
 import { z } from "zod";
-import { zChatMessage, zRecipientId } from "../schema/chat";
-import { zIntOrStringId } from "../schema";
+import {
+  zChatMessage,
+  zRecipientId,
+  zfdChatMessage,
+  zfdRecipientId,
+} from "../schema/chat";
+import { zIntOrStringId, zLimit, zOffset } from "../schema";
 
 const router = express.Router();
 const chatBlockCustomMessage = {
@@ -34,10 +40,12 @@ router.use(verifyToken);
 router.route("/").post(
   uploadImage.single("image"),
   validateBody(
-    z.object({
-      message: zChatMessage,
-      recipientId: zRecipientId,
-    })
+    zfd.formData(
+      z.object({
+        message: zfdChatMessage,
+        recipientId: zfdRecipientId,
+      })
+    )
   ),
   isUserBlockOrBlocked_Body("recipientId", chatBlockCustomMessage),
   tryCatch(createChat)
@@ -65,11 +73,18 @@ router
     tryCatch(updateChatById)
   );
 
-router
-  .route("/users/:recipientId")
-  .get(
-    isUserBlockOrBlocked_Params("recipientId"),
-    tryCatch(getChatsByRecipientId)
-  );
+router.route("/users/:recipientId").get(
+  validate(
+    z.object({
+      params: z.object({ recipientId: zIntOrStringId }),
+      query: z.object({
+        limit: zLimit,
+        offset: zOffset,
+      }),
+    })
+  ),
+  isUserBlockOrBlocked_Params("recipientId"),
+  tryCatch(getChatsByRecipientId)
+);
 
 export default router;

@@ -10,8 +10,9 @@ import { refreshToken } from "../controllers/authController";
 import { verifyRefreshToken, verifyToken } from "../middlewares/auth";
 import { getSearchResults } from "../controllers/searchControllers";
 import { tryCatch } from "../middlewares/tryCatch";
-import { validateBody } from "../middlewares/validate";
+import { validate } from "../middlewares/validate";
 import { z } from "zod";
+import { zLimit, zOffset } from "../schema";
 
 export function router(app: Express) {
   app.use("/api/auth", authRouter);
@@ -23,11 +24,13 @@ export function router(app: Express) {
   app.use("/api/chats", chatRouter);
   app.get(
     "/api/search",
-    validateBody(
+    validate(
       z.object({
         query: z.object({
           type: z.enum(["post", "user", "all"]).optional(),
           q: z.string().optional(),
+          limit: zLimit,
+          offset: zOffset,
         }),
       })
     ),

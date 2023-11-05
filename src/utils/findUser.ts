@@ -12,19 +12,199 @@ import { getFilePathname } from "./getFilePathname";
 import prisma from "../config/prismaClient";
 import { Prisma } from "@prisma/client";
 
+export const userWhereAndInput = (currentUserId?: number) =>
+  [
+    {
+      ...excludeBlockedUser(currentUserId),
+      ...excludeBlockingUser(currentUserId),
+    },
+  ] satisfies Prisma.UserWhereInput["AND"];
+
+export const userSelectInput = (currentUserId?: number) =>
+  ({
+    ...selectUser,
+    followedBy: {
+      ...selectUser.followedBy,
+      where: {
+        AND: userWhereAndInput(currentUserId),
+      },
+    },
+    following: {
+      ...selectUser.following,
+      where: {
+        AND: userWhereAndInput(currentUserId),
+      },
+    },
+  } satisfies Prisma.UserSelect);
+
+export const userSelectPublicInput = (currentUserId?: number) =>
+  ({
+    ...selectUserPublic,
+    followedBy: {
+      ...selectUserPublic.followedBy,
+      where: {
+        AND: userWhereAndInput(currentUserId),
+      },
+    },
+    following: {
+      ...selectUserPublic.following,
+      where: {
+        AND: userWhereAndInput(currentUserId),
+      },
+    },
+  } satisfies Prisma.UserSelect);
+
 export const findUserPublic = async (id: string, currentUserId?: number) => {
   const user = await User.findUnique({
     where: {
       id: Number(id),
-      ...excludeBlockedUser(currentUserId),
-      ...excludeBlockingUser(currentUserId),
+      AND: userWhereAndInput(currentUserId),
     },
-    select: selectUserPublic,
+    select: userSelectPublicInput(currentUserId),
   });
 
   if (!user) throw new RequestError("User not found", 404);
 
   return normalizeUserPublic(user);
+};
+
+export const findUser = async (userId: number) => {
+  const user = await User.findUnique({
+    where: {
+      id: userId,
+      AND: userWhereAndInput(userId),
+    },
+    select: userSelectInput(userId),
+  });
+  if (!user) throw new RequestError("User not found", 404);
+  return normalizeUser(user);
+};
+
+export const findUserById = async (id: string) => {
+  const user = await User.findUnique({
+    where: {
+      AND: userWhereAndInput(Number(id)),
+      id: Number(id),
+    },
+    select: userSelectInput(Number(id)),
+  });
+  if (!user) throw new RequestError("User not found", 404);
+  return normalizeUser(user);
+};
+
+export const findAllUser = async ({
+  limit,
+  offset,
+  userId,
+}: {
+  limit: number;
+  offset: number;
+  userId?: number;
+}) => {
+  const users = await User.findMany({
+    select: { ...selectUser },
+    take: limit,
+    skip: offset,
+    where: {
+      AND: userWhereAndInput(userId),
+    },
+  });
+  const totalUsers = await User.count({
+    where: {
+      AND: userWhereAndInput(userId),
+    },
+  });
+
+  const normalizedUser: UserAccount[] = users.map((user) =>
+    normalizeUser(user)
+  );
+
+  return { data: normalizedUser, total: totalUsers };
+};
+
+export const findFollowUserByUserEmail = async (
+  userEmail: string,
+  types: "following" | "followedBy",
+  currentUserId?: number
+) => {
+  const user = await User.findUnique({
+    where: {
+      AND: userWhereAndInput(currentUserId),
+      email: userEmail,
+    },
+    select: {
+      [types]: {
+        select: { id: true },
+        where: {
+          AND: userWhereAndInput(currentUserId),
+        },
+      },
+      _count: {
+        select: {
+          [types]: true,
+        },
+      },
+    },
+  });
+  if (!user) throw new RequestError("User not found", 404);
+
+  return {
+    [types]: [...(user?.[types]?.map((user) => user.id) ?? [])],
+    total: user?._count ?? 0,
+  };
+};
+
+export const findFollowUserByUserId = async (
+  userId: string,
+  types: "following" | "followedBy",
+  currentUserId?: number
+) => {
+  const user = await User.findUnique({
+    where: {
+      id: Number(userId),
+      AND: userWhereAndInput(currentUserId),
+    },
+    select: {
+      [types]: {
+        where: {
+          AND: userWhereAndInput(currentUserId),
+        },
+        select: {
+          id: true,
+          username: true,
+          firstName: true,
+          lastName: true,
+          profile: {
+            select: {
+              avatarImage: {
+                select: {
+                  id: true,
+                  src: true,
+                },
+              },
+            },
+          },
+        },
+      },
+      _count: {
+        select: {
+          [types]: true,
+        },
+      },
+    },
+  });
+
+  if (!user) throw new RequestError("User not found", 404);
+
+  return {
+    [types]: [
+      ...(user?.[types]?.map(({ profile, ...rest }) => ({
+        ...rest,
+        image: getFilePathname((profile as any)?.avatarImage),
+      })) ?? []),
+    ],
+    total: user?._count ?? 0,
+  };
 };
 
 export const searchUsersByName = async ({
@@ -59,12 +239,21 @@ export const searchUsersByName = async ({
   >`SELECT u.id, u.firstName, u.lastName, u.username, u.createdAt, u.updatedAt, pr.profileDescription, cvI.id as coverId, cvI.src as coverSrc, img.src as imageSrc, img.id as imageId, p.id as 'postId', p.authorId
     FROM users AS u
     INNER JOIN profiles as pr ON (u.email = pr.userId)
+    LEFT JOIN _blockedusers as bu ON (u.id = bu.B and bu.A = ${
+      currentUserId || currentUserId === 0 ? currentUserId : Prisma.empty
+    })
+    LEFT JOIN _blockedusers as bu2 ON (u.id = bu2.A and bu2.B = ${
+      currentUserId || currentUserId === 0 ? currentUserId : Prisma.empty
+    })
     LEFT JOIN coverImage as cvI ON (pr.id = cvI.profileId)
     LEFT JOIN images as img ON (pr.id = img.profileId)
-    LEFT JOIN posts as p ON (p.authorId = u.id)
-    WHERE CONCAT(u.firstName, ' ', u.lastName)
-    LIKE ${usersQuery} OR u.username LIKE ${usersQuery} ORDER BY CONCAT(u.firstName, ' ',u.lastName) ASC, u.username ASC`;
-  console.log(queryResults);
+    LEFT JOIN posts as p ON (p.authorId = u.id AND p.type in('friends', 'public'))
+    WHERE bu.A IS NULL AND bu2.B IS NULL AND (CONCAT(u.firstName, ' ', u.lastName)
+    LIKE ${usersQuery} OR u.username LIKE ${usersQuery}) ORDER BY CONCAT(u.firstName, ' ',u.lastName) ASC, u.username ASC`;
+
+  const cuId =
+    currentUserId || currentUserId === 0 ? currentUserId : Prisma.empty;
+
   const userResults: UserAccountPublic[] = await Promise.all(
     queryResults
       .filter((obj, index) => {
@@ -77,14 +266,21 @@ export const searchUsersByName = async ({
           .filter((post, index) => post.authorId === obj.id)
           .map(({ postId }) => JSON.stringify({ id: postId }));
 
+        const subQuerys = Prisma.raw(`SELECT u.id FROM users u 
+        LEFT JOIN _blockedusers as bu ON (u.id = bu.B and bu.A = ${cuId})
+        LEFT JOIN _blockedusers as bu2 ON (u.id = bu2.A and bu2.B = ${cuId}) 
+        WHERE bu.A IS NULL AND bu2.B IS NULL`);
         const followersIds: { id: number }[] =
-          await prisma.$queryRaw`SELECT u2.id FROM users u INNER JOIN _userfollows uf ON (uf.A = u.id) INNER JOIN users u2 ON (uf.B = u2.id) WHERE u.id = ${
-            obj?.id ? obj.id : Prisma.empty
-          }`;
+          await prisma.$queryRaw`SELECT u2.id FROM (${subQuerys}) u 
+          INNER JOIN _userfollows uf ON (uf.A = u.id) 
+          INNER JOIN (${subQuerys}) u2 ON (uf.B = u2.id) 
+          WHERE u.id = ${obj?.id ? obj.id : Prisma.empty}`;
+
         const followedUsersIds: { id: number }[] =
-          await prisma.$queryRaw`SELECT u2.id FROM users u INNER JOIN _userfollows uf ON (uf.B = u.id) INNER JOIN users u2 ON (uf.A = u2.id) WHERE u.id = ${
-            obj?.id ? obj.id : Prisma.empty
-          }`;
+          await prisma.$queryRaw`SELECT u2.id FROM (${subQuerys}) u 
+          INNER JOIN _userfollows uf ON (uf.B = u.id) 
+          INNER JOIN (${subQuerys}) u2 ON (uf.A = u2.id) 
+          WHERE u.id = ${obj?.id ? obj.id : Prisma.empty}`;
 
         const uniquePosts = new Set(posts);
         return {
@@ -126,150 +322,19 @@ export const searchUsersByName = async ({
   ).then((users) => users.slice(offset).slice(0, limit));
 
   const totalResults: [{ total_results: number }] =
-    await prisma.$queryRaw`SELECT COUNT(id) as total_results FROM users u WHERE CONCAT(u.firstName, ' ', u.lastName) LIKE ${usersQuery} OR u.username LIKE ${usersQuery}`;
+    await prisma.$queryRaw`SELECT COUNT(id) as total_results FROM users u 
+    LEFT JOIN _blockedusers as bu ON (u.id = bu.B and bu.A = ${
+      currentUserId || currentUserId === 0 ? currentUserId : Prisma.empty
+    })
+    LEFT JOIN _blockedusers as bu2 ON (u.id = bu2.A and bu2.B = ${
+      currentUserId || currentUserId === 0 ? currentUserId : Prisma.empty
+    }) WHERE bu.A IS NULL AND bu2.B IS NULL AND (CONCAT(u.firstName, ' ', u.lastName) LIKE ${usersQuery} OR u.username LIKE ${usersQuery})`;
 
   return {
     data: userResults,
     total: Number(totalResults[0].total_results),
   };
 };
-
-export const findUser = async (email: string) => {
-  const user = await User.findUnique({
-    where: {
-      email,
-    },
-    select: selectUser,
-  });
-  if (!user) throw new RequestError("User not found", 404);
-  return normalizeUser(user);
-};
-
-export const findUserById = async (id: string) => {
-  const user = await User.findUnique({
-    where: {
-      id: Number(id),
-    },
-    select: selectUser,
-  });
-  if (!user) throw new RequestError("User not found", 404);
-  return normalizeUser(user);
-};
-
-export const findAllUser = async ({
-  limit,
-  offset,
-  userId,
-}: {
-  limit: number;
-  offset: number;
-  userId?: number;
-}) => {
-  const users = await User.findMany({
-    select: { ...selectUser },
-    take: limit,
-    skip: offset,
-    where: {
-      ...excludeBlockedUser(userId),
-      ...excludeBlockingUser(userId),
-    },
-  });
-  const totalUsers = await User.count({
-    where: {
-      ...excludeBlockedUser(userId),
-      ...excludeBlockingUser(userId),
-    },
-  });
-
-  const normalizedUser: UserAccount[] = users.map((user) =>
-    normalizeUser(user)
-  );
-
-  return { data: normalizedUser, total: totalUsers };
-};
-
-export const findFollowUserByUserEmail = async (
-  userEmail: string,
-  types: "following" | "followedBy",
-  currentUserId?: number
-) => {
-  const user = await User.findUnique({
-    where: {
-      email: userEmail,
-    },
-    select: {
-      [types]: {
-        select: { id: true },
-        where: {
-          ...excludeBlockedUser(currentUserId),
-          ...excludeBlockingUser(currentUserId),
-        },
-      },
-      _count: {
-        select: {
-          [types]: true,
-        },
-      },
-    },
-  });
-  console.log(user);
-  return {
-    [types]: [...(user?.[types]?.map((user) => user.id) ?? [])],
-    total: user?._count ?? 0,
-  };
-};
-
-export const findFollowUserByUserId = async (
-  userId: string,
-  types: "following" | "followedBy",
-  currentUserId?: number
-) => {
-  const user = await User.findUnique({
-    where: {
-      id: Number(userId),
-    },
-    select: {
-      [types]: {
-        where: {
-          ...excludeBlockedUser(currentUserId),
-          ...excludeBlockingUser(currentUserId),
-        },
-        select: {
-          id: true,
-          username: true,
-          firstName: true,
-          lastName: true,
-          profile: {
-            select: {
-              avatarImage: {
-                select: {
-                  id: true,
-                  src: true,
-                },
-              },
-            },
-          },
-        },
-      },
-      _count: {
-        select: {
-          [types]: true,
-        },
-      },
-    },
-  });
-
-  return {
-    [types]: [
-      ...(user?.[types]?.map(({ profile, ...rest }) => ({
-        ...rest,
-        image: getFilePathname((profile as any)?.avatarImage),
-      })) ?? []),
-    ],
-    total: user?._count ?? 0,
-  };
-};
-
 // Post extended query
 // `SELECT u.id, u.firstName, u.lastName, u.username, u.createdAt, u.updatedAt, pr.profileDescription, cvI.id as coverId, cvI.src as coverSrc, img.src as imageSrc, img.id as imageId, p.content, p.title, p.id as 'postId', p.authorId, postImgSrc, postImgId, imgPostId
 //     FROM users AS u

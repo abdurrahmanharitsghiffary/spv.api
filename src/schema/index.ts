@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { zfd } from "zod-form-data";
 
 const MAX_ID_VALUE = 2147483647;
 
@@ -16,6 +17,61 @@ export const zUsername = z
   });
 
 export const zProfileImageType = z.enum(["profile", "cover"]);
+
+export const zLimit = z
+  .string()
+  .refine(
+    (arg) => {
+      const n = Number(arg);
+      return !isNaN(n) || arg === undefined;
+    },
+    {
+      message:
+        "Invalid provided limit query, expected number, received NaN value",
+    }
+  )
+  .refine(
+    (arg) => {
+      if (Number(arg) < 0) return false;
+      return true;
+    },
+    {
+      message: "Limit must not be negative number",
+    }
+  )
+  .refine(
+    (arg) => {
+      const n = Number(arg);
+      if (n > 50) return false;
+      return true;
+    },
+    { message: "Limit must be at least 50 or fewer" }
+  )
+  .optional();
+
+export const zOffset = z
+  .string()
+  .refine(
+    (arg) => {
+      const n = Number(arg);
+      return !isNaN(n) || arg === undefined;
+    },
+    {
+      message:
+        "Invalid provided offset query, expected number, received NaN value",
+    }
+  )
+  .refine(
+    (arg) => {
+      if (Number(arg) < 0) return false;
+      return arg === undefined || Number(arg) <= MAX_ID_VALUE;
+    },
+    {
+      message:
+        "Offset must be signed Int number (less than or equal to 2147483647)",
+    }
+  )
+  .optional();
 
 export const zIntId = (key: string = "id") =>
   z
@@ -46,10 +102,16 @@ export const zIntOrStringId = z
     }
   );
 
+export const zfdInt = (key: string = "id") => zfd.numeric(zIntId(key));
+
+export const zfdText = zfd.text(zText);
+
 export const zTitle = z
   .string()
   .max(155, { message: "Title must be 155 characters or fewer." })
   .optional();
+
+export const zfdTitle = zfd.text(zTitle);
 
 export const zFirstName = z
   .string({ required_error: "Firstname must not be empty." })

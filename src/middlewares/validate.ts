@@ -1,6 +1,6 @@
 import express from "express";
-import { AnyZodObject, z } from "zod";
-import { zIntOrStringId } from "../schema";
+import { AnyZodObject, ZodRawShape, z, ZodTypeAny } from "zod";
+import { zIntOrStringId, zLimit, zOffset } from "../schema";
 
 export const validate =
   (schema: AnyZodObject) =>
@@ -22,7 +22,7 @@ export const validate =
   };
 
 export const validateBody =
-  (schema: AnyZodObject) =>
+  (schema: AnyZodObject | ZodTypeAny) =>
   async (
     req: express.Request,
     res: express.Response,
@@ -85,3 +85,27 @@ export const validateParamsV2 =
       next(error);
     }
   };
+
+export const validatePagingOptions = validate(
+  z.object({
+    query: z.object({
+      limit: zLimit,
+      offset: zOffset,
+    }),
+  })
+);
+
+export const validatePagingOptionsExtend = (object?: ZodRawShape) => {
+  let schema = z.object({
+    query: z.object({
+      limit: zLimit,
+      offset: zOffset,
+    }),
+  });
+
+  if (object) {
+    schema.extend(object);
+  }
+
+  return validate(schema);
+};

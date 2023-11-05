@@ -39,6 +39,7 @@ const commentWhereAndInput = (currentUserId?: number) =>
 const commentSelectChildrenCommentInput = (currentUserId?: number) =>
   ({
     ...selectComment.childrenComment,
+
     where: {
       AND: [
         {
@@ -164,6 +165,8 @@ export const findCommentsByPostId = async (
       childrenComment: commentSelectChildrenCommentInput(currentUserId),
     },
   });
+  // TODO
+  // Should filter by their parentId? or just return the exact record by blocking the usersr?
 
   const totalComments = await Comment.count({
     where: {

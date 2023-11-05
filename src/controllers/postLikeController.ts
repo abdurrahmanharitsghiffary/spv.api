@@ -2,10 +2,10 @@ import PostLike from "../models/postLike";
 import express from "express";
 import { ExpressRequestExtended } from "../types/request";
 import { RequestError } from "../lib/error";
-import Post from "../models/post";
 import { jSuccess } from "../utils/jsend";
 import { excludeBlockedUser, excludeBlockingUser } from "../lib/query/user";
-
+import { findPostById } from "../utils/findPost";
+// CONTINUe
 export const getPostLikesByPostId = async (
   req: express.Request,
   res: express.Response
@@ -13,15 +13,7 @@ export const getPostLikesByPostId = async (
   const { userId } = req as ExpressRequestExtended;
   const { postId } = req.params;
 
-  const post = await Post.findUnique({
-    where: {
-      id: Number(postId),
-      author: {
-        ...excludeBlockedUser(Number(userId)),
-        ...excludeBlockingUser(Number(userId)),
-      },
-    },
-  });
+  await findPostById(postId, Number(userId));
 
   const likes = await PostLike.findMany({
     where: {
@@ -61,8 +53,6 @@ export const getPostLikesByPostId = async (
     },
   });
 
-  if (post === null) throw new RequestError("Post not found", 404);
-
   const normalizedLikes = likes.map((like) => ({
     id: like.userId,
     firstName: like.user.firstName,
@@ -87,7 +77,7 @@ export const createLike = async (
   const { userId } = req as ExpressRequestExtended;
   const { postId } = req.params;
 
-  const postAlreadyExist = await PostLike.findUnique({
+  const postAlreadyLiked = await PostLike.findUnique({
     where: {
       userId_postId: {
         userId: Number(userId),
@@ -96,7 +86,7 @@ export const createLike = async (
     },
   });
 
-  if (postAlreadyExist)
+  if (postAlreadyLiked)
     throw new RequestError("You already liked this post", 409);
 
   const createdLike = await PostLike.create({
@@ -124,7 +114,7 @@ export const deleteLike = async (
 
   return res.status(204).json(jSuccess(null));
 };
-// NEED BLOCK FEATURE
+
 export const getPostIsLiked = async (
   req: express.Request,
   res: express.Response

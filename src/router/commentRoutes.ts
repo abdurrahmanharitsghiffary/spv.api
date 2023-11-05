@@ -22,7 +22,8 @@ import {
   validateParamsV2,
 } from "../middlewares/validate";
 import { z } from "zod";
-import { zIntId, zIntOrStringId, zText } from "../schema";
+import { zIntId, zIntOrStringId, zText, zfdInt, zfdText } from "../schema";
+import { zfd } from "zod-form-data";
 
 const router = express.Router();
 
@@ -31,12 +32,14 @@ router.use(verifyToken);
 router.route("/").post(
   uploadImage.single("image"),
   validateBody(
-    z.object({
-      comment: zText,
-      postId: zIntId("postId"),
-      parentId: zIntId("parentId").optional(),
-      imageSrc: z.string().optional(),
-    })
+    zfd.formData(
+      z.object({
+        comment: zfd.text(z.string().optional()).optional(),
+        postId: zfdInt("postId"),
+        parentId: zfdInt("parentId").optional(),
+        imageSrc: zfd.text(z.string().optional()).optional(),
+      })
+    )
   ),
   tryCatch(createComment)
 );
@@ -48,10 +51,12 @@ router
     uploadImage.single("image"),
     validate(
       z.object({
-        body: z.object({
-          comment: zText,
-          imageSrc: z.string().optional(),
-        }),
+        body: zfd.formData(
+          z.object({
+            comment: zfd.text(z.string().optional()).optional(),
+            imageSrc: zfd.text(z.string().optional()).optional(),
+          })
+        ),
         params: z.object({
           commentId: zIntOrStringId,
         }),

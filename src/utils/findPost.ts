@@ -4,12 +4,63 @@ import { selectPost } from "../lib/query/post";
 import { normalizePost, normalizePosts } from "./normalizePost";
 import prisma from "../config/prismaClient";
 import { excludeBlockedUser, excludeBlockingUser } from "../lib/query/user";
+import { Prisma } from "@prisma/client";
+
+const postSelectExtended = (currentUserId?: number) =>
+  ({
+    ...selectPost,
+    comments: {
+      ...selectPost.comments,
+      where: {
+        parentId: null,
+        user: {
+          ...excludeBlockedUser(currentUserId),
+          ...excludeBlockingUser(currentUserId),
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    },
+  } satisfies Prisma.PostSelect);
+
+const postWhereInput = {
+  type: {
+    in: ["public", "friends"],
+  },
+} satisfies Prisma.PostWhereInput;
+
+const postFindUniqueWhereInput = (
+  postId: number | string,
+  currentUserId: number
+) =>
+  ({
+    id: Number(postId),
+    AND: postWhereAndInput(currentUserId),
+    OR: [
+      {
+        authorId: currentUserId,
+        type: { in: ["friends", "private", "public"] },
+      },
+      { ...postWhereInput },
+    ],
+  } satisfies Prisma.PostWhereInput);
+
+const postWhereAndInput = (currentUserId?: number) =>
+  [
+    {
+      author: {
+        ...excludeBlockedUser(currentUserId),
+        ...excludeBlockingUser(currentUserId),
+      },
+    },
+  ] satisfies Prisma.PostWhereInput["AND"];
 
 export const findPostByIdCustomMessage = async ({
-  statusCode,
+  statusCode = 404,
   currentUserId,
   postId,
-  message,
+  message = "Post not found",
 }: {
   statusCode?: number;
   postId: number;
@@ -17,14 +68,8 @@ export const findPostByIdCustomMessage = async ({
   message: string;
 }) => {
   const post = await Post.findUnique({
-    where: {
-      id: Number(postId),
-      author: {
-        ...excludeBlockedUser(currentUserId),
-        ...excludeBlockingUser(currentUserId),
-      },
-    },
-    select: selectPost,
+    where: postFindUniqueWhereInput(postId, Number(currentUserId)),
+    select: postSelectExtended(currentUserId),
   });
 
   if (!post) throw new RequestError(message, statusCode ?? 400);
@@ -34,14 +79,8 @@ export const findPostByIdCustomMessage = async ({
 
 export const findPostById = async (postId: string, currentUserId?: number) => {
   const post = await Post.findUnique({
-    where: {
-      id: Number(postId),
-      author: {
-        ...excludeBlockedUser(currentUserId),
-        ...excludeBlockingUser(currentUserId),
-      },
-    },
-    select: selectPost,
+    where: postFindUniqueWhereInput(postId, Number(currentUserId)),
+    select: postSelectExtended(currentUserId),
   });
 
   if (!post) throw new RequestError("Post not found", 404);
@@ -63,12 +102,16 @@ export const findPostsByAuthorId = async ({
   const posts = await Post.findMany({
     where: {
       authorId,
-      author: {
-        ...excludeBlockedUser(currentUserId),
-        ...excludeBlockingUser(currentUserId),
-      },
+      AND: postWhereAndInput(currentUserId),
+      OR: [
+        {
+          authorId: currentUserId,
+          type: { in: ["friends", "private", "public"] },
+        },
+        { authorId, ...postWhereInput },
+      ],
     },
-    select: selectPost,
+    select: postSelectExtended(currentUserId),
     orderBy: {
       createdAt: "desc",
     },
@@ -78,10 +121,14 @@ export const findPostsByAuthorId = async ({
   const totalPosts = await Post.count({
     where: {
       authorId,
-      author: {
-        ...excludeBlockedUser(currentUserId),
-        ...excludeBlockingUser(currentUserId),
-      },
+      AND: postWhereAndInput(currentUserId),
+      OR: [
+        {
+          authorId: currentUserId,
+          type: { in: ["friends", "private", "public"] },
+        },
+        { authorId, ...postWhereInput },
+      ],
     },
   });
 
@@ -99,22 +146,17 @@ export const findAllPosts = async ({
 }) => {
   const posts = await Post.findMany({
     where: {
-      author: {
-        ...excludeBlockedUser(currentUserId),
-        ...excludeBlockingUser(currentUserId),
-      },
+      AND: postWhereAndInput(currentUserId),
     },
-    select: selectPost,
+    orderBy: { createdAt: "desc" },
+    select: postSelectExtended(currentUserId),
     skip: offset ?? 0,
     take: limit ?? 20,
   });
 
   const totalPosts = await Post.count({
     where: {
-      author: {
-        ...excludeBlockedUser(currentUserId),
-        ...excludeBlockingUser(currentUserId),
-      },
+      AND: postWhereAndInput(currentUserId),
     },
   });
 
@@ -134,35 +176,25 @@ export const findPostByFollowedUserIds = async ({
 }) => {
   const posts = await Post.findMany({
     where: {
-      author: {
-        ...excludeBlockedUser(currentUserId),
-        ...excludeBlockingUser(currentUserId),
-      },
+      AND: postWhereAndInput(currentUserId),
+      ...postWhereInput,
       authorId: {
         in: [...followedUserIds],
-      },
-      type: {
-        in: ["friends", "public"],
       },
     },
     orderBy: { createdAt: "desc" },
     skip: offset,
     take: limit,
     distinct: "authorId",
-    select: selectPost,
+    select: postSelectExtended(currentUserId),
   });
 
   const postsTotal = await Post.count({
     where: {
-      author: {
-        ...excludeBlockedUser(currentUserId),
-        ...excludeBlockingUser(currentUserId),
-      },
+      AND: postWhereAndInput(currentUserId),
+      ...postWhereInput,
       authorId: {
         in: [...followedUserIds],
-      },
-      type: {
-        in: ["friends", "public"],
       },
     },
   });
@@ -184,10 +216,16 @@ export const findSavedPost = async ({
   const savedPosts = await prisma.savedPost.findMany({
     where: {
       post: {
-        author: {
-          ...excludeBlockedUser(currentUserId),
-          ...excludeBlockingUser(currentUserId),
-        },
+        OR: [
+          {
+            author: {
+              id: currentUserId,
+            },
+            type: { in: ["friends", "private", "public"] },
+          },
+          { ...postWhereInput },
+        ],
+        AND: postWhereAndInput(currentUserId),
       },
       userId: Number(userId),
     },
@@ -198,7 +236,7 @@ export const findSavedPost = async ({
     },
     select: {
       post: {
-        select: selectPost,
+        select: postSelectExtended(currentUserId),
       },
       assignedAt: true,
     },
@@ -207,10 +245,16 @@ export const findSavedPost = async ({
   const total = await prisma.savedPost.count({
     where: {
       post: {
-        author: {
-          ...excludeBlockedUser(currentUserId),
-          ...excludeBlockingUser(currentUserId),
-        },
+        OR: [
+          {
+            author: {
+              id: currentUserId,
+            },
+            type: { in: ["friends", "private", "public"] },
+          },
+          { ...postWhereInput },
+        ],
+        AND: postWhereAndInput(currentUserId),
       },
       userId: Number(userId),
     },
@@ -237,13 +281,8 @@ export const searchPosts = async ({
 }) => {
   const posts = await Post.findMany({
     where: {
-      author: {
-        ...excludeBlockedUser(currentUserId),
-        ...excludeBlockingUser(currentUserId),
-      },
-      type: {
-        in: ["friends", "public"],
-      },
+      AND: postWhereAndInput(currentUserId),
+      ...postWhereInput,
       OR: [
         {
           title: {
@@ -260,20 +299,15 @@ export const searchPosts = async ({
     orderBy: {
       createdAt: "desc",
     },
-    select: selectPost,
+    select: postSelectExtended(currentUserId),
     take: limit,
     skip: offset,
   });
 
   const resultsTotal = await Post.count({
     where: {
-      author: {
-        ...excludeBlockedUser(currentUserId),
-        ...excludeBlockingUser(currentUserId),
-      },
-      type: {
-        in: ["friends", "public"],
-      },
+      AND: postWhereAndInput(currentUserId),
+      ...postWhereInput,
       OR: [
         {
           title: {

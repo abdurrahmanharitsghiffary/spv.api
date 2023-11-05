@@ -3,7 +3,6 @@ import express from "express";
 import { ExpressRequestExtended } from "../types/request";
 import { RequestError } from "../lib/error";
 import { jSuccess } from "../utils/jsend";
-import Comment from "../models/comment";
 import { excludeBlockedUser, excludeBlockingUser } from "../lib/query/user";
 import { findCommentById } from "../utils/findComment";
 
@@ -14,23 +13,7 @@ export const getCommentLikesByCommentId = async (
   const { userId } = req as ExpressRequestExtended;
   const { commentId } = req.params;
 
-  const comment = await Comment.findUnique({
-    where: {
-      id: Number(commentId),
-      user: {
-        ...excludeBlockedUser(Number(userId)),
-        ...excludeBlockingUser(Number(userId)),
-      },
-      post: {
-        author: {
-          ...excludeBlockedUser(Number(userId)),
-          ...excludeBlockingUser(Number(userId)),
-        },
-      },
-    },
-  });
-
-  if (comment === null) throw new RequestError("Comment not found", 404);
+  await findCommentById(Number(commentId), Number(userId));
 
   const likes = await CommentLike.findMany({
     where: {

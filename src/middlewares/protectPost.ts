@@ -1,19 +1,7 @@
 import express from "express";
 import { ExpressRequestExtended } from "../types/request";
-import { ForbiddenError, RequestError } from "../lib/error";
-import Post from "../models/post";
-
-const checkPost = async (postId: string) => {
-  const post = await Post.findUnique({
-    where: {
-      id: Number(postId),
-    },
-  });
-
-  if (!post) throw new RequestError("Post not found", 404);
-
-  return post;
-};
+import { ForbiddenError } from "../lib/error";
+import { findPostById } from "../utils/findPost";
 
 export const protectPost = async (
   req: express.Request,
@@ -23,10 +11,9 @@ export const protectPost = async (
   const { postId } = req.params;
   const { userId } = req as ExpressRequestExtended;
 
-  const postIsExist = await checkPost(postId);
+  const post = await findPostById(postId, Number(userId));
 
-  if (!postIsExist) throw new RequestError("Post not found", 404);
-  if (postIsExist?.authorId !== Number(userId)) throw new ForbiddenError();
+  if (post?.author.id !== Number(userId)) throw new ForbiddenError();
 
   return next();
 };

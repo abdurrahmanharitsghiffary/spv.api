@@ -26,7 +26,7 @@ const loginLimitOptions: Partial<Options> = {
   max: 5,
   legacyHeaders: false,
   standardHeaders: "draft-7",
-  windowMs: 6000 * 60,
+  windowMs: 60000 * 60,
   message: {
     status: "error",
     message:

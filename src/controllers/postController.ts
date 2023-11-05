@@ -71,11 +71,7 @@ export const getFollowedUserPost = async (
   return res.status(200).json(
     getPagingObject({
       data: posts.data,
-      // current: getCurrentUrl(req),
       total_records: posts.total,
-      // limit: Number(limit),
-      // offset: Number(offset),
-      // path: `${baseUrl}/api/posts/following`,
       req,
     })
   );
@@ -95,11 +91,7 @@ export const getAllPosts = async (
   return res.status(200).json(
     getPagingObject({
       data: posts.data,
-      // limit,
-      // offset,
-      // current: getCurrentUrl(req),
       total_records: posts.total,
-      // path: `${baseUrl}/api/posts`,
       req,
     })
   );
@@ -116,7 +108,7 @@ export const getPostCommentsById = async (
   offset = Number(offset);
   limit = Number(limit);
 
-  await findPostById(postId);
+  await findPostById(postId, Number(userId));
 
   const comments = await findCommentsByPostId(
     Number(postId),
@@ -169,7 +161,7 @@ export const getSavedPosts = async (
     })
   );
 };
-// NEED BLOCK FEATURE?
+
 export const getPostIsSaved = async (
   req: express.Request,
   res: express.Response
@@ -192,16 +184,17 @@ export const getPostIsSaved = async (
 export const savePost = async (req: express.Request, res: express.Response) => {
   const { userId } = req as ExpressRequestExtended;
   const { postId } = req.body;
-  await findPostById(postId);
 
-  await prisma.savedPost.create({
+  await findPostById(postId, Number(userId));
+
+  const result = await prisma.savedPost.create({
     data: {
       postId: Number(postId),
       userId: Number(userId),
     },
   });
 
-  return res.status(200).json(jSuccess(null));
+  return res.status(201).json(jSuccess(result));
 };
 
 export const deleteSavedPost = async (
@@ -219,7 +212,7 @@ export const deleteSavedPost = async (
     },
   });
 
-  return res.status(200).json(jSuccess(null));
+  return res.status(204).json(jSuccess(null));
 };
 
 export const deletePost = async (
@@ -278,7 +271,6 @@ export const createPost = async (
   res: express.Response
 ) => {
   const images = req.files ?? [];
-  console.log(images);
   const { userId } = req as ExpressRequestExtended;
   const { title, content } = req.body;
 
@@ -331,11 +323,23 @@ export const deletePostImagesByPostId = async (
 ) => {
   const { postId } = req.params;
 
+  const images = await Image.findMany({
+    where: {
+      postId: Number(postId),
+    },
+  });
+
   await Image.deleteMany({
     where: {
       postId: Number(postId),
     },
   });
+
+  await Promise.all(
+    images.map(async (img) => {
+      await deleteUploadedImage(img.src);
+    })
+  );
 
   return res.status(204).json(jSuccess(null));
 };

@@ -26,9 +26,6 @@ export const getSearchResults = async (
   const { userId } = req as ExpressRequestExtended;
   let { type = "all", q = "", limit = 20, offset = 0 } = req.query;
 
-  // if (!searchType.includes((type as string).toLowerCase().trim()))
-  //   throw new RequestError("Invalid search params type", 422);
-
   offset = Number(offset);
   limit = Number(limit);
   let searchResults:
@@ -57,6 +54,7 @@ export const getSearchResults = async (
   } else if (type === "all") {
     (searchResults as SearchAllData).users = userResults;
     (searchResults as SearchAllData).posts = postResults;
+
     return res.status(200).json(
       getPagingObject({
         data: searchResults as SearchAllData,

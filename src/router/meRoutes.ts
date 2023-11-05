@@ -19,8 +19,8 @@ import {
 import {
   getFollowedUser,
   getMyFollowers,
-  createFollowUser,
-  deleteFollow,
+  followUser,
+  unfollowUser,
 } from "../controllers/followController";
 import { uploadImage } from "../utils/uploadImage";
 import { getAllChatsByUserId } from "../controllers/chatController";
@@ -29,13 +29,11 @@ import {
   createNotification,
   getAllUserNotifications,
 } from "../controllers/notificationControllers";
-import {
-  blockUserById,
-  removeBlockedUserById,
-} from "../controllers/blockController";
+import { blockUserById, unblockUser } from "../controllers/blockController";
 import {
   validate,
   validateBody,
+  validatePagingOptions,
   validateParamsV2,
 } from "../middlewares/validate";
 import { z } from "zod";
@@ -43,6 +41,8 @@ import {
   zFirstName,
   zIntId,
   zLastName,
+  zLimit,
+  zOffset,
   zPassword,
   zProfileImageType,
   zText,
@@ -102,7 +102,16 @@ router.route("/account/changepassword").patch(
 
 router
   .route("/account/images")
-  .delete(tryCatch(deleteAccountImage))
+  .delete(
+    validate(
+      z.object({
+        query: z.object({
+          type: zProfileImageType.optional(),
+        }),
+      })
+    ),
+    tryCatch(deleteAccountImage)
+  )
   .patch(
     uploadImage.single("image"),
     validate(
@@ -117,7 +126,7 @@ router
 
 router
   .route("/posts/saved")
-  .get(tryCatch(getSavedPosts))
+  .get(validatePagingOptions, tryCatch(getSavedPosts))
   .post(
     validateBody(
       z.object({
@@ -126,15 +135,17 @@ router
     ),
     tryCatch(savePost)
   );
-router.route("/chats").get(tryCatch(getAllChatsByUserId));
-router.route("/posts").get(tryCatch(getAllMyPosts));
+router
+  .route("/chats")
+  .get(validatePagingOptions, tryCatch(getAllChatsByUserId));
+router.route("/posts").get(validatePagingOptions, tryCatch(getAllMyPosts));
 router.route("/follow").post(
   validateBody(
     z.object({
       userId: zIntId("userId"),
     })
   ),
-  tryCatch(createFollowUser)
+  tryCatch(followUser)
 );
 router.route("/block").post(
   validateBody(
@@ -148,7 +159,18 @@ router.route("/following").get(tryCatch(getFollowedUser));
 router.route("/followers").get(tryCatch(getMyFollowers));
 router
   .route("/notifications")
-  .get(tryCatch(getAllUserNotifications))
+  .get(
+    validate(
+      z.object({
+        query: z.object({
+          limit: zLimit,
+          offset: zOffset,
+          order_by: z.enum(["latest", "oldest"]).optional(),
+        }),
+      })
+    ),
+    tryCatch(getAllUserNotifications)
+  )
   .delete(tryCatch(clearNotifications))
   .post(
     validateBody(
@@ -165,13 +187,15 @@ router
 router
   .route("/posts/saved/:postId")
   .delete(validateParamsV2("postId"), tryCatch(deleteSavedPost));
-router.route("/posts/saved/:postId/isfollowed").get(tryCatch(getPostIsSaved));
+router
+  .route("/posts/saved/:postId/bookmarked")
+  .get(validateParamsV2("postId"), tryCatch(getPostIsSaved));
 
 router
   .route("/block/:userId")
-  .delete(validateParamsV2("userId"), tryCatch(removeBlockedUserById));
+  .delete(validateParamsV2("userId"), tryCatch(unblockUser));
 router
   .route("/follow/:followId")
-  .delete(validateParamsV2("followId"), tryCatch(deleteFollow));
+  .delete(validateParamsV2("followId"), tryCatch(unfollowUser));
 
 export default router;

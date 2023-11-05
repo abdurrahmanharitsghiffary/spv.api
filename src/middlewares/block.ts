@@ -7,6 +7,33 @@ type CustomMessage =
   | { blockedMessage?: string; blockingMessage?: string }
   | undefined;
 
+const blockedMessage =
+  "You do not have permission to access this user's information because you have been blocked by this user.";
+const blockingMessage =
+  "You do not have permission to access this user's information because you have blocked them.";
+
+const blockingResponse = (
+  res: express.Response<any, Record<string, any>>,
+  customMessage?: string
+) =>
+  res.status(403).json({
+    status: "fail",
+    data: {
+      message: customMessage ?? blockingMessage,
+    },
+  });
+
+const blockedResponse = (
+  res: express.Response<any, Record<string, any>>,
+  customMessage?: string
+) =>
+  res.status(403).json({
+    status: "fail",
+    data: {
+      message: customMessage ?? blockedMessage,
+    },
+  });
+
 const isBlockingUser = ({
   currentUserId,
   blockedUserId,
@@ -82,25 +109,10 @@ export const isUserBlockOrBlocked_Params = (
 
       const isBlocked = (blockedUser?.blocking ?? []).length > 0 ? true : false;
 
-      if (isBlocked)
-        return res.status(403).json({
-          status: "fail",
-          data: {
-            message:
-              customMessage?.blockedMessage ??
-              "You do not have permission to access this user's information because you have been blocked by this user.",
-          },
-        });
+      if (isBlocked) return blockedResponse(res, customMessage?.blockedMessage);
 
       if (isBlocking)
-        return res.status(403).json({
-          status: "fail",
-          data: {
-            message:
-              customMessage?.blockingMessage ??
-              "You do not have permission to access this user's information because you have blocked them.",
-          },
-        });
+        return blockingResponse(res, customMessage?.blockingMessage);
 
       return next();
     }
@@ -133,25 +145,10 @@ export const isUserBlockOrBlocked_Body = (
 
       const isBlocked = (blockedUser?.blocking ?? []).length > 0 ? true : false;
 
-      if (isBlocked)
-        return res.status(403).json({
-          status: "fail",
-          data: {
-            message:
-              customMessage?.blockedMessage ??
-              "You do not have permission to access this user's information because you have been blocked by this user.",
-          },
-        });
+      if (isBlocked) return blockedResponse(res, customMessage?.blockedMessage);
 
       if (isBlocking)
-        return res.status(403).json({
-          status: "fail",
-          data: {
-            message:
-              customMessage?.blockingMessage ??
-              "You do not have permission to access this user's information because you have blocked them.",
-          },
-        });
+        return blockingResponse(res, customMessage?.blockingMessage);
 
       return next();
     }
