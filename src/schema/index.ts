@@ -134,3 +134,19 @@ export const zPassword = (passwordId: string = "Password") =>
 export const zEmail = z
   .string({ required_error: "Email must not be empty." })
   .email({ message: "Invalid email format." });
+
+export const zNotificationType = z.enum([
+  "liking_post",
+  "liking_comment",
+  "comment",
+  "follow",
+  "replying_comment",
+]);
+
+export const zGender = z
+  .any()
+  .refine((arg) => arg === null || ["male", "female"].includes(arg), {
+    message: "Invalid gender value, expected value: male, female, null",
+  });
+
+export const zBirthDate = z.date();

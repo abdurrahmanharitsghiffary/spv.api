@@ -37,6 +37,7 @@ export const login = async (req: express.Request, res: express.Response) => {
     id: user.id,
     firstName: user.firstName,
     lastName: user.lastName,
+    fullName: user.fullName,
     email,
     username: user.username,
   });
@@ -45,6 +46,7 @@ export const login = async (req: express.Request, res: express.Response) => {
     id: user.id,
     email,
     lastName: user.lastName,
+    fullName: user.fullName,
     firstName: user.firstName,
     username: user.username,
   });
@@ -81,7 +83,8 @@ export const login = async (req: express.Request, res: express.Response) => {
 };
 
 export const signUp = async (req: express.Request, res: express.Response) => {
-  const { email, password, username, firstName, lastName } = req.body;
+  const { email, password, username, firstName, lastName, birthDate, gender } =
+    req.body;
 
   const isUserExists = await User.findUnique({
     where: { email },
@@ -101,7 +104,7 @@ export const signUp = async (req: express.Request, res: express.Response) => {
       email,
       hashedPassword,
       username,
-      profile: { create: { profileDescription: null } },
+      profile: { create: { profileDescription: null, birthDate, gender } },
       // refreshToken: {
       //   create: {
       //     refreshToken: refresh_token,
@@ -113,6 +116,7 @@ export const signUp = async (req: express.Request, res: express.Response) => {
   const refresh_token = await generateRefreshToken({
     id: user.id,
     firstName,
+    fullName: `${firstName ?? ""} ${lastName ?? ""}`,
     lastName,
     email,
     username,
@@ -122,6 +126,7 @@ export const signUp = async (req: express.Request, res: express.Response) => {
     id: user.id,
     firstName: user.firstName,
     lastName: user.lastName,
+    fullName: user.fullName,
     email,
     username,
   });
@@ -156,6 +161,7 @@ export const refreshToken = tryCatch(
       firstName: user?.firstName,
       lastName: user?.lastName,
       id: user?.id,
+      fullName: user?.fullName,
       username: user?.username,
       email: user?.email,
     });

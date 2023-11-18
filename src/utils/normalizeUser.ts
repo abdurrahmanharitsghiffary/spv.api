@@ -16,9 +16,12 @@ export const normalizeUserPublic = (
     id: user?.id,
     firstName: user?.firstName,
     lastName: user?.lastName,
+    fullName: user?.fullName,
     username: user?.username,
     profile: user.profile
       ? {
+          birthDate: user.profile?.birthDate,
+          gender: user.profile?.gender,
           description: user.profile.profileDescription,
           image: getFilePathname(user.profile.avatarImage),
           coverImage: getFilePathname(user.profile.coverImage),
@@ -45,12 +48,15 @@ export const normalizeUser = (user: SelectUserPayload): UserAccount => {
     id: user?.id,
     firstName: user?.firstName,
     lastName: user?.lastName,
+    fullName: user?.fullName,
     username: user?.username,
     email: user?.email,
     verified: user?.verified,
     role: user?.role,
     profile: user.profile
       ? {
+          birthDate: user.profile?.birthDate,
+          gender: user.profile?.gender,
           description: user.profile.profileDescription,
           image: getFilePathname(user.profile.avatarImage),
           coverImage: getFilePathname(user.profile.coverImage),

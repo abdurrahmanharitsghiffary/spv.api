@@ -31,6 +31,7 @@ export function router(app: Express) {
           q: z.string().optional(),
           limit: zLimit,
           offset: zOffset,
+          filter: z.enum(["followed", "not_followed"]).optional(),
         }),
       })
     ),

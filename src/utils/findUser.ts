@@ -1,5 +1,5 @@
 import User from "../models/user";
-import { UserAccount, UserAccountPublic } from "../types/user";
+import { SearchFilter, UserAccount, UserAccountPublic } from "../types/user";
 import { normalizeUser, normalizeUserPublic } from "./normalizeUser";
 import { RequestError } from "../lib/error";
 import {
@@ -10,7 +10,7 @@ import {
 } from "../lib/query/user";
 import { getFilePathname } from "./getFilePathname";
 import prisma from "../config/prismaClient";
-import { Prisma } from "@prisma/client";
+import { $Enums, Prisma } from "@prisma/client";
 
 export const userWhereAndInput = (currentUserId?: number) =>
   [
@@ -212,129 +212,246 @@ export const searchUsersByName = async ({
   offset = 0,
   query,
   currentUserId,
+  filter,
 }: {
   query: string;
   limit?: number;
   offset?: number;
   currentUserId?: number;
+  filter?: SearchFilter;
 }) => {
-  const usersQuery = `%${query}%`;
-
-  const queryResults = await prisma.$queryRaw<
+  const cuId = currentUserId || currentUserId === 0 ? currentUserId : undefined;
+  let filterQuery = [
     {
-      firstName: string;
-      lastName: string;
-      id: number;
-      username: string;
-      createdAt: Date;
-      updatedAt: Date;
-      profileDescription: string | null;
-      coverId: number | null;
-      coverSrc: string | null;
-      imageSrc: string | null;
-      imageId: number | null;
-      postId: number | null;
-      authorId: number | null;
-    }[]
-  >`SELECT u.id, u.firstName, u.lastName, u.username, u.createdAt, u.updatedAt, pr.profileDescription, cvI.id as coverId, cvI.src as coverSrc, img.src as imageSrc, img.id as imageId, p.id as 'postId', p.authorId
-    FROM users AS u
-    INNER JOIN profiles as pr ON (u.email = pr.userId)
-    LEFT JOIN _blockedusers as bu ON (u.id = bu.B and bu.A = ${
-      currentUserId || currentUserId === 0 ? currentUserId : Prisma.empty
-    })
-    LEFT JOIN _blockedusers as bu2 ON (u.id = bu2.A and bu2.B = ${
-      currentUserId || currentUserId === 0 ? currentUserId : Prisma.empty
-    })
-    LEFT JOIN coverImage as cvI ON (pr.id = cvI.profileId)
-    LEFT JOIN images as img ON (pr.id = img.profileId)
-    LEFT JOIN posts as p ON (p.authorId = u.id AND p.type in('friends', 'public'))
-    WHERE bu.A IS NULL AND bu2.B IS NULL AND (CONCAT(u.firstName, ' ', u.lastName)
-    LIKE ${usersQuery} OR u.username LIKE ${usersQuery}) ORDER BY CONCAT(u.firstName, ' ',u.lastName) ASC, u.username ASC`;
+      followedBy:
+        filter === "not_followed"
+          ? {
+              every: {
+                id: {
+                  not: cuId,
+                },
+              },
+            }
+          : filter === "followed"
+          ? {
+              every: {
+                id: {
+                  equals: cuId,
+                },
+              },
+            }
+          : undefined,
+    },
+  ] satisfies Prisma.UserWhereInput["AND"];
 
-  const cuId =
-    currentUserId || currentUserId === 0 ? currentUserId : Prisma.empty;
-
-  const userResults: UserAccountPublic[] = await Promise.all(
-    queryResults
-      .filter((obj, index) => {
-        return (
-          index === queryResults.findIndex((o) => obj.authorId === o.authorId)
-        );
-      })
-      .map(async (obj) => {
-        const posts = queryResults
-          .filter((post, index) => post.authorId === obj.id)
-          .map(({ postId }) => JSON.stringify({ id: postId }));
-
-        const subQuerys = Prisma.raw(`SELECT u.id FROM users u 
-        LEFT JOIN _blockedusers as bu ON (u.id = bu.B and bu.A = ${cuId})
-        LEFT JOIN _blockedusers as bu2 ON (u.id = bu2.A and bu2.B = ${cuId}) 
-        WHERE bu.A IS NULL AND bu2.B IS NULL`);
-        const followersIds: { id: number }[] =
-          await prisma.$queryRaw`SELECT u2.id FROM (${subQuerys}) u 
-          INNER JOIN _userfollows uf ON (uf.A = u.id) 
-          INNER JOIN (${subQuerys}) u2 ON (uf.B = u2.id) 
-          WHERE u.id = ${obj?.id ? obj.id : Prisma.empty}`;
-
-        const followedUsersIds: { id: number }[] =
-          await prisma.$queryRaw`SELECT u2.id FROM (${subQuerys}) u 
-          INNER JOIN _userfollows uf ON (uf.B = u.id) 
-          INNER JOIN (${subQuerys}) u2 ON (uf.A = u2.id) 
-          WHERE u.id = ${obj?.id ? obj.id : Prisma.empty}`;
-
-        const uniquePosts = new Set(posts);
-        return {
-          id: obj?.id,
-          firstName: obj?.firstName,
-          lastName: obj?.lastName,
-          username: obj?.username,
-          createdAt: obj?.createdAt,
-          updatedAt: obj?.updatedAt,
-          profile: {
-            description: obj?.profileDescription,
-            image: getFilePathname(
-              obj?.imageSrc ? { src: obj?.imageSrc } : null
-            ),
-            coverImage: getFilePathname(
-              obj?.coverSrc ? { src: obj?.coverSrc } : null
-            ),
+  const users = await User.findMany({
+    where: {
+      OR: [
+        {
+          fullName: {
+            contains: query,
           },
-          followedBy: {
-            followerIds: [...(followersIds ?? []).map((user) => user.id)],
-            total: (followersIds ?? []).length,
+        },
+        {
+          username: {
+            contains: query,
           },
-          following: {
-            followedUserIds: [
-              ...(followedUsersIds ?? []).map((user) => user.id),
-            ],
-            total: (followedUsersIds ?? []).length,
+        },
+      ],
+      AND: [
+        ...userWhereAndInput(currentUserId),
+        ...filterQuery,
+        {
+          id: {
+            not: cuId,
           },
-          posts: {
-            postIds: [
-              ...Array.from(uniquePosts ?? [])
-                .map((obj) => JSON.parse(obj))
-                .map((obj) => obj.id),
-            ],
-            total: Array.from(uniquePosts ?? []).length,
-          },
-        };
-      })
-  ).then((users) => users.slice(offset).slice(0, limit));
+        },
+      ],
+    },
+    orderBy: {
+      fullName: "asc",
+    },
+    take: limit,
+    skip: offset,
+    select: userSelectPublicInput(currentUserId),
+  });
 
-  const totalResults: [{ total_results: number }] =
-    await prisma.$queryRaw`SELECT COUNT(id) as total_results FROM users u 
-    LEFT JOIN _blockedusers as bu ON (u.id = bu.B and bu.A = ${
-      currentUserId || currentUserId === 0 ? currentUserId : Prisma.empty
-    })
-    LEFT JOIN _blockedusers as bu2 ON (u.id = bu2.A and bu2.B = ${
-      currentUserId || currentUserId === 0 ? currentUserId : Prisma.empty
-    }) WHERE bu.A IS NULL AND bu2.B IS NULL AND (CONCAT(u.firstName, ' ', u.lastName) LIKE ${usersQuery} OR u.username LIKE ${usersQuery})`;
+  const total = await User.count({
+    where: {
+      OR: [
+        {
+          fullName: {
+            contains: query,
+          },
+        },
+        {
+          username: {
+            contains: query,
+          },
+        },
+      ],
+      AND: [
+        ...userWhereAndInput(currentUserId),
+        ...filterQuery,
+        {
+          id: {
+            not: cuId,
+          },
+        },
+      ],
+    },
+  });
 
-  return {
-    data: userResults,
-    total: Number(totalResults[0].total_results),
-  };
+  const normalizedUsers = users.map((user) => normalizeUserPublic(user));
+
+  return { data: normalizedUsers, total };
 };
+
+// export const searchUsersByName = async ({
+//   limit = 20,
+//   offset = 0,
+//   query,
+//   currentUserId,
+//   filter,
+// }: {
+//   query: string;
+//   limit?: number;
+//   offset?: number;
+//   currentUserId?: number;
+//   filter?: SearchFilter;
+// }) => {
+//   const cuId =
+//     currentUserId || currentUserId === 0 ? currentUserId : Prisma.empty;
+//   const usersQuery = `%${query}%`;
+//   let filteredTable = Prisma.raw(
+//     `SELECT u.id, u.firstName, u.lastName, u.username, u.createdAt, u.updatedAt, u.email from users u`
+//   );
+//   const notFollowedUsers = Prisma.raw(
+//     `SELECT distinct u2.id, u2.firstName, u2.lastName, u2.username, u2.createdAt, u2.updatedAt, u2.email from users u left join _userfollows uf on (u.id = uf.B) INNER JOIN astro_link.users u2 on (u2.id = uf.A) where uf.B != ${cuId}`
+//   );
+//   const followedUsers = Prisma.raw(
+//     `SELECT distinct u2.id, u2.firstName, u2.lastName, u2.username, u2.createdAt, u2.updatedAt, u2.email from users u left join _userfollows uf on (u.id = uf.A) INNER JOIN astro_link.users u2 on (u2.id = uf.B) where uf.B = ${cuId}`
+//   );
+//   if (filter === "followed") {
+//     filteredTable = followedUsers;
+//   } else if (filter === "not_followed") {
+//     filteredTable = notFollowedUsers;
+//   }
+//   // const filterTable = filter ? `(${subUsers})` : `users`;
+
+//   const queryResults = await prisma.$queryRaw<
+//     {
+//       firstName: string;
+//       lastName: string;
+//       id: number;
+//       username: string;
+//       createdAt: Date;
+//       updatedAt: Date;
+//       profileDescription: string | null;
+//       coverId: number | null;
+//       coverSrc: string | null;
+//       imageSrc: string | null;
+//       imageId: number | null;
+//       postId: number | null;
+//       gender: $Enums.Gender | null;
+//       birthDate: Date | null;
+//       authorId: number | null;
+//     }[]
+//   >`SELECT u.id, u.firstName, u.lastName, u.username, u.createdAt, u.updatedAt, pr.profileDescription, pr.gender, pr.birthDate, cvI.id as coverId, cvI.src as coverSrc, img.src as imageSrc, img.id as imageId, p.id as 'postId', p.authorId
+//     FROM users AS u
+//     INNER JOIN profiles as pr ON (u.email = pr.userId)
+//     LEFT JOIN _blockedusers as bu ON (u.id = bu.B and bu.A = ${cuId})
+//     LEFT JOIN _blockedusers as bu2 ON (u.id = bu2.A and bu2.B = ${cuId})
+//     LEFT JOIN coverImage as cvI ON (pr.id = cvI.profileId)
+//     LEFT JOIN images as img ON (pr.id = img.profileId)
+//     LEFT JOIN posts as p ON (p.authorId = u.id AND p.type in('friends', 'public'))
+//     WHERE bu.A IS NULL AND bu2.B IS NULL AND (CONCAT(u.firstName, ' ', u.lastName)
+//     LIKE ${usersQuery} OR u.username LIKE ${usersQuery}) ORDER BY CONCAT(u.firstName, ' ',u.lastName) ASC, u.username ASC`;
+
+//   const userResults: UserAccountPublic[] = await Promise.all(
+//     queryResults
+//       .filter((obj, index) => {
+//         return (
+//           index === queryResults.findIndex((o) => obj.authorId === o.authorId)
+//         );
+//       })
+//       .map(async (obj) => {
+//         const posts = queryResults
+//           .filter((post, index) => post.authorId === obj.id)
+//           .map(({ postId }) => JSON.stringify({ id: postId }));
+
+//         const subQuerys = Prisma.raw(`SELECT u.id FROM users u
+//         LEFT JOIN _blockedusers as bu ON (u.id = bu.B and bu.A = ${cuId})
+//         LEFT JOIN _blockedusers as bu2 ON (u.id = bu2.A and bu2.B = ${cuId})
+//         WHERE bu.A IS NULL AND bu2.B IS NULL`);
+//         const followersIds: { id: number }[] =
+//           await prisma.$queryRaw`SELECT u2.id FROM (${subQuerys}) u
+//           INNER JOIN _userfollows uf ON (uf.A = u.id)
+//           INNER JOIN (${subQuerys}) u2 ON (uf.B = u2.id)
+//           WHERE u.id = ${obj?.id ? obj.id : Prisma.empty}`;
+
+//         const followedUsersIds: { id: number }[] =
+//           await prisma.$queryRaw`SELECT u2.id FROM (${subQuerys}) u
+//           INNER JOIN _userfollows uf ON (uf.B = u.id)
+//           INNER JOIN (${subQuerys}) u2 ON (uf.A = u2.id)
+//           WHERE u.id = ${obj?.id ? obj.id : Prisma.empty}`;
+
+//         const uniquePosts = new Set(posts);
+//         return {
+//           id: obj?.id,
+//           firstName: obj?.firstName,
+//           lastName: obj?.lastName,
+//           username: obj?.username,
+//           createdAt: obj?.createdAt,
+//           updatedAt: obj?.updatedAt,
+
+//           profile: {
+//             birthDate: obj?.birthDate,
+//             gender: obj?.gender,
+//             description: obj?.profileDescription,
+//             image: getFilePathname(
+//               obj?.imageSrc ? { src: obj?.imageSrc } : null
+//             ),
+//             coverImage: getFilePathname(
+//               obj?.coverSrc ? { src: obj?.coverSrc } : null
+//             ),
+//           },
+//           followedBy: {
+//             followerIds: [...(followersIds ?? []).map((user) => user.id)],
+//             total: (followersIds ?? []).length,
+//           },
+//           following: {
+//             followedUserIds: [
+//               ...(followedUsersIds ?? []).map((user) => user.id),
+//             ],
+//             total: (followedUsersIds ?? []).length,
+//           },
+//           posts: {
+//             postIds: [
+//               ...Array.from(uniquePosts ?? [])
+//                 .map((obj) => JSON.parse(obj))
+//                 .map((obj) => obj.id),
+//             ],
+//             total: Array.from(uniquePosts ?? []).length,
+//           },
+//         };
+//       })
+//   ).then((users) => users.slice(offset).slice(0, limit));
+
+//   const totalResults: [{ total_results: number }] =
+//     await prisma.$queryRaw`SELECT COUNT(id) as total_results FROM users u
+//     LEFT JOIN _blockedusers as bu ON (u.id = bu.B and bu.A = ${
+//       currentUserId || currentUserId === 0 ? currentUserId : Prisma.empty
+//     })
+//     LEFT JOIN _blockedusers as bu2 ON (u.id = bu2.A and bu2.B = ${
+//       currentUserId || currentUserId === 0 ? currentUserId : Prisma.empty
+//     }) WHERE bu.A IS NULL AND bu2.B IS NULL AND (CONCAT(u.firstName, ' ', u.lastName) LIKE ${usersQuery} OR u.username LIKE ${usersQuery})`;
+
+//   return {
+//     data: userResults,
+//     total: Number(totalResults[0].total_results),
+//   };
+// };
 // Post extended query
 // `SELECT u.id, u.firstName, u.lastName, u.username, u.createdAt, u.updatedAt, pr.profileDescription, cvI.id as coverId, cvI.src as coverSrc, img.src as imageSrc, img.id as imageId, p.content, p.title, p.id as 'postId', p.authorId, postImgSrc, postImgId, imgPostId
 //     FROM users AS u

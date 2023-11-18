@@ -1,3 +1,4 @@
+import { $Enums } from "@prisma/client";
 import { Post } from "./post";
 import { Image, ImageV2 } from "./profile";
 
@@ -5,8 +6,11 @@ export interface UserAccountPublic {
   id: number;
   firstName: string;
   lastName: string;
+  fullName: string | null;
   username: string;
   profile: {
+    birthDate: Date | null;
+    gender: $Enums.Gender | null;
     description: string | null;
     image: Image;
     coverImage: Image;
@@ -56,10 +60,4 @@ export interface UserSimplified {
   image: Image;
 }
 
-export interface UserNotification {
-  title: string;
-  content: string;
-  type: $Enums.NotificationType;
-  url: string | null;
-  createdAt: Date;
-}
+export type SearchFilter = "followed" | "not_followed";

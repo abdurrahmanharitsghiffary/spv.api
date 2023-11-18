@@ -5,11 +5,7 @@ import { Chat } from "../types/chat";
 import { Comment } from "../types/comment";
 import { Post, PostExtended } from "../types/post";
 import { PagingObject } from "../types/response";
-import {
-  UserAccount,
-  UserAccountPublic,
-  UserNotification,
-} from "../types/user";
+import { UserAccount, UserAccountPublic } from "../types/user";
 import { getCurrentUrl } from "./getCurrentUrl";
 import { SearchAllData } from "../controllers/searchControllers";
 
@@ -38,9 +34,6 @@ const getPrevUrl = ({
 
   return url.href;
 };
-// return offset - limit < 0 ? offset === 0 ? null
-//     : `${path}?offset=0&limit=${limit}`
-//   : `${path}?offset=${offset - limit}&limit=${limit}`;
 
 const getNextUrl = ({
   offset,
@@ -57,44 +50,17 @@ const getNextUrl = ({
   url.searchParams.set("limit", limit.toString());
 
   return url.href;
-  // return `${path}?offset=${offset + limit}&limit=${limit}`};
 };
 
-export const getPagingObject = ({
-  // offset = 0,
-  // limit = 20,
+export const getPagingObject = <T>({
   req,
   data,
-  // path,
   total_records,
-}: // current,
-{
-  // offset?: number;
-  // limit?: number;
-  data:
-    | PostExtended[]
-    | UserNotification[]
-    | Comment[]
-    | UserAccount[]
-    | Chat[]
-    | Post[]
-    | UserAccountPublic[]
-    | SearchAllData;
-
-  // path: string;
+}: {
+  data: T;
   req: express.Request;
   total_records: number;
-  // current: string;
-}): PagingObject<
-  | PostExtended[]
-  | Comment[]
-  | UserAccount[]
-  | Chat[]
-  | Post[]
-  | UserAccountPublic[]
-  | UserNotification[]
-  | SearchAllData
-> => {
+}): PagingObject<T> => {
   let { limit = 20, offset = 0 } = req.query;
   offset = Number(offset);
   limit = Number(limit);

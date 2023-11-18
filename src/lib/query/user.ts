@@ -1,30 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { selectPost } from "./post";
 
-export const excludeBlockedUserEvery = (userId: number | undefined) => {
-  const prismaQuery = {
-    every: {
-      id: {
-        not: userId || userId === 0 ? userId : undefined,
-      },
-    },
-  } satisfies Prisma.UserWhereInput["blocking"];
-
-  return prismaQuery;
-};
-
-export const excludeBlockingUserEvery = (userId: number | undefined) => {
-  const prismaQuery = {
-    every: {
-      id: {
-        not: userId || userId === 0 ? userId : undefined,
-      },
-    },
-  } satisfies Prisma.UserWhereInput["blocked"];
-
-  return prismaQuery;
-};
-
 export const excludeBlockedUser = (userId: number | undefined) => {
   const prismaQuery = {
     blocking: {
@@ -57,10 +33,13 @@ export const selectUserPublic = {
   id: true,
   firstName: true,
   lastName: true,
+  fullName: true,
   username: true,
   createdAt: true,
   profile: {
     select: {
+      gender: true,
+      birthDate: true,
       profileDescription: true,
       coverImage: {
         select: {
@@ -114,6 +93,7 @@ export const selectUser = {
   verified: true,
   firstName: true,
   lastName: true,
+  fullName: true,
   username: true,
   email: true,
   role: true,
@@ -121,6 +101,8 @@ export const selectUser = {
   updatedAt: true,
   profile: {
     select: {
+      gender: true,
+      birthDate: true,
       profileDescription: true,
       coverImage: {
         select: {

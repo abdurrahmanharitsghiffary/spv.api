@@ -1,7 +1,7 @@
 import express from "express";
 // import { RequestError } from "../lib/error";
 import { Post } from "../types/post";
-import { UserAccountPublic } from "../types/user";
+import { SearchFilter, UserAccountPublic } from "../types/user";
 import { searchUsersByName } from "../utils/findUser";
 import { getPagingObject } from "../utils/getPagingObject";
 import { searchPosts } from "../utils/findPost";
@@ -24,7 +24,7 @@ export const getSearchResults = async (
   res: express.Response
 ) => {
   const { userId } = req as ExpressRequestExtended;
-  let { type = "all", q = "", limit = 20, offset = 0 } = req.query;
+  let { type = "all", q = "", limit = 20, offset = 0, filter } = req.query;
 
   offset = Number(offset);
   limit = Number(limit);
@@ -38,6 +38,7 @@ export const getSearchResults = async (
     limit,
     offset,
     currentUserId: Number(userId),
+    filter: filter as SearchFilter,
   });
 
   const postResults = await searchPosts({

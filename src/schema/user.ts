@@ -1,5 +1,13 @@
 import { z } from "zod";
-import { zEmail, zFirstName, zLastName, zPassword, zUsername } from ".";
+import {
+  zBirthDate,
+  zEmail,
+  zFirstName,
+  zGender,
+  zLastName,
+  zPassword,
+  zUsername,
+} from ".";
 
 export const userValidationSignUpSchema = z.object({
   body: z.object({
@@ -8,6 +16,8 @@ export const userValidationSignUpSchema = z.object({
     firstName: zFirstName,
     password: zPassword(),
     email: zEmail,
+    gender: zGender.optional(),
+    birthDate: zBirthDate.optional(),
   }),
 });
 

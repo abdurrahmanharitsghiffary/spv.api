@@ -91,7 +91,8 @@ export const updateMyAccount = async (
 ) => {
   const { userEmail } = req as ExpressRequestExtended;
 
-  const { username, description, firstName, lastName } = req.body;
+  const { username, description, firstName, lastName, gender, birthDate } =
+    req.body;
 
   await User.update({
     where: {
@@ -103,6 +104,8 @@ export const updateMyAccount = async (
       lastName,
       profile: {
         update: {
+          gender,
+          birthDate,
           profileDescription: description,
         },
       },

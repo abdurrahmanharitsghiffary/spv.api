@@ -2,24 +2,112 @@ import express from "express";
 import Notification from "../models/notification";
 import { jSuccess } from "../utils/jsend";
 import { ExpressRequestExtended } from "../types/request";
-import { RequestError } from "../lib/error";
-import { NotificationType } from "@prisma/client";
+import { NotificationType, Prisma } from "@prisma/client";
 import { getPagingObject } from "../utils/getPagingObject";
-import { UserNotification } from "../types/user";
+import { NotificationBase } from "../types/notification";
+import { excludeBlockedUser, excludeBlockingUser } from "../lib/query/user";
+
+const selectUserSimplified = {
+  id: true,
+  firstName: true,
+  lastName: true,
+  fullName: true,
+  username: true,
+  profile: {
+    select: {
+      avatarImage: true,
+    },
+  },
+} satisfies Prisma.UserSelect;
+
+const notificationSelect = (userId?: number | string) =>
+  ({
+    id: true,
+    type: true,
+    isRead: true,
+    user: {
+      select: {
+        ...selectUserSimplified,
+      },
+    },
+    post: {
+      select: {
+        id: true,
+        title: true,
+        content: true,
+        author: {
+          select: {
+            ...selectUserSimplified,
+          },
+        },
+      },
+      where: {
+        author: {
+          ...excludeBlockingUser(Number(userId)),
+          ...excludeBlockedUser(Number(userId)),
+        },
+      },
+    },
+    comment: {
+      select: {
+        id: true,
+        comment: true,
+        user: {
+          select: {
+            ...selectUserSimplified,
+          },
+        },
+      },
+      where: {
+        user: {
+          ...excludeBlockingUser(Number(userId)),
+          ...excludeBlockedUser(Number(userId)),
+        },
+      },
+    },
+    createdAt: true,
+    updatedAt: true,
+  } satisfies Prisma.NotificationSelect);
+
+const notificationWhereAndInput = (userId?: number | string) =>
+  [
+    {
+      user: {
+        ...excludeBlockingUser(Number(userId)),
+        ...excludeBlockedUser(Number(userId)),
+      },
+    },
+    {
+      post: {
+        author: {
+          ...excludeBlockingUser(Number(userId)),
+          ...excludeBlockedUser(Number(userId)),
+        },
+      },
+    },
+    {
+      comment: {
+        user: {
+          ...excludeBlockingUser(Number(userId)),
+          ...excludeBlockedUser(Number(userId)),
+        },
+      },
+    },
+  ] satisfies Prisma.NotificationWhereInput["AND"];
 
 const getTimeQuery = (time: string) => {
   let num: number = 0;
 
-  if (Number.isNaN(Number(time))) {
-    throw new RequestError("Invalid time options value", 422);
-  }
+  const extractTime = (time: string, options: "y" | "h" | "d") => {
+    return time.split(options)?.[0] ?? 0;
+  };
 
-  if (time.endsWith("d")) {
-    num = Number(time) * 60000 * 60 * 24;
-  }
-
-  if (time.endsWith("h")) {
-    num = Number(time) * 60000 * 60;
+  if (time.endsWith("y")) {
+    num = Number(extractTime(time, "y")) * 60000 * 60 * 24 * 365;
+  } else if (time.endsWith("d")) {
+    num = Number(extractTime(time, "d")) * 60000 * 60 * 24;
+  } else if (time.endsWith("h")) {
+    num = Number(extractTime(time, "h")) * 60000 * 60;
   }
 
   if (!Number.isNaN(Number(time))) {
@@ -36,17 +124,12 @@ export const getAllUserNotifications = async (
   const { offset = 0, limit = 20, order_by = "latest" } = req.query;
   const { userId } = req as ExpressRequestExtended;
 
-  const notifications: UserNotification[] = await Notification.findMany({
+  const notifications: NotificationBase[] = await Notification.findMany({
     where: {
-      userId: Number(userId),
+      receiverId: Number(userId),
+      AND: notificationWhereAndInput(userId),
     },
-    select: {
-      title: true,
-      content: true,
-      url: true,
-      type: true,
-      createdAt: true,
-    },
+    select: notificationSelect(userId),
     orderBy: {
       createdAt:
         order_by === "latest"
@@ -61,7 +144,8 @@ export const getAllUserNotifications = async (
 
   const total_notifications = await Notification.count({
     where: {
-      userId: Number(userId),
+      receiverId: Number(userId),
+      AND: notificationWhereAndInput(userId),
     },
   });
 
@@ -83,7 +167,7 @@ export const clearNotifications = async (
 
   await Notification.deleteMany({
     where: {
-      userId: Number(userId),
+      receiverId: Number(userId),
       createdAt: {
         lt: before_timestamp
           ? new Date(Date.now() - getTimeQuery(before_timestamp as string))
@@ -100,29 +184,82 @@ export const createNotification = async (
   res: express.Response
 ) => {
   const { userId } = req as ExpressRequestExtended;
-  const { title, type, content, url } = req.body as {
-    title: string;
-    content: string;
+  const { type, receiverId, postId, commentId } = req.body as {
     type: NotificationType;
-    url?: string;
+    receiverId: string | number;
+    commentId?: number;
+    postId?: number;
   };
 
-  const createdNotification = await Notification.create({
-    data: {
-      title,
-      type,
-      content,
-      url,
-      userId: Number(userId),
-    },
-    select: {
-      title: true,
-      content: true,
-      type: true,
-      url: true,
-      createdAt: true,
-    },
-  });
+  const response = (data: any) => res.status(201).json(jSuccess(data));
 
-  return res.status(201).json(jSuccess(createdNotification));
+  switch (type) {
+    case "comment": {
+      const createdNotification = await Notification.create({
+        data: {
+          type,
+          receiverId: Number(receiverId),
+          userId: Number(userId),
+          postId: Number(postId),
+        },
+        select: notificationSelect(userId),
+      });
+
+      return response(createdNotification);
+    }
+    case "follow": {
+      const createdNotification = await Notification.create({
+        data: {
+          type,
+          receiverId: Number(receiverId),
+          userId: Number(userId),
+        },
+        select: notificationSelect(userId),
+      });
+
+      return response(createdNotification);
+    }
+    case "liking_comment": {
+      const createdNotification = await Notification.create({
+        data: {
+          type,
+          receiverId: Number(receiverId),
+          userId: Number(userId),
+          commentId: Number(commentId),
+        },
+        select: notificationSelect(userId),
+      });
+
+      return response(createdNotification);
+    }
+    case "liking_post": {
+      const createdNotification = await Notification.create({
+        data: {
+          type,
+          receiverId: Number(receiverId),
+          userId: Number(userId),
+          postId: Number(postId),
+        },
+        select: notificationSelect(userId),
+      });
+
+      return response(createdNotification);
+    }
+    case "replying_comment": {
+      const createdNotification = await Notification.create({
+        data: {
+          type,
+          receiverId: Number(receiverId),
+          userId: Number(userId),
+          commentId: Number(commentId),
+        },
+        select: notificationSelect(userId),
+      });
+
+      return response(createdNotification);
+    }
+    default: {
+      return null;
+    }
+  }
 };

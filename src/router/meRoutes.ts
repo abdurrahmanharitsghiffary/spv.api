@@ -38,16 +38,21 @@ import {
 } from "../middlewares/validate";
 import { z } from "zod";
 import {
+  zBirthDate,
   zFirstName,
+  zGender,
   zIntId,
   zLastName,
   zLimit,
+  zNotificationType,
   zOffset,
   zPassword,
   zProfileImageType,
   zText,
   zUsername,
 } from "../schema";
+import { NotificationType } from "@prisma/client";
+import { isNullUndefined } from "../utils/isNullUndefined";
 
 const router = express.Router();
 
@@ -60,9 +65,11 @@ router
     validateBody(
       z.object({
         username: zUsername.optional(),
-        description: z.string().min(1).optional(),
+        description: z.string().optional(),
         firstName: zFirstName.optional(),
         lastName: zLastName.optional(),
+        gender: zGender.optional(),
+        birthDate: zBirthDate.optional(),
       })
     ),
     tryCatch(updateMyAccount)
@@ -171,15 +178,76 @@ router
     ),
     tryCatch(getAllUserNotifications)
   )
-  .delete(tryCatch(clearNotifications))
+  .delete(
+    validate(
+      z.object({
+        query: z.object({
+          before_timestamp: z
+            .any()
+            .refine(
+              (arg) => {
+                if (!Number.isNaN(Number(arg))) return true;
+                if (["y", "d", "h"].some((t) => arg.endsWith(t))) return true;
+                return false;
+              },
+              {
+                message:
+                  "Invalid before_timestamp query options, query options must be a number of ms or a number value followed by: h (hours), d (day), y (year). example value: 1h, 2d, 1y, 60000.",
+              }
+            )
+            .optional(),
+        }),
+      })
+    ),
+    tryCatch(clearNotifications)
+  )
   .post(
     validateBody(
-      z.object({
-        title: zText,
-        type: z.enum(["follow", "post", "like", "comment"]),
-        content: zText,
-        url: zText.optional(),
-      })
+      z
+        .object({
+          type: zNotificationType,
+          postId: zIntId("postId").optional(),
+          commentId: zIntId("commentId").optional(),
+          receiverId: zIntId("receiverId"),
+        })
+        .refine(
+          (arg) => {
+            if (
+              (arg.type === "comment" || arg.type === "replying_comment") &&
+              isNullUndefined(arg.postId)
+            )
+              return false;
+            return true;
+          },
+          {
+            message:
+              "postId is required for comment and replying_comment notification type",
+            path: ["postId"],
+          }
+        )
+        .refine(
+          (arg) => {
+            if (arg.type === "liking_comment" && isNullUndefined(arg.commentId))
+              return false;
+            return true;
+          },
+          {
+            message:
+              "commentId is required for liking_comment notification type",
+            path: ["commentId"],
+          }
+        )
+        .refine(
+          (arg) => {
+            if (arg.type === "liking_post" && isNullUndefined(arg.postId))
+              return false;
+            return true;
+          },
+          {
+            message: "postId is required for liking_post notification type",
+            path: ["postId"],
+          }
+        )
     ),
     tryCatch(createNotification)
   );

@@ -10,7 +10,11 @@ import helmet from "helmet";
 import { sanitizer } from "./middlewares/sanitizer";
 dotenv.config();
 
-const allowlist = ["http://localhost:3000", "http://127.0.0.1:3000"];
+const allowlist = [
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
+  "https://spv-client.vercel.app",
+];
 
 const app = express();
 app.use(express.json());
