@@ -17,6 +17,9 @@ export const sendResetToken = async (
   const user = await User.findUnique({
     where: {
       email,
+      provider: {
+        equals: null,
+      },
     },
   });
 

@@ -2,6 +2,7 @@ import { Express } from "express";
 import userRouter from "./userRoutes";
 import authRouter from "./authRoutes";
 import postRouter from "./postRoutes";
+import googleRouter from "./googleAuthRoutes";
 import commentRouter from "./commentRoutes";
 import meRouter from "./meRoutes";
 import accountRouter from "./accountRoutes";
@@ -15,6 +16,7 @@ import { z } from "zod";
 import { zLimit, zOffset } from "../schema";
 
 export function router(app: Express) {
+  app.use("/api/auth/google", googleRouter);
   app.use("/api/auth", authRouter);
   app.use("/api/users", userRouter);
   app.use("/api/posts", postRouter);

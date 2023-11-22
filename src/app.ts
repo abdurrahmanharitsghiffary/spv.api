@@ -8,6 +8,8 @@ import morgan from "morgan";
 import { router } from "./router";
 import helmet from "helmet";
 import { sanitizer } from "./middlewares/sanitizer";
+import passport from "passport";
+import { passportGoogle } from "./lib/googleAuth";
 dotenv.config();
 
 const allowlist = [
@@ -22,12 +24,23 @@ app.use(express.static("./src"));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser(process.env.COOKIE_SECRET));
 app.use(express.urlencoded({ extended: false }));
+passportGoogle();
+app.use(passport.initialize());
 app.use(morgan("dev"));
 app.use(sanitizer());
 app.use(
   helmet({
     xFrameOptions: {
       action: "deny",
+    },
+  })
+);
+app.use(
+  helmet.contentSecurityPolicy({
+    directives: {
+      defaultSrc: ["self"],
+      connectSrc: ["self", "https://accounts.google.com"],
+      // Add any other directives you need
     },
   })
 );

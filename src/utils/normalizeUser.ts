@@ -46,6 +46,7 @@ export const normalizeUserPublic = (
 export const normalizeUser = (user: SelectUserPayload): UserAccount => {
   const normalizedUser: UserAccount = {
     id: user?.id,
+    provider: user?.provider,
     firstName: user?.firstName,
     lastName: user?.lastName,
     fullName: user?.fullName,

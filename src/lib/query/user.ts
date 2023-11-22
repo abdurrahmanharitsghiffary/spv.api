@@ -90,6 +90,7 @@ export type SelectUserPublicPayload = Prisma.UserGetPayload<{
 
 export const selectUser = {
   id: true,
+  provider: true,
   verified: true,
   firstName: true,
   lastName: true,

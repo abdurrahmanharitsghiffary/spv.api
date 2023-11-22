@@ -33,6 +33,7 @@ export interface UserAccountPublic {
 
 export interface UserAccount extends UserAccountPublic {
   email: string;
+  provider: $Enums.AuthProvider | null;
   verified: boolean;
   role: $Enums.Role;
 }

@@ -128,6 +128,13 @@ export const deleteMyAccount = async (
   if (!isMatch)
     throw new RequestError("Incorrect password. Please try again.", 400);
 
+  res.clearCookie("x.spv.session", {
+    sameSite: "strict",
+    secure: true,
+    httpOnly: true,
+    maxAge: 60000 * 60 * 24 * 7,
+  });
+
   await User.delete({
     where: {
       email: userEmail,
@@ -197,7 +204,12 @@ export const changeMyAccountPassword = async (
   const { currentPassword, password } = req.body;
 
   const user = await User.findUnique({
-    where: { email: userEmail },
+    where: {
+      email: userEmail,
+      provider: {
+        equals: null,
+      },
+    },
   });
 
   if (!user) throw new RequestError("Something went wrong!", 400);

@@ -16,6 +16,9 @@ export const login = async (req: express.Request, res: express.Response) => {
   const user = await User.findUnique({
     where: {
       email,
+      provider: {
+        equals: null,
+      },
     },
     include: {
       profile: {
@@ -90,7 +93,7 @@ export const signUp = async (req: express.Request, res: express.Response) => {
     where: { email },
   });
 
-  if (isUserExists) throw new RequestError("User already exists!", 409);
+  if (isUserExists) throw new RequestError("Email already registered.", 409);
 
   const hashedPassword = await bcrypt.hash(
     password,
