@@ -19,11 +19,7 @@ export const selectChat = {
       ...selectUserSimplified,
     },
   },
-  recipient: {
-    select: {
-      ...selectUserSimplified,
-    },
-  },
+  chatRoomId: true,
   createdAt: true,
   updatedAt: true,
 } satisfies Prisma.ChatSelect;
@@ -111,15 +107,9 @@ export const selectChatRoomWithWhereInput = (userId?: number) =>
       },
       take: 1,
       where: {
-        OR: [
+        AND: [
           {
             author: {
-              ...excludeBlockedUser(userId),
-              ...excludeBlockingUser(userId),
-            },
-          },
-          {
-            recipient: {
               ...excludeBlockedUser(userId),
               ...excludeBlockingUser(userId),
             },

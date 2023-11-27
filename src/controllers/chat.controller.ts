@@ -3,11 +3,12 @@ import { ExpressRequestExtended } from "../types/request";
 import {
   findAllUserChat,
   findChatByParticipantIds,
+  findChatRoomById,
 } from "../utils/chat/chat.utils";
 import {
   deleteChatById as deleteChatWithId,
   updateChatById as updateChatWithId,
-  createChatWithSenderIdAndRecipientId,
+  createChatWithRoomIdAndAuthorId,
 } from "../utils/chat/chat.utils";
 import { getPagingObject } from "../utils/paging";
 import Image from "../models/image.models";
@@ -15,6 +16,7 @@ import { getFileDest } from "../utils";
 import { ApiResponse } from "../utils/response";
 import { emitSocketEvent } from "../socket/socket.utils";
 import { findUserById } from "../utils/user/user.utils";
+import { normalizeChat } from "../utils/chat/chat.normalize";
 
 export const getChatsByRecipientId = async (
   req: express.Request,
@@ -73,12 +75,14 @@ export const deleteChatById = async (
 
   const deletedChat = await deleteChatWithId(Number(messageId));
 
-  emitSocketEvent(
-    req,
-    deletedChat.recipientId.toString(),
-    "deleteMessage",
-    deletedChat
-  );
+  deletedChat.chatRoom.participants.forEach((participant) => {
+    emitSocketEvent(
+      req,
+      participant.userId.toString(),
+      "deleteMessage",
+      deletedChat
+    );
+  });
 
   return res
     .status(204)
@@ -99,12 +103,14 @@ export const updateChatById = async (
     Number(userId)
   );
 
-  emitSocketEvent(
-    req,
-    updatedChat.recipientId.toString(),
-    "updateMessage",
-    updatedChat
-  );
+  updatedChat.chatRoom.participants.forEach((participant) => {
+    emitSocketEvent(
+      req,
+      participant.userId.toString(),
+      "updateMessage",
+      updatedChat
+    );
+  });
 
   return res
     .status(204)
@@ -116,18 +122,14 @@ export const createChat = async (
   res: express.Response
 ) => {
   const { userId } = req as ExpressRequestExtended;
-  const { recipientId, message, chatRoomId } = req.body;
+  const { message, chatRoomId } = req.body;
 
   const image = req.file ?? null;
 
-  await findUserById(Number(recipientId), Number(userId), {
-    message: "Recipient not found.",
-    statusCode: 404,
-  });
+  await findChatRoomById(Number(chatRoomId), Number(userId));
 
-  const createdChat = await createChatWithSenderIdAndRecipientId({
+  const createdChat = await createChatWithRoomIdAndAuthorId({
     senderId: Number(userId),
-    receiverId: Number(recipientId),
     message,
     chatRoomId,
   });
@@ -141,9 +143,22 @@ export const createChat = async (
     });
   }
 
-  emitSocketEvent(req, recipientId.toString(), "receiveMessage", createdChat);
+  createdChat.chatRoom.participants.forEach((participant) => {
+    emitSocketEvent(
+      req,
+      participant.userId.toString(),
+      "receiveMessage",
+      createdChat
+    );
+  });
 
   return res
     .status(201)
-    .json(new ApiResponse(createdChat, 201, "Chat successfully created."));
+    .json(
+      new ApiResponse(
+        normalizeChat(createdChat),
+        201,
+        "Chat successfully created."
+      )
+    );
 };

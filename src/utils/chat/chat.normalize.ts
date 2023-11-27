@@ -20,15 +20,7 @@ export const normalizeChat = (chat: SelectChatPayload): Chat => {
       username: chat.author.username,
       avatarImage: getCompleteFileUrlPath(chat.author.profile?.avatarImage),
     } as any,
-    recipient: {
-      id: chat.recipient.id,
-      fullName: chat.recipient.fullName,
-      isOnline: chat.recipient.isOnline,
-      firstName: chat.recipient.firstName,
-      lastName: chat.recipient.lastName,
-      username: chat.recipient.username,
-      avatarImage: getCompleteFileUrlPath(chat.recipient.profile?.avatarImage),
-    } as any,
+    roomId: chat.chatRoomId,
     createdAt: chat.createdAt,
     updatedAt: chat.updatedAt,
   };

@@ -13,6 +13,18 @@ import { simplifyUser } from "../user/user.normalize";
 import { ChatRoom } from "../../models/chat.models";
 import Image from "../../models/image.models";
 
+const selectChatRoomParticipants = {
+  chatRoom: {
+    select: {
+      participants: {
+        select: {
+          userId: true,
+        },
+      },
+    },
+  },
+} satisfies Prisma.ChatSelect;
+
 const chatRoomWhereOrInput = (currentUserId: number) =>
   [
     {
@@ -42,28 +54,12 @@ const chatRoomWhereOrInput = (currentUserId: number) =>
 const chatWhereAndInput = (currentUserId?: number) =>
   [
     {
-      recipient: {
-        ...excludeBlockedUser(currentUserId),
-        ...excludeBlockingUser(currentUserId),
-      },
-    },
-  ] satisfies Prisma.ChatWhereInput["AND"];
-
-const chatWhereOrInput = (currentUserId: number) =>
-  [
-    {
       author: {
         ...excludeBlockedUser(currentUserId),
         ...excludeBlockingUser(currentUserId),
       },
     },
-    {
-      recipient: {
-        ...excludeBlockedUser(currentUserId),
-        ...excludeBlockingUser(currentUserId),
-      },
-    },
-  ] satisfies Prisma.ChatWhereInput["OR"];
+  ] satisfies Prisma.ChatWhereInput["AND"];
 
 export const findChatByRoomId = async ({
   currentUserId,
@@ -79,7 +75,7 @@ export const findChatByRoomId = async ({
   const messages = await Chat.findMany({
     where: {
       chatRoomId: roomId,
-      OR: chatWhereOrInput(currentUserId),
+      AND: chatWhereAndInput(currentUserId),
     },
     select: selectChat,
     take: limit,
@@ -162,20 +158,7 @@ export const findChatByParticipantIds = async ({
           ...selectChat,
         },
         where: {
-          OR: [
-            {
-              author: {
-                ...excludeBlockedUser(currentUserId),
-                ...excludeBlockingUser(currentUserId),
-              },
-            },
-            {
-              recipient: {
-                ...excludeBlockedUser(currentUserId),
-                ...excludeBlockingUser(currentUserId),
-              },
-            },
-          ],
+          AND: chatWhereAndInput(currentUserId),
         },
         skip: offset,
         take: limit,
@@ -330,23 +313,32 @@ export const findAllUserChat = async ({
   return { data: chatRoom, total: totalRooms };
 };
 
-export const createChatWithSenderIdAndRecipientId = async (createOptions: {
-  receiverId: number;
+export const createChatWithRoomIdAndAuthorId = async (createOptions: {
   senderId: number;
   message: string;
   chatRoomId: number;
   imageSrc?: string;
 }) => {
-  const { receiverId, chatRoomId, senderId, message } = createOptions;
+  const { chatRoomId, senderId, message } = createOptions;
 
   const createdChat = await Chat.create({
     data: {
       chatRoomId,
       authorId: senderId,
-      recipientId: receiverId,
       message,
     },
-    select: selectChat,
+    select: {
+      ...selectChat,
+      chatRoom: {
+        select: {
+          participants: {
+            select: {
+              userId: true,
+            },
+          },
+        },
+      },
+    },
   });
 
   if (createOptions?.imageSrc) {
@@ -358,7 +350,7 @@ export const createChatWithSenderIdAndRecipientId = async (createOptions: {
     });
   }
 
-  return normalizeChat(createdChat);
+  return createdChat;
 };
 
 export const deleteChatById = async (
@@ -370,6 +362,7 @@ export const deleteChatById = async (
     where: {
       id: chatId,
     },
+    select: selectChatRoomParticipants,
   });
 };
 
@@ -386,6 +379,7 @@ export const updateChatById = async (
     data: {
       message,
     },
+    select: selectChatRoomParticipants,
   });
 };
 
