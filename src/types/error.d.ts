@@ -1,3 +1,1 @@
-export interface RequestError extends Error {
-  statusCode: number;
-}
+export type RequestError = Error & { statusCode?: number };

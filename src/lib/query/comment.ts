@@ -1,4 +1,5 @@
 import { Prisma } from "@prisma/client";
+import { selectUserSimplified } from "./user";
 
 export const selectSingleComment = {
   id: true,
@@ -8,13 +9,7 @@ export const selectSingleComment = {
   image: { select: { src: true } },
   user: {
     select: {
-      id: true,
-      firstName: true,
-      lastName: true,
-      username: true,
-      profile: {
-        select: { avatarImage: { select: { src: true } } },
-      },
+      ...selectUserSimplified,
     },
   },
   updatedAt: true,

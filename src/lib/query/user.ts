@@ -34,6 +34,7 @@ export const selectUserPublic = {
   firstName: true,
   lastName: true,
   fullName: true,
+  isOnline: true,
   username: true,
   createdAt: true,
   profile: {
@@ -92,6 +93,7 @@ export const selectUser = {
   id: true,
   provider: true,
   verified: true,
+  isOnline: true,
   firstName: true,
   lastName: true,
   fullName: true,
@@ -146,4 +148,27 @@ export const selectUser = {
 
 export type SelectUserPayload = Prisma.UserGetPayload<{
   select: typeof selectUser;
+}>;
+
+export const selectUserSimplified = {
+  id: true,
+  firstName: true,
+  lastName: true,
+  fullName: true,
+  isOnline: true,
+  username: true,
+  profile: {
+    select: {
+      avatarImage: {
+        select: {
+          id: true,
+          src: true,
+        },
+      },
+    },
+  },
+} satisfies Prisma.UserSelect;
+
+export type SelectUserSimplifiedPayload = Prisma.UserGetPayload<{
+  select: typeof selectUserSimplified;
 }>;

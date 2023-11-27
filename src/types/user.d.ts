@@ -5,14 +5,16 @@ import { Image, ImageV2 } from "./profile";
 export interface UserAccountPublic {
   id: number;
   firstName: string;
+  isOnline: boolean;
   lastName: string;
   fullName: string | null;
   username: string;
+  isFollowed: boolean;
   profile: {
     birthDate: Date | null;
     gender: $Enums.Gender | null;
     description: string | null;
-    image: Image;
+    avatarImage: Image;
     coverImage: Image;
   } | null;
   followedBy: {
@@ -38,27 +40,18 @@ export interface UserAccount extends UserAccountPublic {
   role: $Enums.Role;
 }
 
-export interface User {
-  id: number;
-  firstName: string;
-  lastName: string;
-  username: string;
-  email: string;
-  hashedPassword: string;
-  profile: Profile;
-  createdAt: Date;
-  updatedAt: Date;
-  followedBy: User[];
-  following: User[];
-  posts: Post[];
-}
-
 export interface UserSimplified {
   id: number;
   firstName: string;
+  isOnline: boolean;
+  fullName: string | null;
   lastName: string;
   username: string;
-  image: Image;
+  avatarImage: Image;
+}
+
+export interface UserSimplifiedWF extends UserSimplified {
+  isFollowed: boolean;
 }
 
 export type SearchFilter = "followed" | "not_followed";

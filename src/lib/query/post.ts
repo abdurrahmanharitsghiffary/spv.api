@@ -1,17 +1,11 @@
 import { Prisma } from "@prisma/client";
+import { selectUserSimplified } from "./user";
 
 export const selectAuthorPost = {
   author: {
-    select: {
-      id: true,
-      firstName: true,
-      lastName: true,
-      username: true,
-      profile: { select: { avatarImage: { select: { src: true } } } },
-    },
+    select: selectUserSimplified,
   },
 } satisfies Prisma.PostSelect;
-
 export type SelectAuthorPost = Prisma.PostGetPayload<{
   select: typeof selectAuthorPost;
 }>;

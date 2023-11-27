@@ -1,11 +1,9 @@
-import app from "./app";
-import { createServer } from "http";
+import server from "./app";
+import { PORT as PORTC, HOST as HOSTC } from "./lib/consts";
 
-const server = createServer(app);
-
-const PORT = process.env.PORT || 5000;
-const HOST = process.env.HOST || "localhost";
+const PORT = PORTC || 5000;
+const HOST = HOSTC || "localhost";
 
 server.listen(PORT, () => {
-  console.log(`listening on http://localhost:${process.env.PORT}`);
+  console.log(`listening on http://localhost:${PORT}`);
 });

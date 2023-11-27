@@ -1,19 +1,22 @@
 import { Express } from "express";
-import userRouter from "./userRoutes";
-import authRouter from "./authRoutes";
-import postRouter from "./postRoutes";
-import googleRouter from "./googleAuthRoutes";
-import commentRouter from "./commentRoutes";
-import meRouter from "./meRoutes";
-import accountRouter from "./accountRoutes";
-import chatRouter from "./chatRoutes";
-import { refreshToken } from "../controllers/authController";
-import { verifyRefreshToken, verifyToken } from "../middlewares/auth";
-import { getSearchResults } from "../controllers/searchControllers";
-import { tryCatch } from "../middlewares/tryCatch";
-import { validate } from "../middlewares/validate";
+import userRouter from "./user.routes";
+import authRouter from "./auth.routes";
+import postRouter from "./post.routes";
+import googleRouter from "./googleAuth.routes";
+import messageRouter from "./messages.routes";
+import commentRouter from "./comment.routes";
+import meRouter from "./me.routes";
+import accountRouter from "./account.routes";
+import chatRouter from "./chat.routes";
+import { refreshToken } from "../controllers/auth.controller";
+import {
+  verifyRefreshToken,
+  verifyToken,
+} from "../middlewares/auth.middlewares";
+import { getSearchResults } from "../controllers/search.controllers";
+import { tryCatch } from "../middlewares/handler.middlewares";
+import { validate } from "../middlewares/validator.middlewares";
 import { z } from "zod";
-import { zLimit, zOffset } from "../schema";
 
 export function router(app: Express) {
   app.use("/api/auth/google", googleRouter);
@@ -24,6 +27,7 @@ export function router(app: Express) {
   app.use("/api/me", meRouter);
   app.use("/api/account", accountRouter);
   app.use("/api/chats", chatRouter);
+  app.use("/api/messages", messageRouter);
   app.get(
     "/api/search",
     validate(
@@ -31,8 +35,6 @@ export function router(app: Express) {
         query: z.object({
           type: z.enum(["post", "user", "all"]).optional(),
           q: z.string().optional(),
-          limit: zLimit,
-          offset: zOffset,
           filter: z.enum(["followed", "not_followed"]).optional(),
         }),
       })

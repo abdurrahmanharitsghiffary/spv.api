@@ -150,3 +150,9 @@ export const zGender = z
   });
 
 export const zBirthDate = z.date();
+
+export const emailRequestValidation = z.object({
+  body: z.object({
+    email: zEmail,
+  }),
+});

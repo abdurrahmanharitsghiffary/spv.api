@@ -1,7 +1,11 @@
-export type PagingObject<T> = {
-  status: "success";
-  code?: number;
+export type ApiResponseT<T> = {
+  success: boolean;
+  message?: string;
+  statusCode: number;
   data: T;
+};
+
+export type ApiPagingObjectResponse<T> = {
   pagination: {
     previous: null | string;
     next: null | string;
@@ -11,21 +15,4 @@ export type PagingObject<T> = {
     limit: number;
     offset: number;
   };
-};
-
-export type JsendSuccess<T> = {
-  status: "success";
-  code?: number | string;
-  data: T;
-};
-
-export type JsendFail<T> = {
-  status: "fail";
-  data: T;
-};
-
-export type JsendError<T> = {
-  status: "error";
-  code?: number | string;
-  message: T;
-};
+} & ApiResponseT<T>;

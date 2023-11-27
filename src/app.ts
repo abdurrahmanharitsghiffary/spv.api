@@ -1,15 +1,20 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import notFound from "./middlewares/notfound";
-import { error } from "./middlewares/error";
+import notFound from "./middlewares";
+import { error } from "./middlewares/error.middlewares";
 import cookieParser from "cookie-parser";
 import morgan from "morgan";
 import { router } from "./router";
 import helmet from "helmet";
-import { sanitizer } from "./middlewares/sanitizer";
+import { sanitizer } from "./middlewares/sanitizer.middlewares";
 import passport from "passport";
-import { passportGoogle } from "./lib/googleAuth";
+import { passportGoogle } from "./middlewares/passport.middlewares";
+import { IoServer } from "./types/socket";
+import { createServer } from "http";
+import { Server } from "socket.io";
+import { ioInit } from "./socket";
+import { BASE_CLIENT_URL, COOKIE_SECRET } from "./lib/consts";
 dotenv.config();
 
 const allowlist = [
@@ -19,10 +24,16 @@ const allowlist = [
 ];
 
 const app = express();
+export const server = createServer(app);
+export const io: IoServer = new Server(server, {
+  cors: { origin: BASE_CLIENT_URL, credentials: true },
+});
+app.set("io", io);
+
 app.use(express.json());
 app.use(express.static("./src"));
 app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser(process.env.COOKIE_SECRET));
+app.use(cookieParser(COOKIE_SECRET));
 app.use(express.urlencoded({ extended: false }));
 passportGoogle();
 app.use(passport.initialize());
@@ -61,10 +72,10 @@ app.use(
     },
   })
 );
-
+ioInit(io);
 router(app);
 
 app.use(notFound);
 app.use(error);
 
-export default app;
+export default server;
