@@ -29,7 +29,6 @@ model User {
   refreshToken RefreshToken? @relation("RefreshToken")
   tokens Token[] @relation("Token")
   authoredChats Chat[] @relation("AuthoredChat")
-  // chats Chat[] @relation("ReceivedChat")
   blocked User[] @relation("BlockedUsers")
   blocking User[] @relation("BlockedUsers")
   following  User[] @relation("UserFollows")
@@ -42,7 +41,6 @@ model User {
   comments Comment[]
   commentLikes CommentLike[]
   likes PostLike[] 
-  // participants ChatRoomParticipant[]
 
   @@map("users")
 }
@@ -90,14 +88,13 @@ model Post {
 }
 
 model SavedPost {
-post Post @relation(fields: [postId],references: [id])
-postId Int
-user User @relation(fields: [userId], references: [id])
-userId Int
-assignedAt DateTime @default(now())
-@@id([postId, userId])
+  post Post @relation(fields: [postId],references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  postId Int
+  userId Int
+  assignedAt DateTime @default(now())
+  @@id([postId, userId])
 }
-
 enum PostType {
   public
   private
@@ -117,7 +114,7 @@ model Comment {
   parentComment Comment? @relation("ReplyComment",fields: [parentId],  references: [id], onDelete: Cascade)
   childrenComment Comment[] @relation("ReplyComment")
 
-notification Notification[]
+  notification Notification[]
   post Post? @relation(fields: [postId],  references: [id], onDelete: Cascade)
   user User @relation(fields: [userId],  references: [id],  onDelete: Cascade)
 
@@ -136,7 +133,7 @@ model CommentLike {
 
 model PostLike {
   userId Int
-  postId Int 
+  postId Int
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
@@ -156,8 +153,10 @@ model Image {
   profileId Int? @unique
   commentId Int? @unique
   chatId Int? @unique
+  groupId Int? @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  group ChatRoom? @relation(fields: [groupId], references: [id], onDelete: Cascade)
   chat Chat? @relation("ChatImage", fields: [chatId],references: [id], onDelete: Cascade)
   profile Profile? @relation("ProfileImage",fields: [profileId],  references: [id], onDelete: Cascade)
   comment Comment? @relation("CommentImage",fields: [commentId],  references: [id], onDelete: Cascade)
@@ -200,7 +199,8 @@ model Token {
 model ChatRoom {
   id Int @id @default(autoincrement())
   participants ChatRoomParticipant[]
-  messages Chat[]
+  messages Chat[] 
+  groupPicture Image?
   description String? @db.Text
   title String? @db.VarChar(125)
   isGroupChat Boolean @default(false)
@@ -246,8 +246,8 @@ model Chat {
 }
 
 enum TokenType {
-reset_token
-verify_token
+  reset_token
+  verify_token
 }
 
 model Notification {

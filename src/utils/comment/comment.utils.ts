@@ -93,8 +93,8 @@ export const findCommentById = async (
   });
   console.log(comment);
   if (!comment) throw new RequestError("Comment not found", 404);
-
-  return normalizeComment(comment);
+  const normalizedComment = await normalizeComment(comment);
+  return normalizedComment;
 };
 
 export const findCommentByIdCustomMessage = async ({
@@ -117,8 +117,8 @@ export const findCommentByIdCustomMessage = async ({
   });
 
   if (!comment) throw new RequestError(message, statusCode);
-
-  return normalizeComment(comment);
+  const normalizedComment = await normalizeComment(comment);
+  return normalizedComment;
 };
 
 export const findCommentsByPostId = async (
@@ -209,6 +209,6 @@ export const findCommentsByPostId = async (
       ],
     },
   });
-
-  return { data: normalizeComments(comments), total: totalComments };
+  const normalizedComments = await normalizeComments(comments);
+  return { data: normalizedComments, total: totalComments };
 };

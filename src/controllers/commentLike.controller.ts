@@ -45,13 +45,17 @@ export const getCommentLikesByCommentId = async (
     },
   });
 
-  const normalizedLikes = likes.map((like) => ({
-    id: like.userId,
-    firstName: like.user.firstName,
-    lastName: like.user.lastName,
-    username: like.user.username,
-    profilePhoto: like.user.profile?.avatarImage,
-  }));
+  const normalizedLikes = await Promise.all(
+    likes.map((like) =>
+      Promise.resolve({
+        id: like.userId,
+        firstName: like.user.firstName,
+        lastName: like.user.lastName,
+        username: like.user.username,
+        profilePhoto: like.user.profile?.avatarImage,
+      })
+    )
+  );
 
   return res.status(200).json(
     new ApiResponse(

@@ -1,15 +1,9 @@
-import { $Enums, Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { RequestError } from "../../lib/error";
-import {
-  selectChat,
-  selectChatRoom,
-  selectChatRoomWithWhereInput,
-} from "../../lib/query/chat";
+import { selectChat } from "../../lib/query/chat";
 import { excludeBlockedUser, excludeBlockingUser } from "../../lib/query/user";
 import Chat from "../../models/chat.models";
-import { normalizeChat, normalizeChatRooms } from "./chat.normalize";
-import { ChatRoom as ChatRoomT, LastChat } from "../../types/chat";
-import { simplifyUser } from "../user/user.normalize";
+import { normalizeChat } from "./chat.normalize";
 import { ChatRoom } from "../../models/chat.models";
 import Image from "../../models/image.models";
 
@@ -24,32 +18,6 @@ const selectChatRoomParticipants = {
     },
   },
 } satisfies Prisma.ChatSelect;
-
-const chatRoomWhereOrInput = (currentUserId: number) =>
-  [
-    {
-      isGroupChat: false,
-      participants: {
-        every: {
-          user: {
-            ...excludeBlockedUser(currentUserId),
-            ...excludeBlockingUser(currentUserId),
-          },
-        },
-      },
-    },
-    {
-      isGroupChat: true,
-      participants: {
-        some: {
-          user: {
-            ...excludeBlockedUser(currentUserId),
-            ...excludeBlockingUser(currentUserId),
-          },
-        },
-      },
-    },
-  ] satisfies Prisma.ChatRoomWhereInput["OR"];
 
 const chatWhereAndInput = (currentUserId?: number) =>
   [
@@ -92,7 +60,7 @@ export const findChatByRoomId = async ({
   });
 
   return {
-    data: messages.map((msg) => normalizeChat(msg)),
+    data: await Promise.all(messages.map((msg) => normalizeChat(msg))),
     total: totalMessages,
   };
 };
@@ -107,8 +75,8 @@ export const findChatById = async (chatId: number, currentUserId?: number) => {
   });
 
   if (!chat) throw new RequestError("Chat not found", 404);
-
-  return normalizeChat(chat);
+  const normalizedChat = await normalizeChat(chat);
+  return normalizedChat;
 };
 
 export const findChatByParticipantIds = async ({
@@ -172,145 +140,11 @@ export const findChatByParticipantIds = async ({
   if (!chats) throw new RequestError("Chat not found.", 404);
 
   return {
-    data: (chats?.messages ?? []).map((chat) => normalizeChat(chat)),
+    data: await Promise.all(
+      (chats?.messages ?? []).map((chat) => normalizeChat(chat))
+    ),
     total: chats?._count?.messages ?? 0,
   };
-};
-
-export const findChatRoomById = async (id: number, currentUserId: number) => {
-  const chatRoom = await ChatRoom.findUnique({
-    where: {
-      id,
-      OR: chatRoomWhereOrInput(currentUserId),
-    },
-    select: selectChatRoomWithWhereInput(currentUserId),
-  });
-
-  if (!chatRoom) throw new RequestError("Chat room not found.", 404);
-
-  return chatRoom;
-};
-
-export const findAllUserChat = async ({
-  userId,
-  limit,
-  offset,
-}: {
-  limit?: number;
-  offset?: number;
-  userId: number;
-}): Promise<{ data: ChatRoomT[]; total: number }> => {
-  const rooms = await ChatRoom.findMany({
-    where: {
-      OR: [
-        {
-          isGroupChat: false,
-          participants: {
-            some: {
-              userId: {
-                in: [userId],
-              },
-            },
-          },
-          AND: [
-            {
-              participants: {
-                every: {
-                  user: {
-                    ...excludeBlockedUser(userId),
-                    ...excludeBlockingUser(userId),
-                  },
-                },
-              },
-            },
-          ],
-        },
-        {
-          isGroupChat: true,
-          participants: {
-            some: {
-              userId: {
-                in: [userId],
-              },
-            },
-          },
-          AND: [
-            {
-              participants: {
-                some: {
-                  user: {
-                    ...excludeBlockedUser(userId),
-                    ...excludeBlockingUser(userId),
-                  },
-                },
-              },
-            },
-          ],
-        },
-      ],
-    },
-    skip: offset,
-    take: limit,
-    orderBy: {
-      createdAt: "desc",
-    },
-    select: selectChatRoomWithWhereInput(userId),
-  });
-
-  const totalRooms = await ChatRoom.count({
-    where: {
-      OR: [
-        {
-          isGroupChat: false,
-          participants: {
-            some: {
-              userId: {
-                in: [userId],
-              },
-            },
-          },
-          AND: [
-            {
-              participants: {
-                every: {
-                  user: {
-                    ...excludeBlockedUser(userId),
-                    ...excludeBlockingUser(userId),
-                  },
-                },
-              },
-            },
-          ],
-        },
-        {
-          isGroupChat: true,
-          participants: {
-            some: {
-              userId: {
-                in: [userId],
-              },
-            },
-          },
-          AND: [
-            {
-              participants: {
-                some: {
-                  user: {
-                    ...excludeBlockedUser(userId),
-                    ...excludeBlockingUser(userId),
-                  },
-                },
-              },
-            },
-          ],
-        },
-      ],
-    },
-  });
-
-  const chatRoom: ChatRoomT[] = rooms.map((room) => normalizeChatRooms(room));
-
-  return { data: chatRoom, total: totalRooms };
 };
 
 export const createChatWithRoomIdAndAuthorId = async (createOptions: {
@@ -362,7 +196,7 @@ export const deleteChatById = async (
     where: {
       id: chatId,
     },
-    select: selectChatRoomParticipants,
+    select: { ...selectChat, ...selectChatRoomParticipants },
   });
 };
 
@@ -379,41 +213,6 @@ export const updateChatById = async (
     data: {
       message,
     },
-    select: selectChatRoomParticipants,
+    select: { ...selectChat, ...selectChatRoomParticipants },
   });
-};
-
-type CreateChatRoomOptions = {
-  participantIds: number[];
-  currentUserId: number;
-};
-
-export const createChatRoom = async ({
-  participantIds,
-  currentUserId,
-}: CreateChatRoomOptions) => {
-  const chatRoom = await ChatRoom.create({
-    data: {
-      participants: {
-        createMany: {
-          skipDuplicates: true,
-          data: [
-            ...participantIds.map((id) => ({
-              userId: id,
-              role: "user" as $Enums.ParticipantRole,
-            })),
-            {
-              userId: currentUserId,
-              role: "user",
-            },
-          ],
-        },
-      },
-    },
-    select: {
-      ...selectChatRoom,
-    },
-  });
-
-  return normalizeChatRooms(chatRoom);
 };

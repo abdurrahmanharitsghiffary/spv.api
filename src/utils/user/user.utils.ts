@@ -75,7 +75,8 @@ export const findUserPublic = async (id: string, currentUserId?: number) => {
   if (!user) throw new RequestError("User not found", 404);
 
   const isFollowed = getUserIsFollowed(user, currentUserId);
-  return normalizeUserPublic(user, isFollowed);
+  const normalizedUser = await normalizeUserPublic(user, isFollowed);
+  return normalizedUser;
 };
 
 export const findUserById = async (
@@ -98,8 +99,8 @@ export const findUserById = async (
     throw new RequestError(customMessage.message, customMessage.statusCode);
 
   const isFollowed = getUserIsFollowed(user, currentUserId);
-
-  return normalizeUser(user, isFollowed);
+  const normalizedUser = await normalizeUser(user, isFollowed);
+  return normalizedUser;
 };
 
 export const findAllUser = async ({
@@ -125,10 +126,12 @@ export const findAllUser = async ({
     },
   });
 
-  const normalizedUser: UserAccount[] = users.map((user) => {
-    const isFollowed = getUserIsFollowed(user, userId);
-    return normalizeUser(user, isFollowed);
-  });
+  const normalizedUser: UserAccount[] = await Promise.all(
+    users.map((user) => {
+      const isFollowed = getUserIsFollowed(user, userId);
+      return normalizeUser(user, isFollowed);
+    })
+  );
 
   return { data: normalizedUser, total: totalUsers };
 };
@@ -315,10 +318,12 @@ export const searchUsersByName = async ({
     },
   });
 
-  const normalizedUsers = users.map((user) => {
-    const isFollowed = getUserIsFollowed(user, cuId);
-    return normalizeUserPublic(user, isFollowed);
-  });
+  const normalizedUsers = await Promise.all(
+    users.map((user) => {
+      const isFollowed = getUserIsFollowed(user, cuId);
+      return normalizeUserPublic(user, isFollowed);
+    })
+  );
 
   return { data: normalizedUsers, total };
 };

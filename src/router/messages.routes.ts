@@ -35,7 +35,6 @@ router.route("/").post(
     zfd.formData(
       z.object({
         message: zfdChatMessage,
-        recipientId: zfdRecipientId,
         chatRoomId: zfdInt("chatRoomId"),
       })
     )

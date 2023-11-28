@@ -1,10 +1,6 @@
 import express from "express";
 import { ExpressRequestExtended } from "../types/request";
-import {
-  findAllUserChat,
-  findChatByParticipantIds,
-  findChatRoomById,
-} from "../utils/chat/chat.utils";
+import { findChatByParticipantIds } from "../utils/chat/chat.utils";
 import {
   deleteChatById as deleteChatWithId,
   updateChatById as updateChatWithId,
@@ -15,8 +11,12 @@ import Image from "../models/image.models";
 import { getFileDest } from "../utils";
 import { ApiResponse } from "../utils/response";
 import { emitSocketEvent } from "../socket/socket.utils";
-import { findUserById } from "../utils/user/user.utils";
 import { normalizeChat } from "../utils/chat/chat.normalize";
+import { Socket_Event } from "../socket/event";
+import {
+  findAllUserChatRoom,
+  findChatRoomById,
+} from "../utils/chat/chatRoom.utils";
 
 export const getChatsByRecipientId = async (
   req: express.Request,
@@ -52,7 +52,7 @@ export const getAllChatsByUserId = async (
   const { userId } = req as ExpressRequestExtended;
   const { limit = 20, offset = 0 } = req.query;
 
-  const rooms = await findAllUserChat({
+  const rooms = await findAllUserChatRoom({
     userId: Number(userId),
     limit: Number(limit),
     offset: Number(offset),
@@ -74,13 +74,14 @@ export const deleteChatById = async (
   const { messageId } = req.params;
 
   const deletedChat = await deleteChatWithId(Number(messageId));
+  const normalizedChat = await normalizeChat(deletedChat);
 
   deletedChat.chatRoom.participants.forEach((participant) => {
     emitSocketEvent(
       req,
       participant.userId.toString(),
-      "deleteMessage",
-      deletedChat
+      Socket_Event.DELETE_MESSAGE,
+      normalizedChat
     );
   });
 
@@ -103,12 +104,14 @@ export const updateChatById = async (
     Number(userId)
   );
 
+  const normalizedChat = await normalizeChat(updatedChat);
+
   updatedChat.chatRoom.participants.forEach((participant) => {
     emitSocketEvent(
       req,
       participant.userId.toString(),
-      "updateMessage",
-      updatedChat
+      Socket_Event.UPDATE_MESSAGE,
+      normalizedChat
     );
   });
 
@@ -143,22 +146,18 @@ export const createChat = async (
     });
   }
 
+  const normalizedChat = await normalizeChat(createdChat);
+
   createdChat.chatRoom.participants.forEach((participant) => {
     emitSocketEvent(
       req,
       participant.userId.toString(),
-      "receiveMessage",
-      createdChat
+      Socket_Event.RECEIVE_MESSAGE,
+      normalizedChat
     );
   });
 
   return res
     .status(201)
-    .json(
-      new ApiResponse(
-        normalizeChat(createdChat),
-        201,
-        "Chat successfully created."
-      )
-    );
+    .json(new ApiResponse(normalizedChat, 201, "Chat successfully created."));
 };

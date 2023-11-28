@@ -51,6 +51,9 @@ export const selectChatRoom = {
     },
   },
   participants: {
+    orderBy: {
+      createdAt: "desc",
+    },
     take: 10,
     select: {
       createdAt: true,
@@ -72,6 +75,9 @@ export const selectChatRoomWithWhereInput = (userId?: number) =>
   ({
     participants: {
       take: 10,
+      orderBy: {
+        createdAt: "desc",
+      },
       select: {
         createdAt: true,
         role: true,

@@ -5,6 +5,7 @@ import User from "../models/user.models";
 import { Socket_Event } from "./event";
 import { RequestError, UnauthorizedError } from "../lib/error";
 import { ACCESS_TOKEN_SECRET } from "../lib/consts";
+
 export const ioInit = (
   io: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>
 ) => {

@@ -1,15 +1,16 @@
 import express from "express";
 import { ExpressRequestExtended } from "../types/request";
+import { findChatByRoomId } from "../utils/chat/chat.utils";
 import {
   createChatRoom as createChatRoomUts,
-  findChatById,
-  findChatByRoomId,
   findChatRoomById,
-} from "../utils/chat/chat.utils";
+} from "../utils/chat/chatRoom.utils";
 import { ApiResponse } from "../utils/response";
-import Chat, { ChatRoom } from "../models/chat.models";
+import { ChatRoom } from "../models/chat.models";
 import { findParticipantsByRoomId } from "../utils/participants.utils";
 import { getPagingObject } from "../utils/paging";
+import { emitSocketEvent } from "../socket/socket.utils";
+import { Socket_Event } from "../socket/event";
 
 export const createChatRoom = async (
   req: express.Request,
@@ -23,11 +24,21 @@ export const createChatRoom = async (
     currentUserId: Number(userId),
   });
 
+  createdRoom.participants.users.forEach((user) => {
+    emitSocketEvent(
+      req,
+      user.id.toString(),
+      Socket_Event.JOIN_ROOM,
+      createdRoom.id
+    );
+  });
+
   return res
     .status(201)
     .json(new ApiResponse(createdRoom, 201, "Chat room created."));
 };
-
+// TODO INTEGRATE SOCKET EVENT
+// CHECK IF API FULLFIL SPEC
 export const updateChatRoom = async (
   req: express.Request,
   res: express.Response
@@ -54,6 +65,20 @@ export const updateChatRoom = async (
         })),
       },
     },
+    include: {
+      participants: {
+        select: { userId: true },
+      },
+    },
+  });
+
+  updatedChatRoom.participants.forEach((participant) => {
+    emitSocketEvent(
+      req,
+      participant.userId.toString(),
+      Socket_Event.UPDATE_ROOM,
+      updatedChatRoom.id
+    );
   });
 
   return res
@@ -71,6 +96,20 @@ export const deleteChatRoom = async (
     where: {
       id: Number(roomId),
     },
+    include: {
+      participants: {
+        select: { userId: true },
+      },
+    },
+  });
+
+  deletedRoom.participants.forEach((participant) => {
+    emitSocketEvent(
+      req,
+      participant.userId.toString(),
+      Socket_Event.DELETE_ROOM,
+      deletedRoom.id
+    );
   });
 
   return res

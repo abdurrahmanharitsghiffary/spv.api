@@ -1,5 +1,5 @@
 import { RequestError } from "../../lib/error";
-import Post, { PostLike } from "../../models/post.models";
+import Post from "../../models/post.models";
 import { selectPost } from "../../lib/query/post";
 import { normalizePost } from "./post.normalize";
 import prisma from "../../config/prismaClient";
@@ -104,8 +104,8 @@ export const findPostByIdCustomMessage = async ({
   });
 
   if (!post) throw new RequestError(message, statusCode ?? 400);
-
-  return normalizePost(post);
+  const normalizedPost = await normalizePost(post);
+  return normalizedPost;
 };
 
 export const findPostById = async (postId: string, currentUserId?: number) => {
@@ -115,8 +115,8 @@ export const findPostById = async (postId: string, currentUserId?: number) => {
   });
 
   if (!post) throw new RequestError("Post not found", 404);
-
-  return normalizePost(post);
+  const normalizedPost = await normalizePost(post);
+  return normalizedPost;
 };
 
 export const findPostsByAuthorId = async ({
@@ -163,7 +163,10 @@ export const findPostsByAuthorId = async ({
     },
   });
 
-  return { data: posts.map((post) => normalizePost(post)), total: totalPosts };
+  return {
+    data: await Promise.all(posts.map((post) => normalizePost(post))),
+    total: totalPosts,
+  };
 };
 
 export const findAllPosts = async ({
@@ -191,7 +194,10 @@ export const findAllPosts = async ({
     },
   });
 
-  return { data: posts.map((post) => normalizePost(post)), total: totalPosts };
+  return {
+    data: await Promise.all(posts.map((post) => normalizePost(post))),
+    total: totalPosts,
+  };
 };
 
 export const findPostByFollowedUserIds = async ({
@@ -230,7 +236,10 @@ export const findPostByFollowedUserIds = async ({
     },
   });
 
-  return { data: posts.map((post) => normalizePost(post)), total: postsTotal };
+  return {
+    data: await Promise.all(posts.map((post) => normalizePost(post))),
+    total: postsTotal,
+  };
 };
 
 export const findSavedPost = async ({
@@ -292,8 +301,10 @@ export const findSavedPost = async ({
   });
 
   return {
-    data: savedPosts.map((post) =>
-      normalizePost({ ...post.post, assignedAt: post.assignedAt })
+    data: await Promise.all(
+      savedPosts.map((post) =>
+        normalizePost({ ...post.post, assignedAt: post.assignedAt })
+      )
     ),
     total,
   };
@@ -355,7 +366,7 @@ export const searchPosts = async ({
   });
 
   return {
-    data: posts.map((post) => normalizePost(post)),
+    data: await Promise.all(posts.map((post) => normalizePost(post))),
     total: resultsTotal,
   };
 };

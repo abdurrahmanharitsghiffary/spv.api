@@ -13,44 +13,49 @@ type SelectCommentPayloadExtended = SelectCommentPayload & {
   } & SelectCommentPayload["user"];
 };
 
-const normalize = (comment: SelectCommentPayloadExtended): Comment => {
-  const normalizedComment: Comment = {
-    id: comment.id,
-    postId: comment.postId,
-    comment: comment.comment,
-    image: getCompleteFileUrlPath(comment?.image),
-    isLiked: comment.likes?.[0]?.userId ? true : false,
-    user: {
-      id: comment.user.id,
-      isFollowed: comment.user.followedBy?.[0]?.id ? true : false,
-      fullName: comment.user.fullName,
-      isOnline: comment.user.isOnline,
-      firstName: comment.user.firstName,
-      lastName: comment.user.lastName,
-      username: comment.user.username,
-      avatarImage: getCompleteFileUrlPath(comment.user.profile?.avatarImage),
-    },
-    total_likes: comment._count.likes,
-    createdAt: comment.createdAt,
-    updatedAt: comment.updatedAt,
+const normalize = (comment: SelectCommentPayloadExtended): Promise<Comment> =>
+  new Promise((resolve) => {
+    const normalizedComment: Comment = {
+      id: comment.id,
+      postId: comment.postId,
+      comment: comment.comment,
+      image: getCompleteFileUrlPath(comment?.image),
+      isLiked: comment.likes?.[0]?.userId ? true : false,
+      user: {
+        id: comment.user.id,
+        isFollowed: comment.user.followedBy?.[0]?.id ? true : false,
+        fullName: comment.user.fullName,
+        isOnline: comment.user.isOnline,
+        firstName: comment.user.firstName,
+        lastName: comment.user.lastName,
+        username: comment.user.username,
+        avatarImage: getCompleteFileUrlPath(comment.user.profile?.avatarImage),
+      },
+      total_likes: comment._count.likes,
+      createdAt: comment.createdAt,
+      updatedAt: comment.updatedAt,
 
-    replies: {
-      ids: comment.childrenComment.map((comment) => comment.id),
-      total: comment._count.childrenComment,
-    },
-  };
+      replies: {
+        ids: comment.childrenComment.map((comment) => comment.id),
+        total: comment._count.childrenComment,
+      },
+    };
+
+    return resolve(normalizedComment);
+  });
+export const normalizeComment = async (
+  comment: SelectCommentPayloadExtended
+) => {
+  const normalizedComment: Comment = await normalize(comment);
 
   return normalizedComment;
 };
-export const normalizeComment = (comment: SelectCommentPayloadExtended) => {
-  const normalizedComment: Comment = normalize(comment);
 
-  return normalizedComment;
-};
-
-export const normalizeComments = (comments: SelectCommentPayloadExtended[]) => {
-  const normalizedComments: Comment[] = comments.map((comment) =>
-    normalize(comment)
+export const normalizeComments = async (
+  comments: SelectCommentPayloadExtended[]
+) => {
+  const normalizedComments: Comment[] = await Promise.all(
+    comments.map((comment) => normalize(comment))
   );
 
   return normalizedComments;
