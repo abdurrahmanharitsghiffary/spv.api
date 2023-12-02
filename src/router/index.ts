@@ -17,6 +17,7 @@ import { getSearchResults } from "../controllers/search.controllers";
 import { tryCatch } from "../middlewares/handler.middlewares";
 import { validate } from "../middlewares/validator.middlewares";
 import { z } from "zod";
+import { zLimit, zOffset } from "../schema";
 
 export function router(app: Express) {
   app.use("/api/auth/google", googleRouter);
@@ -33,6 +34,8 @@ export function router(app: Express) {
     validate(
       z.object({
         query: z.object({
+          limit: zLimit,
+          offset: zOffset,
           type: z.enum(["post", "user", "all"]).optional(),
           q: z.string().optional(),
           filter: z.enum(["followed", "not_followed"]).optional(),

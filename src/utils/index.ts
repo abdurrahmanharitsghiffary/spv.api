@@ -49,6 +49,6 @@ export const getRandomToken = (): Promise<string> => {
   );
 };
 
-export const isNullUndefined = (data: any) => {
+export const isNullOrUndefined = (data: any) => {
   return data === null || data === undefined;
 };

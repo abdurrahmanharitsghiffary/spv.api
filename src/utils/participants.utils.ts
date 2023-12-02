@@ -35,7 +35,9 @@ export const findParticipantsByRoomId = async ({
   });
 
   const normalizedParticipants = await Promise.all(
-    participants.map((participant) => normalizeChatParticipant(participant))
+    participants.map((participant) =>
+      Promise.resolve(normalizeChatParticipant(participant))
+    )
   );
 
   const total = await ChatRoomParticipant.count({

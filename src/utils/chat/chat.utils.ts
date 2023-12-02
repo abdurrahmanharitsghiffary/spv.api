@@ -60,7 +60,9 @@ export const findChatByRoomId = async ({
   });
 
   return {
-    data: await Promise.all(messages.map((msg) => normalizeChat(msg))),
+    data: await Promise.all(
+      messages.map((msg) => Promise.resolve(normalizeChat(msg)))
+    ),
     total: totalMessages,
   };
 };
@@ -141,7 +143,9 @@ export const findChatByParticipantIds = async ({
 
   return {
     data: await Promise.all(
-      (chats?.messages ?? []).map((chat) => normalizeChat(chat))
+      (chats?.messages ?? []).map((chat) =>
+        Promise.resolve(normalizeChat(chat))
+      )
     ),
     total: chats?._count?.messages ?? 0,
   };

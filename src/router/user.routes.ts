@@ -15,18 +15,21 @@ import {
 import { getPostByUserId } from "../controllers/user.controller";
 import {
   validate,
+  validatePagingOptions,
   validateParamsV2,
 } from "../middlewares/validator.middlewares";
 import { z } from "zod";
-import { zIntOrStringId, zText, zUsername } from "../schema";
+import { zIntOrStringId, zLimit, zOffset, zText, zUsername } from "../schema";
 import { getAllBlockedUsers } from "../controllers/block.controller";
 
 const router = express.Router();
 router.use(verifyToken);
 
-router.route("/").get(isAdmin, tryCatch(getAllUsers));
+router.route("/").get(validatePagingOptions, isAdmin, tryCatch(getAllUsers));
 
-router.route("/blocked").get(tryCatch(getAllBlockedUsers));
+router
+  .route("/blocked")
+  .get(validatePagingOptions, tryCatch(getAllBlockedUsers));
 
 router
   .route("/:userId")
@@ -63,6 +66,10 @@ router.route("/:userId/posts").get(
     z.object({
       params: z.object({
         userId: zIntOrStringId,
+      }),
+      query: z.object({
+        limit: zLimit,
+        offset: zOffset,
       }),
     })
   ),

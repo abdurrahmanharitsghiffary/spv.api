@@ -8,7 +8,7 @@ import {
 } from "../utils/chat/chat.utils";
 import { getPagingObject } from "../utils/paging";
 import Image from "../models/image.models";
-import { getFileDest } from "../utils";
+import { deleteUploadedImage, getFileDest } from "../utils";
 import { ApiResponse } from "../utils/response";
 import { emitSocketEvent } from "../socket/socket.utils";
 import { normalizeChat } from "../utils/chat/chat.normalize";
@@ -17,33 +17,6 @@ import {
   findAllUserChatRoom,
   findChatRoomById,
 } from "../utils/chat/chatRoom.utils";
-
-export const getChatsByRecipientId = async (
-  req: express.Request,
-  res: express.Response
-) => {
-  const { recipientId } = req.params;
-
-  let { limit = 20, offset = 0 } = req.query;
-  limit = Number(limit);
-  offset = Number(offset);
-  const { userId } = req as ExpressRequestExtended;
-
-  const chats = await findChatByParticipantIds({
-    currentUserId: Number(userId),
-    participantsId: [Number(recipientId)],
-    limit,
-    offset,
-  });
-
-  return res.status(200).json(
-    await getPagingObject({
-      data: chats.data,
-      req,
-      total_records: chats.total,
-    })
-  );
-};
 
 export const getAllChatsByUserId = async (
   req: express.Request,
@@ -84,6 +57,10 @@ export const deleteChatById = async (
       normalizedChat
     );
   });
+
+  if (deletedChat.chatImage?.src) {
+    await deleteUploadedImage(deletedChat.chatImage.src);
+  }
 
   return res
     .status(204)
@@ -134,7 +111,7 @@ export const createChat = async (
   const createdChat = await createChatWithRoomIdAndAuthorId({
     senderId: Number(userId),
     message,
-    chatRoomId,
+    chatRoomId: Number(chatRoomId),
   });
 
   if (image) {

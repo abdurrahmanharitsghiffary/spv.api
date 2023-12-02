@@ -1,6 +1,9 @@
 import { z } from "zod";
+import { zLimit, zOffset } from ".";
 
 export const postCommentValidationQuery = z.object({
+  limit: zLimit,
+  offset: zOffset,
   order_by: z
     .string()
     .refine(

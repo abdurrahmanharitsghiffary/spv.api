@@ -50,6 +50,7 @@ const postSelectExtended = (currentUserId?: number) =>
           where: {
             id: currentUserId,
           },
+          take: 1,
         },
       },
     },
@@ -164,7 +165,9 @@ export const findPostsByAuthorId = async ({
   });
 
   return {
-    data: await Promise.all(posts.map((post) => normalizePost(post))),
+    data: await Promise.all(
+      posts.map((post) => Promise.resolve(normalizePost(post)))
+    ),
     total: totalPosts,
   };
 };
@@ -195,7 +198,9 @@ export const findAllPosts = async ({
   });
 
   return {
-    data: await Promise.all(posts.map((post) => normalizePost(post))),
+    data: await Promise.all(
+      posts.map((post) => Promise.resolve(normalizePost(post)))
+    ),
     total: totalPosts,
   };
 };
@@ -237,7 +242,9 @@ export const findPostByFollowedUserIds = async ({
   });
 
   return {
-    data: await Promise.all(posts.map((post) => normalizePost(post))),
+    data: await Promise.all(
+      posts.map((post) => Promise.resolve(normalizePost(post)))
+    ),
     total: postsTotal,
   };
 };
@@ -303,7 +310,9 @@ export const findSavedPost = async ({
   return {
     data: await Promise.all(
       savedPosts.map((post) =>
-        normalizePost({ ...post.post, assignedAt: post.assignedAt })
+        Promise.resolve(
+          normalizePost({ ...post.post, assignedAt: post.assignedAt })
+        )
       )
     ),
     total,
@@ -366,7 +375,9 @@ export const searchPosts = async ({
   });
 
   return {
-    data: await Promise.all(posts.map((post) => normalizePost(post))),
+    data: await Promise.all(
+      posts.map((post) => Promise.resolve(normalizePost(post)))
+    ),
     total: resultsTotal,
   };
 };

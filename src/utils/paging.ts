@@ -64,17 +64,6 @@ export const getPagingObject = async <T>({
   offset = Number(offset);
   limit = Number(limit);
 
-  await z
-    .object({
-      query: z.object({
-        limit: zLimit,
-        offset: zOffset,
-      }),
-    })
-    .parseAsync({
-      query: req.query,
-    });
-
   const path = getCurrentUrl(req);
 
   const dataLength =
@@ -83,7 +72,7 @@ export const getPagingObject = async <T>({
       : ((data as SearchAllData)?.posts?.data?.length ?? 0) +
         ((data as SearchAllData)?.users?.data?.length ?? 0);
 
-  return {
+  return await Promise.resolve({
     statusCode: 200,
     success: true,
     data,
@@ -101,5 +90,5 @@ export const getPagingObject = async <T>({
       offset,
       limit,
     },
-  };
+  });
 };

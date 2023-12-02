@@ -1,14 +1,14 @@
 import { Prisma } from "@prisma/client";
 import { selectUserSimplified } from "./user";
 
-export const selectAuthorPost = {
-  author: {
-    select: selectUserSimplified,
-  },
-} satisfies Prisma.PostSelect;
-export type SelectAuthorPost = Prisma.PostGetPayload<{
-  select: typeof selectAuthorPost;
-}>;
+// export const selectAuthorPost = {
+//   author: {
+//     select: selectUserSimplified,
+//   },
+// } satisfies Prisma.PostSelect;
+// export type SelectAuthorPost = Prisma.PostGetPayload<{
+//   select: typeof selectAuthorPost;
+// }>;
 
 export const selectPost = {
   id: true,
@@ -22,7 +22,26 @@ export const selectPost = {
       src: true,
     },
   },
-  ...selectAuthorPost,
+  author: {
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      fullName: true,
+      isOnline: true,
+      username: true,
+      profile: {
+        select: {
+          avatarImage: {
+            select: {
+              id: true,
+              src: true,
+            },
+          },
+        },
+      },
+    },
+  },
   comments: {
     where: {
       parentId: null,

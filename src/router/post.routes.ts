@@ -26,9 +26,10 @@ import {
 import {
   validate,
   validateBody,
+  validatePagingOptions,
   validateParamsV2,
 } from "../middlewares/validator.middlewares";
-import { z } from "zod";
+import { object, z } from "zod";
 import { zIntOrStringId, zfdText, zfdTitle } from "../schema";
 import { postCommentValidationQuery } from "../schema/comment.schema";
 import { zfd } from "zod-form-data";
@@ -51,9 +52,11 @@ router
     ),
     tryCatch(createPost)
   )
-  .get(isAdmin, tryCatch(getAllPosts));
+  .get(validatePagingOptions, isAdmin, tryCatch(getAllPosts));
 
-router.route("/following").get(tryCatch(getFollowedUserPost));
+router
+  .route("/following")
+  .get(validatePagingOptions, tryCatch(getFollowedUserPost));
 
 router
   .route("/:postId")
@@ -86,9 +89,11 @@ router.route("/:postId/comments").get(
   validate(
     z.object({
       query: postCommentValidationQuery,
+      params: z.object({
+        postId: zIntOrStringId,
+      }),
     })
   ),
-  validateParamsV2("postId"),
   tryCatch(getPostCommentsById)
 );
 

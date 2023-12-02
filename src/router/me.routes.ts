@@ -33,6 +33,7 @@ import { blockUserById, unblockUser } from "../controllers/block.controller";
 import {
   validate,
   validateBody,
+  validatePagingOptions,
   validateParamsV2,
 } from "../middlewares/validator.middlewares";
 import { z } from "zod";
@@ -42,12 +43,14 @@ import {
   zGender,
   zIntId,
   zLastName,
+  zLimit,
   zNotificationType,
+  zOffset,
   zPassword,
   zProfileImageType,
   zUsername,
 } from "../schema";
-import { isNullUndefined } from "../utils";
+import { isNullOrUndefined } from "../utils";
 
 const router = express.Router();
 
@@ -128,7 +131,7 @@ router
 
 router
   .route("/posts/saved")
-  .get(tryCatch(getSavedPosts))
+  .get(validatePagingOptions, tryCatch(getSavedPosts))
   .post(
     validateBody(
       z.object({
@@ -137,8 +140,10 @@ router
     ),
     tryCatch(savePost)
   );
-router.route("/chats").get(tryCatch(getAllChatsByUserId));
-router.route("/posts").get(tryCatch(getAllMyPosts));
+router
+  .route("/chats")
+  .get(validatePagingOptions, tryCatch(getAllChatsByUserId));
+router.route("/posts").get(validatePagingOptions, tryCatch(getAllMyPosts));
 router.route("/follow").post(
   validateBody(
     z.object({
@@ -163,6 +168,8 @@ router
     validate(
       z.object({
         query: z.object({
+          limit: zLimit,
+          offset: zOffset,
           order_by: z.enum(["latest", "oldest"]).optional(),
         }),
       })
@@ -205,7 +212,7 @@ router
           (arg) => {
             if (
               (arg.type === "comment" || arg.type === "replying_comment") &&
-              isNullUndefined(arg.postId)
+              isNullOrUndefined(arg.postId)
             )
               return false;
             return true;
@@ -218,7 +225,10 @@ router
         )
         .refine(
           (arg) => {
-            if (arg.type === "liking_comment" && isNullUndefined(arg.commentId))
+            if (
+              arg.type === "liking_comment" &&
+              isNullOrUndefined(arg.commentId)
+            )
               return false;
             return true;
           },
@@ -230,7 +240,7 @@ router
         )
         .refine(
           (arg) => {
-            if (arg.type === "liking_post" && isNullUndefined(arg.postId))
+            if (arg.type === "liking_post" && isNullOrUndefined(arg.postId))
               return false;
             return true;
           },

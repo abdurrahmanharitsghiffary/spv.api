@@ -43,7 +43,7 @@ export const getAllBlockedUsers = async (
       data: await Promise.all(
         (user?.blocked ?? []).map((user) => {
           const isFollowed = getUserIsFollowed(user, Number(userId));
-          return normalizeUserPublic(user, isFollowed);
+          return Promise.resolve(normalizeUserPublic(user, isFollowed));
         })
       ),
       req,

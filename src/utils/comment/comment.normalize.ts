@@ -55,7 +55,7 @@ export const normalizeComments = async (
   comments: SelectCommentPayloadExtended[]
 ) => {
   const normalizedComments: Comment[] = await Promise.all(
-    comments.map((comment) => normalize(comment))
+    comments.map((comment) => Promise.resolve(normalize(comment)))
   );
 
   return normalizedComments;

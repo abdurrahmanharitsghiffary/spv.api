@@ -6,7 +6,6 @@ import {
   findChatRoomById,
 } from "../utils/chat/chatRoom.utils";
 import { ApiResponse } from "../utils/response";
-import { ChatRoom } from "../models/chat.models";
 import { findParticipantsByRoomId } from "../utils/participants.utils";
 import { getPagingObject } from "../utils/paging";
 import { emitSocketEvent } from "../socket/socket.utils";
@@ -39,83 +38,6 @@ export const createChatRoom = async (
 };
 // TODO INTEGRATE SOCKET EVENT
 // CHECK IF API FULLFIL SPEC
-export const updateChatRoom = async (
-  req: express.Request,
-  res: express.Response
-) => {
-  const { roomId } = req.params;
-  const { participants = [], description, title } = req.body;
-
-  const updatedChatRoom = await ChatRoom.update({
-    where: {
-      id: Number(roomId),
-      isGroupChat: true,
-    },
-    data: {
-      description,
-      title,
-      participants: {
-        create: participants.map((id: number) => ({
-          user: {
-            connect: {
-              id,
-            },
-          },
-          role: "user",
-        })),
-      },
-    },
-    include: {
-      participants: {
-        select: { userId: true },
-      },
-    },
-  });
-
-  updatedChatRoom.participants.forEach((participant) => {
-    emitSocketEvent(
-      req,
-      participant.userId.toString(),
-      Socket_Event.UPDATE_ROOM,
-      updatedChatRoom.id
-    );
-  });
-
-  return res
-    .status(204)
-    .json(new ApiResponse(null, 204, "Chat room successfully updated."));
-};
-
-export const deleteChatRoom = async (
-  req: express.Request,
-  res: express.Response
-) => {
-  const { roomId } = req.params;
-
-  const deletedRoom = await ChatRoom.delete({
-    where: {
-      id: Number(roomId),
-    },
-    include: {
-      participants: {
-        select: { userId: true },
-      },
-    },
-  });
-
-  deletedRoom.participants.forEach((participant) => {
-    emitSocketEvent(
-      req,
-      participant.userId.toString(),
-      Socket_Event.DELETE_ROOM,
-      deletedRoom.id
-    );
-  });
-
-  return res
-    .status(204)
-    .json(new ApiResponse(null, 204, "Chat room successfully deleted."));
-};
 
 export const getChatRoomById = async (
   req: express.Request,

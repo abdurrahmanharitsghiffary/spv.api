@@ -35,14 +35,14 @@ export const uploadImage = multer({
       callback(
         new RequestError(
           "Invalid file mime types, accepted types: .jpg, .jpeg, .png, .webp",
-          422
+          415
         )
       );
     } else if (fileSize >= MAX_FILE_SIZE) {
       callback(
         new RequestError(
           "The file size exceeds the maximum allowed limit. Please upload a file that is equals to 300kb or fewer.",
-          422
+          413
         )
       );
     } else {

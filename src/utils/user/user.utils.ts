@@ -129,7 +129,7 @@ export const findAllUser = async ({
   const normalizedUser: UserAccount[] = await Promise.all(
     users.map((user) => {
       const isFollowed = getUserIsFollowed(user, userId);
-      return normalizeUser(user, isFollowed);
+      return Promise.resolve(normalizeUser(user, isFollowed));
     })
   );
 
@@ -216,7 +216,7 @@ export const findFollowUserByUserId = async (
     [types]: [
       ...(user?.[types]?.map(({ profile, ...rest }) => ({
         ...rest,
-        image: getCompleteFileUrlPath((profile as any)?.avatarImage),
+        avatarImage: getCompleteFileUrlPath((profile as any)?.avatarImage),
       })) ?? []),
     ],
     total: user?._count ?? 0,
@@ -321,7 +321,7 @@ export const searchUsersByName = async ({
   const normalizedUsers = await Promise.all(
     users.map((user) => {
       const isFollowed = getUserIsFollowed(user, cuId);
-      return normalizeUserPublic(user, isFollowed);
+      return Promise.resolve(normalizeUserPublic(user, isFollowed));
     })
   );
 

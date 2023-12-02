@@ -55,7 +55,7 @@ export const getFollowedUserPost = async (
       id: Number(userId),
     },
     select: {
-      following: true,
+      following: { select: { id: true } },
     },
   });
 
@@ -227,11 +227,22 @@ export const deletePost = async (
 ) => {
   const { postId } = req.params;
 
-  await Post.delete({
+  const deletedPost = await Post.delete({
     where: {
       id: Number(postId),
     },
+    include: {
+      images: {
+        select: { src: true },
+      },
+    },
   });
+
+  if (deletedPost.images.length > 0) {
+    deletedPost.images.forEach(async (image) => {
+      await deleteUploadedImage(image.src);
+    });
+  }
 
   return res
     .status(204)

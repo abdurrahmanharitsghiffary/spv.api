@@ -18,11 +18,7 @@ import {
 } from "../middlewares/validator.middlewares";
 import { zfd } from "zod-form-data";
 import { z } from "zod";
-import {
-  zChatMessage,
-  zfdChatMessage,
-  zfdRecipientId,
-} from "../schema/chat.schema";
+import { zChatMessage, zfdChatMessage } from "../schema/chat.schema";
 import { zIntOrStringId, zfdInt } from "../schema";
 
 const router = express.Router();

@@ -7,6 +7,7 @@ import {
 } from "../utils/comment/comment.utils";
 import { ApiResponse } from "../utils/response";
 import { findPostByIdCustomMessage } from "../utils/post/post.utils";
+import { deleteUploadedImage } from "../utils";
 
 export const getComment = async (
   req: express.Request,
@@ -26,11 +27,20 @@ export const deleteComment = async (
 ) => {
   const { commentId } = req.params;
 
-  await Comment.delete({
+  const deletedComment = await Comment.delete({
     where: {
       id: Number(commentId),
     },
+    include: {
+      image: {
+        select: { src: true },
+      },
+    },
   });
+
+  if (deletedComment.image?.src) {
+    await deleteUploadedImage(deletedComment.image.src);
+  }
 
   return res
     .status(204)

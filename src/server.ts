@@ -1,8 +1,7 @@
 import server from "./app";
-import { PORT as PORTC, HOST as HOSTC } from "./lib/consts";
+import { PORT as CPORT } from "./lib/consts";
 
-const PORT = PORTC || 5000;
-const HOST = HOSTC || "localhost";
+const PORT = CPORT || 5000;
 
 server.listen(PORT, () => {
   console.log(`listening on http://localhost:${PORT}`);

@@ -49,7 +49,7 @@ export const normalizeChatParticipant = (
 ): Promise<ChatRoomParticipant> =>
   new Promise((resolve) =>
     resolve({
-      avatarImage: payload.user.profile?.avatarImage,
+      avatarImage: getCompleteFileUrlPath(payload.user.profile?.avatarImage),
       firstName: payload.user.firstName,
       lastName: payload.user.lastName,
       fullName: payload.user.fullName,

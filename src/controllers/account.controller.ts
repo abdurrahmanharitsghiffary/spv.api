@@ -146,11 +146,27 @@ export const deleteMyAccount = async (
     maxAge: 60000 * 60 * 24 * 7,
   });
 
-  await User.delete({
+  const deletedUser = await User.delete({
     where: {
       email: userEmail,
     },
+    include: {
+      profile: {
+        include: {
+          avatarImage: { select: { src: true } },
+          coverImage: { select: { src: true } },
+        },
+      },
+    },
   });
+
+  if (deletedUser.profile?.coverImage?.src) {
+    await deleteUploadedImage(deletedUser.profile.coverImage.src);
+  }
+
+  if (deletedUser.profile?.avatarImage?.src) {
+    await deleteUploadedImage(deletedUser.profile.avatarImage.src);
+  }
 
   return res
     .status(204)

@@ -3,6 +3,8 @@ export type ApiResponseT<T> = {
   message?: string;
   statusCode: number;
   data: T;
+  errors?: any[] | undefined;
+  name?: string;
 };
 
 export type ApiPagingObjectResponse<T> = {

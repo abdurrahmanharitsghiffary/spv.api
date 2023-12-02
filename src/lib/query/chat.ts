@@ -29,6 +29,12 @@ export type SelectChatPayload = Prisma.ChatGetPayload<{
 }>;
 
 export const selectChatRoom = {
+  groupPicture: {
+    select: {
+      src: true,
+      id: true,
+    },
+  },
   id: true,
   createdAt: true,
   description: true,
@@ -73,6 +79,12 @@ export type SelectChatRoomPayload = Prisma.ChatRoomGetPayload<{
 
 export const selectChatRoomWithWhereInput = (userId?: number) =>
   ({
+    groupPicture: {
+      select: {
+        src: true,
+        id: true,
+      },
+    },
     participants: {
       take: 10,
       orderBy: {
