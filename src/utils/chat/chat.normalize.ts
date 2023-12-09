@@ -10,7 +10,20 @@ export const normalizeChat = (chat: SelectChatPayload): Promise<Chat> =>
     const normalizedChat: Chat = {
       id: chat.id,
       message: chat.message,
-      attachments: getCompleteFileUrlPath(chat.chatImage),
+      attachments: (chat.chatImage ?? []).map((image) =>
+        getCompleteFileUrlPath(image)
+      ),
+      readedBy: chat.readedBy.map((read) => ({
+        avatarImage: read.user.profile?.avatarImage,
+        firstName: read.user.firstName,
+        fullName: read.user.fullName,
+        lastName: read.user.lastName,
+        id: read.user.id,
+        isOnline: read.user.isOnline,
+        readedAt: read.createdAt,
+        username: read.user.username,
+      })),
+      isGroupChat: chat.chatRoom.isGroupChat,
       author: {
         id: chat.author.id,
         fullName: chat.author.fullName,
@@ -51,6 +64,7 @@ export const normalizeChatParticipant = (
     resolve({
       avatarImage: getCompleteFileUrlPath(payload.user.profile?.avatarImage),
       firstName: payload.user.firstName,
+      roomId: payload.chatRoomId,
       lastName: payload.user.lastName,
       fullName: payload.user.fullName,
       id: payload.user.id,

@@ -44,7 +44,6 @@ export const verifyToken = tryCatchMiddleware(
     if (!token) throw new RequestError("No token provided!", 401);
     const decode = await JWT.verify(token, ACCESS_TOKEN_SECRET as string);
 
-    console.log(decode, " decode");
     (req as ExpressRequestExtended).userEmail = (decode as JwtPayload).email;
     (req as ExpressRequestExtended).userId = (decode as JwtPayload).id;
     const isUserExist = await User.findUnique({

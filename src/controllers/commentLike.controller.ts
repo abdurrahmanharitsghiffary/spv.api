@@ -1,4 +1,4 @@
-import { CommentLike } from "../models/comment.models";
+import Comment, { CommentLike } from "../models/comment.models";
 import express from "express";
 import { ExpressRequestExtended } from "../types/request";
 import { RequestError } from "../lib/error";
@@ -9,27 +9,30 @@ import {
   selectUserSimplified,
 } from "../lib/query/user";
 import { findCommentById } from "../utils/comment/comment.utils";
-
+import { NotFound } from "../lib/messages";
+// /continue
 export const getCommentLikesByCommentId = async (
   req: express.Request,
   res: express.Response
 ) => {
   const { userId } = req as ExpressRequestExtended;
   const { commentId } = req.params;
+  const uId = Number(userId);
+  const cId = Number(commentId);
 
-  await findCommentById(Number(commentId), Number(userId));
+  await findCommentById(cId, uId);
 
   const likes = await CommentLike.findMany({
     where: {
       AND: [
         {
           user: {
-            ...excludeBlockedUser(Number(userId)),
-            ...excludeBlockingUser(Number(userId)),
+            ...excludeBlockedUser(uId),
+            ...excludeBlockingUser(uId),
           },
         },
       ],
-      commentId: Number(commentId),
+      commentId: cId,
     },
     select: {
       userId: true,
@@ -41,7 +44,7 @@ export const getCommentLikesByCommentId = async (
 
   const count = await CommentLike.count({
     where: {
-      commentId: Number(commentId),
+      commentId: cId,
     },
   });
 
@@ -60,7 +63,7 @@ export const getCommentLikesByCommentId = async (
   return res.status(200).json(
     new ApiResponse(
       {
-        commentId: Number(commentId),
+        commentId: cId,
         likedBy: normalizedLikes,
         total: count,
       },
@@ -75,14 +78,16 @@ export const createLike = async (
 ) => {
   const { userId } = req as ExpressRequestExtended;
   const { commentId } = req.params;
+  const uId = Number(userId);
+  const cId = Number(commentId);
 
-  await findCommentById(Number(commentId), Number(userId));
+  await findCommentById(cId, uId);
 
   const commentAlreadyExist = await CommentLike.findUnique({
     where: {
       userId_commentId: {
-        userId: Number(userId),
-        commentId: Number(commentId),
+        userId: uId,
+        commentId: cId,
       },
     },
   });
@@ -92,8 +97,8 @@ export const createLike = async (
 
   const createdLike = await CommentLike.create({
     data: {
-      userId: Number(userId),
-      commentId: Number(commentId),
+      userId: uId,
+      commentId: cId,
     },
   });
 
@@ -108,12 +113,39 @@ export const deleteLike = async (
 ) => {
   const { userId } = req as ExpressRequestExtended;
   const { commentId } = req.params;
+  const uId = Number(userId);
+  const cId = Number(commentId);
+
+  const comment = await Comment.findUnique({
+    where: {
+      id: cId,
+    },
+    select: {
+      likes: {
+        select: {
+          userId: true,
+        },
+        where: {
+          userId: uId,
+        },
+      },
+    },
+  });
+
+  if (!comment) throw new RequestError(NotFound.COMMENT, 404);
+  if (!comment.likes?.[0]?.userId) {
+    throw new RequestError(
+      "Failed to unlike comment, because you are not liking the comment",
+      // NEED FIX CODE:STATUS_CODE
+      400
+    );
+  }
 
   await CommentLike.delete({
     where: {
       userId_commentId: {
-        userId: Number(userId),
-        commentId: Number(commentId),
+        userId: uId,
+        commentId: cId,
       },
     },
   });

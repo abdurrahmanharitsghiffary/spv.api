@@ -1,4 +1,4 @@
-import { PostLike } from "../models/post.models";
+import Post, { PostLike } from "../models/post.models";
 import express from "express";
 import { ExpressRequestExtended } from "../types/request";
 import { RequestError } from "../lib/error";
@@ -9,6 +9,8 @@ import {
   selectUserSimplified,
 } from "../lib/query/user";
 import { findPostById } from "../utils/post/post.utils";
+import { NotFound } from "../lib/messages";
+import { findPostIsLiked } from "../utils/post/postLike.utils";
 // CONTINUe
 export const getPostLikesByPostId = async (
   req: express.Request,
@@ -74,18 +76,12 @@ export const createLike = async (
 ) => {
   const { userId } = req as ExpressRequestExtended;
   const { postId } = req.params;
+  const pId = Number(postId);
+  const uId = Number(userId);
 
-  const postAlreadyLiked = await PostLike.findUnique({
-    where: {
-      userId_postId: {
-        userId: Number(userId),
-        postId: Number(postId),
-      },
-    },
-  });
-
-  if (postAlreadyLiked)
-    throw new RequestError("You already liked this post", 409);
+  const post = await findPostIsLiked(pId, uId);
+  if (post.likes?.[0]?.userId)
+    throw new RequestError("Post already liked", 409);
 
   const createdLike = await PostLike.create({
     data: {
@@ -103,10 +99,17 @@ export const deleteLike = async (
 ) => {
   const { userId } = req as ExpressRequestExtended;
   const { postId } = req.params;
+  const pId = Number(postId);
+  const uId = Number(userId);
+
+  const post = await findPostIsLiked(pId, uId);
+
+  if (!post.likes?.[0]?.userId)
+    throw new RequestError("Post is not liked.", 400);
 
   await PostLike.delete({
     where: {
-      userId_postId: { userId: Number(userId), postId: Number(postId) },
+      userId_postId: { userId: uId, postId: pId },
     },
   });
 

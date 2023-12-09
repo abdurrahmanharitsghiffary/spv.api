@@ -1,6 +1,5 @@
 import express from "express";
 import { ExpressRequestExtended } from "../types/request";
-import { findChatByParticipantIds } from "../utils/chat/chat.utils";
 import {
   deleteChatById as deleteChatWithId,
   updateChatById as updateChatWithId,
@@ -23,12 +22,13 @@ export const getAllChatsByUserId = async (
   res: express.Response
 ) => {
   const { userId } = req as ExpressRequestExtended;
-  const { limit = 20, offset = 0 } = req.query;
+  const { limit = 20, offset = 0, type = "all" } = req.query;
 
   const rooms = await findAllUserChatRoom({
     userId: Number(userId),
     limit: Number(limit),
     offset: Number(offset),
+    type: type as any,
   });
 
   return res.status(200).json(
@@ -44,9 +44,10 @@ export const deleteChatById = async (
   req: express.Request,
   res: express.Response
 ) => {
+  const { userId } = req as ExpressRequestExtended;
   const { messageId } = req.params;
 
-  const deletedChat = await deleteChatWithId(Number(messageId));
+  const deletedChat = await deleteChatWithId(Number(messageId), Number(userId));
   const normalizedChat = await normalizeChat(deletedChat);
 
   deletedChat.chatRoom.participants.forEach((participant) => {
@@ -58,8 +59,10 @@ export const deleteChatById = async (
     );
   });
 
-  if (deletedChat.chatImage?.src) {
-    await deleteUploadedImage(deletedChat.chatImage.src);
+  if (deletedChat.chatImage && deletedChat.chatImage.length > 0) {
+    deletedChat.chatImage.forEach(async (image) => {
+      await deleteUploadedImage(image.src);
+    });
   }
 
   return res
@@ -77,8 +80,8 @@ export const updateChatById = async (
 
   const updatedChat = await updateChatWithId(
     Number(messageId),
-    message,
-    Number(userId)
+    Number(userId),
+    message
   );
 
   const normalizedChat = await normalizeChat(updatedChat);
@@ -103,25 +106,18 @@ export const createChat = async (
 ) => {
   const { userId } = req as ExpressRequestExtended;
   const { message, chatRoomId } = req.body;
-
-  const image = req.file ?? null;
-
-  await findChatRoomById(Number(chatRoomId), Number(userId));
+  const cRId = Number(chatRoomId);
+  const uId = Number(userId);
+  const images = (req.files as Express.Multer.File[]) ?? [];
+  console.log(images, "Images");
+  await findChatRoomById(cRId, uId);
 
   const createdChat = await createChatWithRoomIdAndAuthorId({
-    senderId: Number(userId),
+    senderId: uId,
     message,
-    chatRoomId: Number(chatRoomId),
+    chatRoomId: cRId,
+    images,
   });
-
-  if (image) {
-    await Image.create({
-      data: {
-        chatId: createdChat.id,
-        src: getFileDest(image) as string,
-      },
-    });
-  }
 
   const normalizedChat = await normalizeChat(createdChat);
 

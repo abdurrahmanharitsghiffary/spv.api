@@ -12,6 +12,7 @@ export const error = async (
   let name = err?.name ?? "";
   let errors = err?.errors ?? [];
   console.log(message, "ErrMessage");
+  console.log("Error: ", err);
   switch (name) {
     case "JsonWebTokenError":
       {

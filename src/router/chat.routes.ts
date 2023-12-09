@@ -16,17 +16,21 @@ import {
   getChatRoomById,
   getChatRoomMessagesByRoomId,
   getChatRoomParticipantsByRoomId,
+  getParticipant,
 } from "../controllers/chatRoom.controller";
 import { protectChatRoom } from "../middlewares/chatRoom.middlewares";
 import {
   createGroupChat,
   deleteGroupChat,
+  deleteGroupParticipants,
   joinGroupChat,
   leaveGroupChat,
   updateGroupChat,
+  updateGroupChatParticipants,
 } from "../controllers/groupChat.controllers";
 import { uploadImage } from "../middlewares/multer.middlewares";
 import { zfd } from "zod-form-data";
+import { zParticipants, zfdParticipants } from "../schema/chat.schema";
 
 const router = express.Router();
 
@@ -46,7 +50,9 @@ router
     tryCatch(createChatRoom)
   );
 
-router.route("/:roomId").get(tryCatch(getChatRoomById));
+router
+  .route("/:roomId")
+  .get(validateParamsV2("roomId"), tryCatch(getChatRoomById));
 
 router
   .route("/:roomId/messages")
@@ -54,22 +60,60 @@ router
 
 router
   .route("/:roomId/participants")
-  .get(validatePagingOptionsExt, tryCatch(getChatRoomParticipantsByRoomId));
+  .get(validatePagingOptionsExt, tryCatch(getChatRoomParticipantsByRoomId))
+  .patch(
+    validate(
+      z.object({
+        body: z.object({
+          participants: zParticipants("participants", 1),
+        }),
+        params: z.object({
+          roomId: zIntOrStringId,
+        }),
+      })
+    ),
+    protectChatRoom("roomId", true),
+    tryCatch(updateGroupChatParticipants)
+  )
+  .delete(
+    validate(
+      z.object({
+        body: z.object({
+          ids: z.array(z.number()),
+        }),
+        params: z.object({
+          roomId: zIntOrStringId,
+        }),
+      })
+    ),
+    protectChatRoom("roomId", true),
+    tryCatch(deleteGroupParticipants)
+  );
+
+router.route("/:roomId/participants/:participantId").get(
+  validate(
+    z.object({
+      params: z.object({
+        roomId: zIntOrStringId,
+        participantId: zIntOrStringId,
+      }),
+    })
+  ),
+  tryCatch(getParticipant)
+);
 
 router.route("/group").post(
   uploadImage.single("image"),
   validateBody(
     zfd.formData(
       z.object({
-        participants: zfd.repeatable(
-          zfd.numeric(zIntId("participants")).array().min(2)
-        ),
+        participants: zfdParticipants("participants", 2),
         title: zfd.text(z.string().optional()),
         description: zfd.text(z.string().optional()),
       })
     )
   ),
-  createGroupChat
+  tryCatch(createGroupChat)
 );
 
 router
@@ -80,12 +124,7 @@ router
       z.object({
         body: zfd.formData(
           z.object({
-            participants: zfd.repeatable(
-              zfd.numeric(zIntId("participants")).array().optional()
-            ),
-            admin: zfd.repeatable(
-              zfd.numeric(zIntId("admins")).array().optional()
-            ),
+            participants: zfdParticipants("participants").optional(),
             description: zfdText.optional(),
             title: zfd.text(z.string().max(125).optional()),
           })
@@ -95,20 +134,20 @@ router
         }),
       })
     ),
-    protectChatRoom,
+    protectChatRoom("groupId", true),
     tryCatch(updateGroupChat)
   )
   .delete(
     validateParamsV2("groupId"),
-    protectChatRoom,
+    protectChatRoom("groupId", true),
     tryCatch(deleteGroupChat)
   );
 
 router
   .route("/group/:groupId/join")
-  .post(validateParamsV2("groupId"), joinGroupChat);
+  .post(validateParamsV2("groupId"), tryCatch(joinGroupChat));
 router
   .route("/group/:groupId/leave")
-  .delete(validateParamsV2("groupId"), leaveGroupChat);
+  .delete(validateParamsV2("groupId"), tryCatch(leaveGroupChat));
 
 export default router;

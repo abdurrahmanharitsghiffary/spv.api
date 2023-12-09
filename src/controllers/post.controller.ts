@@ -10,12 +10,19 @@ import {
 } from "../utils/post/post.utils";
 import { findCommentsByPostId } from "../utils/comment/comment.utils";
 import Image from "../models/image.models";
-import { getFileDest } from "../utils";
+import {
+  getFileDest,
+  imageUploadErrorHandler,
+  prismaImageUploader,
+} from "../utils";
 import { getPagingObject } from "../utils/paging";
 import User from "../models/user.models";
 import { deleteUploadedImage } from "../utils";
 import { ApiResponse } from "../utils/response";
 import prisma from "../config/prismaClient";
+import { RequestError } from "../lib/error";
+import { excludeBlockedUser, excludeBlockingUser } from "../lib/query/user";
+import { NotFound } from "../lib/messages";
 
 export const getAllMyPosts = async (
   req: express.Request,
@@ -184,19 +191,31 @@ export const getPostIsSaved = async (
 export const savePost = async (req: express.Request, res: express.Response) => {
   const { userId } = req as ExpressRequestExtended;
   const { postId } = req.body;
-
+  const pId = Number(postId);
+  const uId = Number(userId);
   await findPostById(postId, Number(userId));
+
+  const savedPost = await prisma.savedPost.findUnique({
+    where: {
+      postId_userId: {
+        postId: pId,
+        userId: uId,
+      },
+    },
+  });
+
+  if (savedPost) throw new RequestError("Post already saved", 409);
 
   const result = await prisma.savedPost.create({
     data: {
-      postId: Number(postId),
-      userId: Number(userId),
+      postId: pId,
+      userId: uId,
     },
   });
 
   return res
     .status(201)
-    .json(new ApiResponse(result, 201, "Post successfully bookmarked."));
+    .json(new ApiResponse(result, 201, "Post successfully saved."));
 };
 
 export const deleteSavedPost = async (
@@ -205,11 +224,42 @@ export const deleteSavedPost = async (
 ) => {
   const { userId } = req as ExpressRequestExtended;
   const { postId } = req.params;
+  const pId = Number(postId);
+  const uId = Number(userId);
+
+  const post = await Post.findUnique({
+    where: {
+      id: pId,
+      author: {
+        AND: [
+          {
+            ...excludeBlockedUser(uId),
+            ...excludeBlockingUser(uId),
+          },
+        ],
+      },
+    },
+    select: {
+      follower: {
+        where: {
+          userId: uId,
+        },
+        select: {
+          userId: true,
+        },
+      },
+    },
+  });
+
+  if (!post) throw new RequestError(NotFound.POST, 404);
+  if (!post.follower?.[0]?.userId)
+    throw new RequestError("Post is not saved", 404);
+
   await prisma.savedPost.delete({
     where: {
       postId_userId: {
-        userId: Number(userId),
-        postId: Number(postId),
+        userId: uId,
+        postId: pId,
       },
     },
   });
@@ -217,7 +267,7 @@ export const deleteSavedPost = async (
   return res
     .status(204)
     .json(
-      new ApiResponse(null, 204, "Post successfully removed from bookmark.")
+      new ApiResponse(null, 204, "Post successfully removed from saved posts.")
     );
 };
 
@@ -255,7 +305,7 @@ export const updatePost = async (
 ) => {
   const { title, content } = req.body;
   const { postId } = req.params;
-  const images = req.files ?? [];
+  const images = (req.files as Express.Multer.File[]) ?? [];
 
   await prisma.$transaction(async (tx) => {
     await tx.post.update({
@@ -268,18 +318,10 @@ export const updatePost = async (
       },
     });
 
-    if ((images.length as number) > 0) {
-      const imagesDest = ((images as Express.Multer.File[]) ?? [])?.map(
-        (image) => ({
-          src: getFileDest(image) as string,
-          postId: Number(postId),
-        })
-      );
-
-      await tx.image.createMany({
-        data: imagesDest,
-      });
+    if (images && images.length > 0) {
+      await prismaImageUploader(tx, images, Number(postId), "post");
     }
+    return;
   });
 
   return res
@@ -291,7 +333,7 @@ export const createPost = async (
   req: express.Request,
   res: express.Response
 ) => {
-  const images = req.files ?? [];
+  const images = (req.files as Express.Multer.File[]) ?? [];
   const { userId } = req as ExpressRequestExtended;
   const { title, content } = req.body;
 
@@ -304,15 +346,10 @@ export const createPost = async (
       },
     });
 
-    await tx.image.createMany({
-      data: [
-        // @ts-ignore
-        ...images?.map((image: Express.Multer.File) => ({
-          src: getFileDest(image),
-          postId: post.id,
-        })),
-      ],
-    });
+    if (images && images.length > 0) {
+      const sources = await prismaImageUploader(tx, images, post.id, "post");
+      (post as any).images = sources;
+    }
 
     return post;
   });

@@ -1,10 +1,20 @@
 export class RequestError extends Error {
   statusCode: number;
-  constructor(message: string, statusCode: number) {
+  errors?: any[];
+  code?: string;
+  constructor(
+    message: string,
+    statusCode: number,
+    errors: any[] = [],
+    code?: string
+  ) {
     super();
     this.message = message;
     this.statusCode = statusCode;
     this.name = "RequestError";
+
+    if (code) this.code = code;
+    if (errors?.length > 0) this.errors = errors;
   }
 }
 

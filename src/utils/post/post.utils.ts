@@ -5,6 +5,7 @@ import { normalizePost } from "./post.normalize";
 import prisma from "../../config/prismaClient";
 import { excludeBlockedUser, excludeBlockingUser } from "../../lib/query/user";
 import { Prisma } from "@prisma/client";
+import { NotFound } from "../../lib/messages";
 
 const postSelectExtended = (currentUserId?: number) =>
   ({
@@ -92,7 +93,7 @@ export const findPostByIdCustomMessage = async ({
   statusCode = 404,
   currentUserId,
   postId,
-  message = "Post not found",
+  message = NotFound.POST,
 }: {
   statusCode?: number;
   postId: number;
@@ -115,7 +116,7 @@ export const findPostById = async (postId: string, currentUserId?: number) => {
     select: postSelectExtended(currentUserId),
   });
 
-  if (!post) throw new RequestError("Post not found", 404);
+  if (!post) throw new RequestError(NotFound.POST, 404);
   const normalizedPost = await normalizePost(post);
   return normalizedPost;
 };

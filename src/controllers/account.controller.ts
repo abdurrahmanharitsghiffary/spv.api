@@ -13,6 +13,7 @@ import { ApiResponse } from "../utils/response";
 import * as bcrypt from "bcrypt";
 import { CoverImage } from "../models/image.models";
 import { BCRYPT_SALT } from "../lib/consts";
+import { NotFound } from "../lib/messages";
 
 export const getMyAccountInfo = async (
   req: express.Request,
@@ -198,7 +199,7 @@ export const deleteAccountImage = async (
 
   if (type === "profile") {
     if (!user?.profile?.avatarImage)
-      throw new RequestError("Profile image not found", 404);
+      throw new RequestError(NotFound.PROFILE_IMAGE, 404);
 
     if (user.profile)
       await Image.delete({
@@ -210,7 +211,7 @@ export const deleteAccountImage = async (
     await deleteUploadedImage(user.profile.avatarImage.src);
   } else {
     if (!user?.profile?.coverImage)
-      throw new RequestError("Profile image not found", 404);
+      throw new RequestError(NotFound.PROFILE_IMAGE, 404);
 
     if (user.profile)
       await CoverImage.delete({

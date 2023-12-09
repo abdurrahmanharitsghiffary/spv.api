@@ -17,6 +17,7 @@ model User {
   fullName String? @db.VarChar(250)
   username String @db.VarChar(100)
   isOnline Boolean @default(false)
+  lastOnline DateTime?
   email String @unique @db.VarChar(100)
   hashedPassword String @db.VarChar(100)
   profile Profile?
@@ -34,6 +35,7 @@ model User {
   following  User[] @relation("UserFollows")
   followedBy User[] @relation("UserFollows")
   followedPost SavedPost[]
+  readedMessages MessageRead[]
   chatRoom ChatRoomParticipant[]
   sendedNotifications Notification[] @relation("SendedNotifications")
   notifications Notification[] @relation("ReceivedNotifications")
@@ -80,11 +82,22 @@ model Post {
   likes PostLike[]
   type PostType @default(public)
   follower SavedPost[]
+  tags PostTag[]
 
   notification Notification[]
   author User @relation(fields: [authorId] , references: [id], onDelete: Cascade)
 
   @@map("posts")
+}
+
+model PostTag {
+  id Int @id @default(autoincrement())
+  tag String @db.VarChar(100)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  post Post[]
+
+  @@map("post_tags")
 }
 
 model SavedPost {
@@ -152,7 +165,8 @@ model Image {
   postId Int?
   profileId Int? @unique
   commentId Int? @unique
-  chatId Int? @unique
+  chatId Int?
+  // chat Chat[]
   groupId Int? @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -211,7 +225,6 @@ model ChatRoom {
 }
 
 model ChatRoomParticipant {
-id Int @id @default(autoincrement())
 chatRoomId Int
 chatRoom ChatRoom @relation(fields: [chatRoomId],  references: [id], onDelete: Cascade)
 role ParticipantRole
@@ -220,12 +233,14 @@ user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 createdAt DateTime @default(now())
 updatedAt DateTime @updatedAt
 
+@@id([chatRoomId,userId])
 @@map("chat_room_participants")
 }
 
 enum ParticipantRole {
   admin
   user
+  creator
 }
 
 model Chat {
@@ -233,8 +248,9 @@ model Chat {
   message String? @db.Text
   chatRoomId Int
   chatRoom ChatRoom @relation(fields: [chatRoomId], references: [id], onDelete: Cascade) 
-  chatImage Image? @relation("ChatImage")
-  isRead Boolean @default(false)
+  chatImage Image[] @relation("ChatImage")
+  // chatImage Image[]
+  readedBy MessageRead[]
   authorId Int
   author User @relation("AuthoredChat",fields: [authorId], references: [id], onDelete: Cascade)
   // recipientId Int
@@ -243,6 +259,18 @@ model Chat {
   updatedAt DateTime @updatedAt
 
   @@map("chats")
+}
+
+model MessageRead {
+  userId Int 
+  chatId Int 
+  user User @relation(fields: [userId],references: [id], onDelete: Cascade)
+  chat Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@id([userId, chatId])
+  @@map("message_reads")
 }
 
 enum TokenType {

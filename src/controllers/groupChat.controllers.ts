@@ -1,16 +1,21 @@
 import express from "express";
 import { createChatRoom, findChatRoomById } from "../utils/chat/chatRoom.utils";
-import { ExpressRequestExtended } from "../types/request";
+import {
+  ExpressRequestExtended,
+  ExpressRequestProtectedGroup,
+} from "../types/request";
 import { ApiResponse } from "../utils/response";
 import { ChatRoom, ChatRoomParticipant } from "../models/chat.models";
-import { selectChatRoom } from "../lib/query/chat";
+import { selectChatRoomPWL, selectRoomParticipant } from "../lib/query/chat";
 import { selectUserSimplified } from "../lib/query/user";
 import { emitSocketEvent } from "../socket/socket.utils";
 import { Socket_Event } from "../socket/event";
 import { normalizeChatRooms } from "../utils/chat/chatRoom.normalize";
 import { RequestError } from "../lib/error";
 import Image from "../models/image.models";
-import { deleteUploadedImage, getFileDest } from "../utils";
+import { checkParticipants, deleteUploadedImage, getFileDest } from "../utils";
+import { ParticipantsField } from "../types/chat";
+import { NotFound } from "../lib/messages";
 
 export const createGroupChat = async (
   req: express.Request,
@@ -22,7 +27,7 @@ export const createGroupChat = async (
 
   const createdGroupChat = await createChatRoom({
     isGroupChat: true,
-    participantIds: participants,
+    participants: participants,
     currentUserId: Number(userId),
     description,
     title,
@@ -51,16 +56,31 @@ export const joinGroupChat = async (
 ) => {
   const { groupId } = req.params;
   const { userId } = req as ExpressRequestExtended;
+  const gId = Number(groupId);
+  const uId = Number(userId);
 
-  await findChatRoomById(Number(groupId), Number(userId), {
-    message: "Group chat not found.",
+  await findChatRoomById(gId, uId, {
+    message: NotFound.GROUP_CHAT,
     statusCode: 404,
   });
 
+  const participant = await ChatRoomParticipant.findUnique({
+    where: {
+      chatRoomId_userId: {
+        chatRoomId: gId,
+        userId: uId,
+      },
+    },
+  });
+
+  if (participant) {
+    throw new RequestError("You already participated in the group.", 400);
+  }
+
   const joinedRoom = await ChatRoomParticipant.create({
     data: {
-      chatRoomId: Number(groupId),
-      userId: Number(userId),
+      chatRoomId: gId,
+      userId: uId,
       role: "user",
     },
     select: {
@@ -70,7 +90,7 @@ export const joinGroupChat = async (
       },
       chatRoomId: true,
       createdAt: true,
-      chatRoom: { select: selectChatRoom },
+      chatRoom: { select: selectChatRoomPWL(uId) },
     },
   });
 
@@ -96,11 +116,19 @@ export const leaveGroupChat = async (
 ) => {
   const { groupId } = req.params;
   const { userId } = req as ExpressRequestExtended;
+  const gId = Number(groupId);
+  const uId = Number(userId);
 
-  const paticipatedMember = await ChatRoomParticipant.findFirst({
+  const group = await ChatRoom.findUnique({ where: { id: gId } });
+
+  if (!group) throw new RequestError(NotFound.GROUP_CHAT, 404);
+
+  const paticipatedMember = await ChatRoomParticipant.findUnique({
     where: {
-      userId: Number(userId),
-      chatRoomId: Number(groupId),
+      chatRoomId_userId: {
+        userId: uId,
+        chatRoomId: gId,
+      },
     },
   });
 
@@ -110,7 +138,10 @@ export const leaveGroupChat = async (
 
   const joinedRoom = await ChatRoomParticipant.delete({
     where: {
-      id: paticipatedMember.id,
+      chatRoomId_userId: {
+        userId: paticipatedMember.userId,
+        chatRoomId: gId,
+      },
     },
     select: {
       role: true,
@@ -119,7 +150,7 @@ export const leaveGroupChat = async (
       },
       chatRoomId: true,
       createdAt: true,
-      chatRoom: { select: selectChatRoom },
+      chatRoom: { select: selectChatRoomPWL(uId) },
     },
   });
 
@@ -145,33 +176,36 @@ export const updateGroupChat = async (
 ) => {
   const { groupId } = req.params;
   const image = req.file;
-  const { participants = [], description, title, admin } = req.body;
+  const { userRole } = req as ExpressRequestProtectedGroup;
+  const { participants = [], description, title } = req.body;
+  const gId = Number(groupId);
+
+  await checkParticipants(participants, gId, userRole);
 
   const updatedChatRoom = await ChatRoom.update({
     where: {
-      id: Number(groupId),
+      id: gId,
       isGroupChat: true,
     },
     data: {
       description,
       title,
       participants: {
-        create: [
-          ...participants.map((id: number) => ({
-            user: {
-              connect: {
-                id,
+        upsert: [
+          ...(participants as ParticipantsField).map((item) => ({
+            create: {
+              role: item.role,
+              userId: item.id,
+            },
+            update: {
+              role: item.role,
+            },
+            where: {
+              chatRoomId_userId: {
+                chatRoomId: gId,
+                userId: item.id,
               },
             },
-            role: "user",
-          })),
-          ...admin.map((id: number) => ({
-            user: {
-              connect: {
-                id,
-              },
-            },
-            role: "admin",
           })),
         ],
       },
@@ -261,4 +295,118 @@ export const deleteGroupChat = async (
   return res
     .status(204)
     .json(new ApiResponse(null, 204, "Chat room successfully deleted."));
+};
+
+export const updateGroupChatParticipants = async (
+  req: express.Request,
+  res: express.Response
+) => {
+  const { roomId } = req.params;
+  const { participants } = req.body;
+  const { userRole } = req as ExpressRequestProtectedGroup;
+  const rId = Number(roomId);
+
+  await checkParticipants(participants, rId, userRole);
+
+  const updatedGroupChat = await ChatRoom.update({
+    where: {
+      id: rId,
+    },
+    data: {
+      participants: {
+        upsert: [
+          ...(participants as ParticipantsField).map((item) => ({
+            create: {
+              role: item.role,
+              userId: item.id,
+            },
+            update: {
+              role: item.role,
+            },
+            where: {
+              chatRoomId_userId: {
+                chatRoomId: rId,
+                userId: item.id,
+              },
+            },
+          })),
+        ],
+      },
+    },
+    select: {
+      participants: {
+        select: {
+          ...selectRoomParticipant,
+        },
+      },
+    },
+  });
+
+  updatedGroupChat.participants.forEach((participant) => {
+    emitSocketEvent(
+      req,
+      participant.user.id.toString(),
+      Socket_Event.UPDATE_ROOM,
+      updatedGroupChat
+    );
+  });
+
+  return res
+    .status(204)
+    .json(
+      new ApiResponse(
+        null,
+        204,
+        "Participants successfully added into the group."
+      )
+    );
+};
+
+export const deleteGroupParticipants = async (
+  req: express.Request,
+  res: express.Response
+) => {
+  const { roomId } = req.params;
+  const { userRole } = req as ExpressRequestProtectedGroup;
+  const { ids } = req.body;
+  const rId = Number(roomId);
+
+  await checkParticipants(ids, rId, userRole, true);
+
+  const chatRoomAfterDeletingParticipants = await ChatRoom.update({
+    where: {
+      id: rId,
+    },
+    data: {
+      participants: {
+        deleteMany: [...(ids as number[]).map((id) => ({ userId: id }))],
+      },
+    },
+    select: {
+      participants: {
+        select: {
+          userId: true,
+        },
+      },
+    },
+  });
+
+  chatRoomAfterDeletingParticipants.participants.forEach((participant) => {
+    emitSocketEvent(
+      req,
+      participant.userId.toString(),
+      Socket_Event.UPDATE_ROOM,
+      chatRoomAfterDeletingParticipants
+    );
+  });
+
+  return res
+    .status(204)
+    .json(
+      new ApiResponse(
+        null,
+        204,
+        "Participants successfully removed from the group."
+      )
+    );
 };

@@ -29,7 +29,7 @@ import {
   validatePagingOptions,
   validateParamsV2,
 } from "../middlewares/validator.middlewares";
-import { object, z } from "zod";
+import { z } from "zod";
 import { zIntOrStringId, zfdText, zfdTitle } from "../schema";
 import { postCommentValidationQuery } from "../schema/comment.schema";
 import { zfd } from "zod-form-data";

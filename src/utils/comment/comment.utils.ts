@@ -4,6 +4,8 @@ import { selectComment } from "../../lib/query/comment";
 import Comment from "../../models/comment.models";
 import { normalizeComment, normalizeComments } from "./comment.normalize";
 import { excludeBlockedUser, excludeBlockingUser } from "../../lib/query/user";
+import { VC } from "./type";
+import { NotFound } from "../../lib/messages";
 
 const commentWhereAndInput = (currentUserId?: number) =>
   [
@@ -80,10 +82,13 @@ const selectCommentExtended = (currentUserId?: number) =>
     },
   } satisfies Prisma.CommentSelect);
 
-export const findCommentById = async (
+export const findCommentById = async <
+  T extends boolean | undefined = undefined
+>(
   commentId: number,
-  currentUserId?: number
-) => {
+  currentUserId?: number,
+  shouldNormalize: T = true as T
+): Promise<VC<T>> => {
   const comment = await Comment.findUnique({
     where: {
       id: commentId || commentId === 0 ? commentId : undefined,
@@ -92,9 +97,10 @@ export const findCommentById = async (
     select: selectCommentExtended(currentUserId),
   });
   console.log(comment);
-  if (!comment) throw new RequestError("Comment not found", 404);
+  if (!comment) throw new RequestError(NotFound.COMMENT, 404);
+  if (!shouldNormalize) return comment as any;
   const normalizedComment = await normalizeComment(comment);
-  return normalizedComment;
+  return normalizedComment as any;
 };
 
 export const findCommentByIdCustomMessage = async ({
@@ -212,3 +218,15 @@ export const findCommentsByPostId = async (
   const normalizedComments = await normalizeComments(comments);
   return { data: normalizedComments, total: totalComments };
 };
+
+// export const findCommentOrThrowById = async (id: number) => {
+//   const comment = await Comment.findUnique({
+//     where: {
+//       id,
+//     },
+//   });
+
+//   if (!comment) throw new RequestError(NotFound.COMMENT, 404);
+
+//   return comment;
+// };

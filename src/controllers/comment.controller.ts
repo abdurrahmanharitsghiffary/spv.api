@@ -53,10 +53,11 @@ export const updateComment = async (
 ) => {
   const { comment } = req.body;
   const { commentId } = req.params;
+  const cId = Number(commentId);
 
   await Comment.update({
     where: {
-      id: Number(commentId),
+      id: cId,
     },
     data: {
       comment,
@@ -82,28 +83,32 @@ export const createComment = async (
     imageSrc?: string;
   };
 
+  const pId = Number(postId);
+  const prId = Number(parentId);
+  const uId = Number(userId);
+
   if (parentId) {
     await findCommentByIdCustomMessage({
-      commentId: Number(parentId),
+      commentId: prId,
       message: "Can't found comment with provided parentId",
       statusCode: 404,
-      currentUserId: Number(userId),
+      currentUserId: uId,
     });
   }
 
   await findPostByIdCustomMessage({
     statusCode: 404,
     message: "Can't found post with provided postId",
-    postId: Number(postId),
-    currentUserId: Number(userId),
+    postId: pId,
+    currentUserId: uId,
   });
 
   const result = await createOneComment({
     comment,
-    postId: Number(postId),
-    userId: Number(userId),
+    postId: pId,
+    userId: uId,
     image: imageSrc ? imageSrc : image,
-    parentId: parentId || parentId === 0 ? Number(parentId) : null,
+    parentId: parentId || parentId === 0 ? prId : null,
   });
 
   return res
@@ -122,16 +127,13 @@ export const createReplyComment = async (
     comment: string;
     imageSrc?: string;
   };
-
-  const currentComment = await findCommentById(
-    Number(commentId),
-    Number(userId)
-  );
+  const uId = Number(userId);
+  const currentComment = await findCommentById(Number(commentId), uId);
 
   const result = await createOneComment({
     comment,
     postId: currentComment.postId,
-    userId: Number(userId),
+    userId: uId,
     image: imageSrc ? imageSrc : image,
     parentId: currentComment.id,
   });

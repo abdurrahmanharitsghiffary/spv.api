@@ -4,6 +4,8 @@ export const Socket_Event = Object.freeze({
   JOIN_ROOM: "joinRoom",
   LEAVE: "leave",
   // MESSAGE: "message",
+  READ_MESSAGE: "readMessage",
+  READED_MESSAGE: "readedMessage",
   NOTIFICATION: "notification",
   RECEIVE_NOTIFICATION: "receiveNotification",
   RECEIVE_MESSAGE: "receiveMessage",

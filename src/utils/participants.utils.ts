@@ -1,3 +1,5 @@
+import { RequestError } from "../lib/error";
+import { NotFound } from "../lib/messages";
 import { selectRoomParticipant } from "../lib/query/chat";
 import { excludeBlockedUser, excludeBlockingUser } from "../lib/query/user";
 import { ChatRoomParticipant } from "../models/chat.models";
@@ -42,9 +44,42 @@ export const findParticipantsByRoomId = async ({
 
   const total = await ChatRoomParticipant.count({
     where: {
-      chatRoomId: roomId,
+      chatRoomId: Number(roomId),
     },
   });
 
   return { data: normalizedParticipants, total };
+};
+
+export const findParticipantById = async ({
+  chatRoomId,
+  userId,
+  throwOnFound,
+  error,
+}: {
+  chatRoomId: number;
+  userId: number;
+  throwOnFound?: boolean;
+  error?: { message: string; statusCode: number };
+}) => {
+  const participant = await ChatRoomParticipant.findUnique({
+    where: {
+      chatRoomId_userId: {
+        chatRoomId,
+        userId,
+      },
+    },
+    select: selectRoomParticipant,
+  });
+
+  if (!participant) {
+    throw new RequestError(NotFound.PARTICIPANT, 404);
+  }
+
+  if (throwOnFound) {
+    throw new RequestError(error?.message ?? "", error?.statusCode ?? 400);
+  }
+  const normalizedParticipant = await normalizeChatParticipant(participant);
+
+  return normalizedParticipant;
 };

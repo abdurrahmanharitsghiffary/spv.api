@@ -9,6 +9,8 @@ import {
 import User from "../models/user.models";
 import { RequestError } from "../lib/error";
 import { ApiResponse } from "../utils/response";
+import { excludeBlockedUser, excludeBlockingUser } from "../lib/query/user";
+import { NotFound } from "../lib/messages";
 
 export const getFollowedUser = async (
   req: express.Request,
@@ -113,22 +115,41 @@ export const followUser = async (
   res: express.Response
 ) => {
   const { userId: currentUserId } = req as ExpressRequestExtended;
-
   const { userId } = req.body;
+  const CUID = Number(currentUserId);
+  const uId = Number(userId);
 
-  if (currentUserId === userId)
-    throw new RequestError("Can't follow yourself", 400);
+  if (CUID === uId) throw new RequestError("Can't follow yourself", 400);
 
-  await findUserPublic(userId, Number(currentUserId));
+  await findUserPublic(uId as any, CUID);
+  const user = await User.findUnique({
+    where: {
+      id: CUID,
+    },
+    select: {
+      following: {
+        select: { id: true },
+        where: {
+          id: uId,
+        },
+      },
+    },
+  });
+
+  const userAlreadyFollowed = user?.following?.[0]?.id ? true : false;
+
+  if (userAlreadyFollowed) {
+    throw new RequestError("User already followed.", 409);
+  }
 
   const createdFollow = await User.update({
     where: {
-      id: Number(currentUserId),
+      id: CUID,
     },
     data: {
       following: {
         connect: {
-          id: Number(userId),
+          id: uId,
         },
       },
     },
@@ -147,14 +168,38 @@ export const unfollowUser = async (
   req: express.Request,
   res: express.Response
 ) => {
-  const { userEmail } = req as ExpressRequestExtended;
+  const { userId } = req as ExpressRequestExtended;
   const { followId } = req.params;
+  const fId = Number(followId);
+  const cId = Number(userId);
 
-  await findUserById(Number(followId));
+  const user = await User.findUnique({
+    where: {
+      id: fId,
+      AND: [
+        {
+          ...excludeBlockingUser(cId),
+          ...excludeBlockedUser(cId),
+        },
+      ],
+    },
+    select: {
+      followedBy: {
+        select: { id: true },
+        where: { id: cId },
+      },
+    },
+  });
+
+  if (!user) throw new RequestError(NotFound.USER, 404);
+  const isUserAlreadyFollowed = user?.followedBy?.[0]?.id ? true : false;
+
+  if (!isUserAlreadyFollowed)
+    throw new RequestError("User is not followed", 400);
 
   await User.update({
     where: {
-      email: userEmail,
+      id: fId,
     },
     data: {
       following: {

@@ -140,9 +140,18 @@ router
     ),
     tryCatch(savePost)
   );
-router
-  .route("/chats")
-  .get(validatePagingOptions, tryCatch(getAllChatsByUserId));
+router.route("/chats").get(
+  validate(
+    z.object({
+      query: z.object({
+        limit: zLimit,
+        offset: zOffset,
+        type: z.enum(["group", "all", "personal"]).optional(),
+      }),
+    })
+  ),
+  tryCatch(getAllChatsByUserId)
+);
 router.route("/posts").get(validatePagingOptions, tryCatch(getAllMyPosts));
 router.route("/follow").post(
   validateBody(

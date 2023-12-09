@@ -12,6 +12,7 @@ import {
 } from "../../lib/query/user";
 import { getCompleteFileUrlPath } from "..";
 import { Prisma } from "@prisma/client";
+import { NotFound } from "../../lib/messages";
 
 export const getUserIsFollowed = (
   user: SelectUserPayload | SelectUserPublicPayload,
@@ -72,7 +73,7 @@ export const findUserPublic = async (id: string, currentUserId?: number) => {
     select: userSelectPublicInput(currentUserId),
   });
 
-  if (!user) throw new RequestError("User not found", 404);
+  if (!user) throw new RequestError(NotFound.USER, 404);
 
   const isFollowed = getUserIsFollowed(user, currentUserId);
   const normalizedUser = await normalizeUserPublic(user, isFollowed);
@@ -83,7 +84,7 @@ export const findUserById = async (
   id: number,
   currentUserId?: number,
   customMessage: { message: string; statusCode: number } = {
-    message: "User not found",
+    message: NotFound.USER,
     statusCode: 404,
   }
 ) => {
@@ -160,7 +161,7 @@ export const findFollowUserByUserEmail = async (
       },
     },
   });
-  if (!user) throw new RequestError("User not found", 404);
+  if (!user) throw new RequestError(NotFound.USER, 404);
 
   return {
     [types]: [...(user?.[types]?.map((user) => user.id) ?? [])],
@@ -210,7 +211,7 @@ export const findFollowUserByUserId = async (
     },
   });
 
-  if (!user) throw new RequestError("User not found", 404);
+  if (!user) throw new RequestError(NotFound.USER, 404);
 
   return {
     [types]: [

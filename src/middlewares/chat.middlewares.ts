@@ -11,7 +11,7 @@ export const protectChat = async (
   const { userId } = req as ExpressRequestExtended;
   const { messageId } = req.params;
 
-  const chat = await findChatById(Number(messageId));
+  const chat = await findChatById(Number(messageId), Number(userId));
   if (chat.author.id !== Number(userId)) throw new ForbiddenError();
 
   return next();

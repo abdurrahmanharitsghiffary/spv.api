@@ -3,17 +3,20 @@ import { excludeBlockedUser, excludeBlockingUser } from "../../lib/query/user";
 import { ChatRoom } from "../../models/chat.models";
 import {
   selectChatRoom,
+  selectChatRoomPWL,
   selectChatRoomWithWhereInput,
 } from "../../lib/query/chat";
 import { RequestError } from "../../lib/error";
 import { ChatRoom as ChatRoomT } from "../../types/chat";
 import { normalizeChatRooms } from "./chatRoom.normalize";
-import Image from "../../models/image.models";
 import { getFileDest } from "..";
 import prisma from "../../config/prismaClient";
-import { findUserById } from "../user/user.utils";
+import { findUserById, userWhereAndInput } from "../user/user.utils";
+import { Code } from "../../lib/code";
+import User from "../../models/user.models";
+import { NotFound } from "../../lib/messages";
 
-const chatRoomWhereOrInput = (currentUserId: number) =>
+export const chatRoomWhereOrInput = (currentUserId: number) =>
   [
     {
       isGroupChat: false,
@@ -54,7 +57,7 @@ export const findChatRoomById = async (
 
   if (!chatRoom)
     throw new RequestError(
-      opt?.message ?? "Chat room not found.",
+      opt?.message ?? NotFound.CHAT_ROOM,
       opt?.statusCode ?? 404
     );
 
@@ -67,13 +70,19 @@ export const findAllUserChatRoom = async ({
   userId,
   limit,
   offset,
+  type = "all",
 }: {
   limit?: number;
   offset?: number;
   userId: number;
+  type: "group" | "personal" | "all";
 }): Promise<{ data: ChatRoomT[]; total: number }> => {
+  const groupFilter =
+    type === "group" ? true : type === "personal" ? false : undefined;
+
   const rooms = await ChatRoom.findMany({
     where: {
+      isGroupChat: groupFilter,
       OR: [
         {
           isGroupChat: false,
@@ -188,41 +197,65 @@ export const findAllUserChatRoom = async ({
 };
 
 type CreateChatRoomOptions = {
-  participantIds: number[];
+  participants?: { id: number; role: "admin" | "user" }[];
   currentUserId: number;
   isGroupChat?: boolean;
   description?: string;
   title?: string;
   image?: Express.Multer.File;
-  admins?: number[];
 };
 
 export const createChatRoom = async ({
-  participantIds = [],
+  participants = [],
   currentUserId,
   isGroupChat = false,
   description,
   title,
   image,
-  admins = [],
 }: CreateChatRoomOptions) => {
-  participantIds = participantIds
-    .map((id) => Number(id))
-    .filter((id) => !isNaN(id));
+  participants = participants
+    .map((item) => ({ ...item, id: Number(item.id) }))
+    .filter((item) => !isNaN(item.id));
 
-  admins = admins.map((id) => Number(id)).filter((id) => !isNaN(id));
+  const isUserIncludedInFields = participants.some(
+    (item) => item.id === currentUserId
+  );
+
+  if (isUserIncludedInFields) {
+    throw new RequestError(
+      "participants field should not contain the group chat creator (it will be automatically added as creator).",
+      400
+    );
+  }
+
+  let errors: any[] = [];
+
+  await Promise.all(
+    participants.map(async (item) => {
+      const user = await User.findUnique({
+        where: {
+          id: item.id,
+          AND: userWhereAndInput(currentUserId),
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      if (!user) {
+        errors.push({
+          message: NotFound.USER,
+          id: item.id,
+          code: Code.NOT_FOUND,
+        });
+      }
+    })
+  );
+
+  if (errors.length > 0)
+    throw new RequestError("Not found", 404, errors, "create_chat_room");
 
   return await prisma.$transaction(async (tx) => {
-    participantIds.forEach(async (id) => {
-      await findUserById(id);
-    });
-
-    if (admins?.length > 0) {
-      admins.forEach(async (id) => {
-        await findUserById(id);
-      });
-    }
-
     if (!isGroupChat) {
       const chatRoomIsExist = await tx.chatRoom.findFirst({
         where: {
@@ -230,7 +263,10 @@ export const createChatRoom = async ({
           participants: {
             every: {
               userId: {
-                in: [...participantIds, currentUserId],
+                in: [
+                  ...participants.map((participant) => participant.id),
+                  currentUserId,
+                ],
               },
             },
           },
@@ -251,20 +287,22 @@ export const createChatRoom = async ({
           createMany: {
             skipDuplicates: true,
             data: [
-              ...participantIds.map((id) => ({
-                userId: id,
-                role: "user" as $Enums.ParticipantRole,
+              ...participants.map((item) => ({
+                userId: item.id,
+                role: isGroupChat
+                  ? item.role ?? "user"
+                  : ("creator" as $Enums.ParticipantRole),
               })),
               {
                 userId: currentUserId,
-                role: isGroupChat ? "admin" : "user",
+                role: "creator",
               },
             ],
           },
         },
       },
       select: {
-        ...selectChatRoom,
+        ...selectChatRoomPWL(currentUserId),
       },
     });
 
