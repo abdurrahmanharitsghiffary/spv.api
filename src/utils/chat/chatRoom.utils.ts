@@ -71,7 +71,9 @@ export const findAllUserChatRoom = async ({
   limit,
   offset,
   type = "all",
+  q,
 }: {
+  q?: string;
   limit?: number;
   offset?: number;
   userId: number;
@@ -88,6 +90,15 @@ export const findAllUserChatRoom = async ({
           isGroupChat: false,
           participants: {
             some: {
+              AND: [
+                {
+                  user: {
+                    fullName: {
+                      contains: q,
+                    },
+                  },
+                },
+              ],
               userId: {
                 in: [userId],
               },
@@ -116,6 +127,7 @@ export const findAllUserChatRoom = async ({
             },
           },
           AND: [
+            { title: { contains: q } },
             {
               participants: {
                 some: {
@@ -140,11 +152,21 @@ export const findAllUserChatRoom = async ({
 
   const totalRooms = await ChatRoom.count({
     where: {
+      isGroupChat: groupFilter,
       OR: [
         {
           isGroupChat: false,
           participants: {
             some: {
+              AND: [
+                {
+                  user: {
+                    fullName: {
+                      contains: q,
+                    },
+                  },
+                },
+              ],
               userId: {
                 in: [userId],
               },
@@ -173,6 +195,8 @@ export const findAllUserChatRoom = async ({
             },
           },
           AND: [
+            { title: { contains: q } },
+
             {
               participants: {
                 some: {

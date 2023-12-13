@@ -22,13 +22,14 @@ export const getAllChatsByUserId = async (
   res: express.Response
 ) => {
   const { userId } = req as ExpressRequestExtended;
-  const { limit = 20, offset = 0, type = "all" } = req.query;
+  const { limit = 20, offset = 0, type = "all", q } = req.query;
 
   const rooms = await findAllUserChatRoom({
     userId: Number(userId),
     limit: Number(limit),
     offset: Number(offset),
     type: type as any,
+    q: q as string,
   });
 
   return res.status(200).json(

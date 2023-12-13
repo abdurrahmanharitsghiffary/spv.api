@@ -177,9 +177,9 @@ export const updateGroupChat = async (
   const { groupId } = req.params;
   const image = req.file;
   const { userRole } = req as ExpressRequestProtectedGroup;
-  const { participants = [], description, title } = req.body;
+  let { participants = [], description, title } = req.body;
   const gId = Number(groupId);
-
+  participants = participants.map((p: any) => ({ ...p, id: Number(p.id) }));
   await checkParticipants(participants, gId, userRole);
 
   const updatedChatRoom = await ChatRoom.update({
@@ -230,7 +230,7 @@ export const updateGroupChat = async (
         groupId: updatedChatRoom.id,
       },
       where: {
-        id: updatedChatRoom.groupPicture?.id,
+        groupId: updatedChatRoom.id,
       },
       update: {
         src: getFileDest(image) as string,

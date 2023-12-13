@@ -123,6 +123,9 @@ export const checkParticipants = async (
           participantRole === "user" &&
           currentUserRole === "admin";
 
+        const IS_ADMIN_UPDATE_CREATOR =
+          participant?.role === "creator" && currentUserRole === "admin";
+
         const IS_UPDATING_USER_WITH_ROLE_ADMIN =
           participant?.role === "admin" && currentUserRole === "admin";
 
@@ -131,6 +134,19 @@ export const checkParticipants = async (
 
         // Check if user already exist in the group before add them
         // if user is already exist with role user and the item.role is "admin" that user will be promoted as admin in the group
+
+        if (participant && IS_ADMIN_UPDATE_CREATOR) {
+          errors.push({
+            message: `Admin cannot ${
+              isDeleting ? "delete" : "demote"
+            } group creator`,
+            code: Code.FORBIDDEN,
+            groupId,
+            id,
+          });
+          return;
+        }
+
         if (IS_USER_ALREADY_EXIST && !isDeleting) {
           errors.push({
             message: `Participant with ID ${id} already exists in the group.`,

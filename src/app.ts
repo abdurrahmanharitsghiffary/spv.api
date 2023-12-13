@@ -73,6 +73,7 @@ app.use(
   })
 );
 ioInit(io);
+
 router(app);
 
 app.use(notFound);

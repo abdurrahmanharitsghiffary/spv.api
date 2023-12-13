@@ -36,7 +36,7 @@ import {
   validatePagingOptions,
   validateParamsV2,
 } from "../middlewares/validator.middlewares";
-import { z } from "zod";
+import { string, z } from "zod";
 import {
   zBirthDate,
   zFirstName,
@@ -147,6 +147,7 @@ router.route("/chats").get(
         limit: zLimit,
         offset: zOffset,
         type: z.enum(["group", "all", "personal"]).optional(),
+        q: string().optional(),
       }),
     })
   ),

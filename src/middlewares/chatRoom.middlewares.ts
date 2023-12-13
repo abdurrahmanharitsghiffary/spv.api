@@ -9,7 +9,11 @@ import { chatRoomWhereOrInput } from "../utils/chat/chatRoom.utils";
 import { ChatRoom, ChatRoomParticipant } from "../models/chat.models";
 import { NotFound } from "../lib/messages";
 
-export const protectChatRoom = (params: string, isGroupChat?: boolean) =>
+export const protectChatRoom = (
+  params: string,
+  isGroupChat?: boolean,
+  protectDelete?: boolean
+) =>
   tryCatchMiddleware(
     async (
       req: express.Request,
@@ -55,7 +59,9 @@ export const protectChatRoom = (params: string, isGroupChat?: boolean) =>
 
       if (
         !room?.participants.some(
-          (user) => user.role !== "user" && user.userId === uId
+          (user) =>
+            (protectDelete ? user.role === "creator" : user.role !== "user") &&
+            user.userId === uId
         )
       ) {
         throw new ForbiddenError();

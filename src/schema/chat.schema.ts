@@ -19,7 +19,13 @@ export const zParticipant = (key: string) =>
     role: z.enum(["user", "admin"]),
   });
 
-export const zfdParticipant = (key: string) => zfd.json(zParticipant(key));
+export const zfdParticipant = (key: string) =>
+  zfd.json(
+    z.object({
+      id: zfd.numeric(zIntId(key)),
+      role: zfd.text(z.enum(["user", "admin"])),
+    })
+  );
 
 export const zParticipants = (key: string, min: number = 0) =>
   z

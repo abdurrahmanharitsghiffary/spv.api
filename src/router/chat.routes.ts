@@ -139,7 +139,7 @@ router
   )
   .delete(
     validateParamsV2("groupId"),
-    protectChatRoom("groupId", true),
+    protectChatRoom("groupId", true, true),
     tryCatch(deleteGroupChat)
   );
 
