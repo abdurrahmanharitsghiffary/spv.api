@@ -38,7 +38,7 @@ export const createGroupChat = async (
     emitSocketEvent(
       req,
       participant.id.toString(),
-      Socket_Event.CREATE_ROOM,
+      Socket_Event.JOIN_ROOM,
       createdGroupChat
     );
   });

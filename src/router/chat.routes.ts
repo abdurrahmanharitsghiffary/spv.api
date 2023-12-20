@@ -31,10 +31,13 @@ import {
 import { uploadImage } from "../middlewares/multer.middlewares";
 import { zfd } from "zod-form-data";
 import { zParticipants, zfdParticipants } from "../schema/chat.schema";
+import { checkIsParticipatedInChatRoom } from "../middlewares";
 
 const router = express.Router();
 
 router.use(verifyToken);
+
+const checkIsParticipated = checkIsParticipatedInChatRoom({ params: "roomId" });
 
 const validatePagingOptionsExt = validate(
   z.object({
@@ -52,15 +55,27 @@ router
 
 router
   .route("/:roomId")
-  .get(validateParamsV2("roomId"), tryCatch(getChatRoomById));
+  .get(
+    validateParamsV2("roomId"),
+    checkIsParticipated,
+    tryCatch(getChatRoomById)
+  );
 
 router
   .route("/:roomId/messages")
-  .get(validatePagingOptionsExt, tryCatch(getChatRoomMessagesByRoomId));
+  .get(
+    validatePagingOptionsExt,
+    checkIsParticipated,
+    tryCatch(getChatRoomMessagesByRoomId)
+  );
 
 router
   .route("/:roomId/participants")
-  .get(validatePagingOptionsExt, tryCatch(getChatRoomParticipantsByRoomId))
+  .get(
+    validatePagingOptionsExt,
+    checkIsParticipated,
+    tryCatch(getChatRoomParticipantsByRoomId)
+  )
   .patch(
     validate(
       z.object({

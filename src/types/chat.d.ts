@@ -14,13 +14,13 @@ export type Chat = {
   updatedAt: Date;
 };
 
-type UndreadMessageSimplified = {
+type UnreadMessageSimplified = {
   total: number;
 };
 
-type UndreadMessage = {
+type UnreadMessage = {
   total: number;
-} & UndreadMessageSimplified;
+} & UnreadMessageSimplified;
 
 type ChatRoomParticipant = UserSimplified & {
   role: $Enums.ParticipantRole;
@@ -33,7 +33,7 @@ type ChatRoom = {
   picture: Image;
   participants: { users: ChatRoomParticipant[]; total: number };
   messages: Chat[];
-  unreadMessages: UndreadMessageSimplified;
+  unreadMessages: UnreadMessageSimplified;
   description?: string | null;
   title?: string | null;
   isGroupChat: boolean;

@@ -15,6 +15,7 @@ import { $Enums, Prisma, PrismaClient } from "@prisma/client";
 import { NotFound } from "../lib/messages";
 import { DefaultArgs } from "@prisma/client/runtime/library";
 export const deleteUploadedImage = async (src: string) => {
+  if (src.includes("giphy")) return null;
   const path = src.split("public/")[1];
   try {
     await fs.unlink("src/public/" + path);

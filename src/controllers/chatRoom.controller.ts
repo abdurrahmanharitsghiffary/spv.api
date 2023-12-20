@@ -34,7 +34,7 @@ export const createChatRoom = async (
       req,
       user.id.toString(),
       Socket_Event.JOIN_ROOM,
-      createdRoom.id
+      createdRoom
     );
   });
 

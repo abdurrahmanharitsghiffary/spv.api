@@ -5,7 +5,7 @@ import User from "../models/user.models";
 import { Socket_Event } from "./event";
 import { RequestError, UnauthorizedError } from "../lib/error";
 import { ACCESS_TOKEN_SECRET } from "../lib/consts";
-import Chat, { ReadChat } from "../models/chat.models";
+import Chat, { ChatRoomParticipant, ReadChat } from "../models/chat.models";
 
 export const ioInit = (
   io: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>
@@ -71,9 +71,66 @@ export const ioInit = (
         io.emit(Socket_Event.OFFLINE, user.id.toString());
       });
 
+      socket.on(Socket_Event.VISIT_ROOM, (roomId: number) => {
+        console.log("Joined Room: ", roomId);
+        socket.join(roomId.toString());
+        console.log("JOINED ROOMS", socket.rooms);
+      });
+
+      socket.on(
+        Socket_Event.TYPING_MESSAGE,
+        (data: {
+          chatId: number;
+          userId: string;
+          fullName: string;
+          username: string;
+        }) => {
+          console.log(data.userId, " Typing...");
+          console.log("Chat id: ", data.chatId);
+          io.in(data.chatId.toString()).emit(Socket_Event.USER_TYPING, data);
+        }
+      );
+
+      socket.on(
+        Socket_Event.TYPING_END,
+        (data: {
+          chatId: number;
+          userId: number;
+          fullName: string;
+          username: string;
+        }) => {
+          io.in(data.chatId.toString()).emit(
+            Socket_Event.USER_TYPING_END,
+            data
+          );
+        }
+      );
+
       socket.on(
         Socket_Event.READ_MESSAGE,
         async (data: { userId: number; chatId: number }) => {
+          const isParticipated = await ChatRoomParticipant.findUnique({
+            where: {
+              chatRoomId_userId: {
+                chatRoomId: data.chatId,
+                userId: data.userId,
+              },
+            },
+          });
+
+          if (!isParticipated) return;
+
+          const isDuplicated = await ReadChat.findUnique({
+            where: {
+              userId_chatId: {
+                userId: data.userId,
+                chatId: data.chatId,
+              },
+            },
+          });
+
+          if (isDuplicated) return;
+
           const readedMessage = await ReadChat.create({
             data: {
               userId: data.userId,

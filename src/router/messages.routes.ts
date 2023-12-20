@@ -4,6 +4,7 @@ import { uploadImage } from "../middlewares/multer.middlewares";
 import {
   createChat,
   deleteChatById,
+  getMessagesById,
   updateChatById,
 } from "../controllers/chat.controller";
 import {
@@ -20,6 +21,10 @@ import { zfd } from "zod-form-data";
 import { z } from "zod";
 import { zChatMessage, zfdChatMessage } from "../schema/chat.schema";
 import { zIntOrStringId, zfdInt } from "../schema";
+import {
+  checkIsParticipatedInChatRoom,
+  checkMessageAccess,
+} from "../middlewares";
 
 const router = express.Router();
 
@@ -35,11 +40,20 @@ router.route("/").post(
       })
     )
   ),
+  checkIsParticipatedInChatRoom({
+    body: "chatRoomId",
+    shouldAlsoBlockSendingMessageToGroupChat: true,
+  }),
   tryCatch(createChat)
 );
 
 router
   .route("/:messageId")
+  .get(
+    validateParamsV2("messageId"),
+    checkMessageAccess,
+    tryCatch(getMessagesById)
+  )
   .delete(
     validateParamsV2("messageId"),
     tryCatchMiddleware(protectChat),

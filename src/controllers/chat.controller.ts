@@ -4,6 +4,7 @@ import {
   deleteChatById as deleteChatWithId,
   updateChatById as updateChatWithId,
   createChatWithRoomIdAndAuthorId,
+  findChatById,
 } from "../utils/chat/chat.utils";
 import { getPagingObject } from "../utils/paging";
 import Image from "../models/image.models";
@@ -56,7 +57,7 @@ export const deleteChatById = async (
       req,
       participant.userId.toString(),
       Socket_Event.DELETE_MESSAGE,
-      normalizedChat
+      normalizedChat.id
     );
   });
 
@@ -111,7 +112,6 @@ export const createChat = async (
   const uId = Number(userId);
   const images = (req.files as Express.Multer.File[]) ?? [];
   console.log(images, "Images");
-  await findChatRoomById(cRId, uId);
 
   const createdChat = await createChatWithRoomIdAndAuthorId({
     senderId: uId,
@@ -121,7 +121,7 @@ export const createChat = async (
   });
 
   const normalizedChat = await normalizeChat(createdChat);
-
+  console.log(createdChat.chatRoom.participants, "Participants");
   createdChat.chatRoom.participants.forEach((participant) => {
     emitSocketEvent(
       req,
@@ -134,4 +134,15 @@ export const createChat = async (
   return res
     .status(201)
     .json(new ApiResponse(normalizedChat, 201, "Chat successfully created."));
+};
+
+export const getMessagesById = async (
+  req: express.Request,
+  res: express.Response
+) => {
+  const { messageId } = req.params;
+  const { userId } = req as ExpressRequestExtended;
+  const message = await findChatById(Number(messageId), Number(userId));
+
+  return res.status(200).json(new ApiResponse(message, 200));
 };
