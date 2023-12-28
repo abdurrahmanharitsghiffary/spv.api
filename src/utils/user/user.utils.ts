@@ -9,6 +9,7 @@ import {
   excludeBlockingUser,
   selectUser,
   selectUserPublic,
+  selectUserSimplified,
 } from "../../lib/query/user";
 import { getCompleteFileUrlPath } from "..";
 import { Prisma } from "@prisma/client";
@@ -137,43 +138,51 @@ export const findAllUser = async ({
   return { data: normalizedUser, total: totalUsers };
 };
 
-export const findFollowUserByUserEmail = async (
-  userEmail: string,
-  types: "following" | "followedBy",
-  currentUserId?: number
-) => {
-  const user = await User.findUnique({
-    where: {
-      AND: userWhereAndInput(currentUserId),
-      email: userEmail,
-    },
-    select: {
-      [types]: {
-        select: { id: true },
-        where: {
-          AND: userWhereAndInput(currentUserId),
-        },
-      },
-      _count: {
-        select: {
-          [types]: true,
-        },
-      },
-    },
-  });
-  if (!user) throw new RequestError(NotFound.USER, 404);
+// export const findFollowUserByUserEmail = async (
+//   userEmail: string,
+//   types: "following" | "followedBy",
+//   currentUserId?: number
+// ) => {
+//   const user = await User.findUnique({
+//     where: {
+//       AND: userWhereAndInput(currentUserId),
+//       email: userEmail,
+//     },
+//     select: {
+//       [types]: {
+//         select: { id: true },
+//         where: {
+//           AND: userWhereAndInput(currentUserId),
+//         },
+//       },
+//       _count: {
+//         select: {
+//           [types]: true,
+//         },
+//       },
+//     },
+//   });
+//   if (!user) throw new RequestError(NotFound.USER, 404);
 
-  return {
-    [types]: [...(user?.[types]?.map((user) => user.id) ?? [])],
-    total: user?._count ?? 0,
-  };
-};
+//   return {
+//     [types]: [...(user?.[types]?.map((user) => user.id) ?? [])],
+//     total: user?._count ?? 0,
+//   };
+// };
 
-export const findFollowUserByUserId = async (
-  userId: string,
-  types: "following" | "followedBy",
-  currentUserId?: number
-) => {
+export const findFollowUserByUserId = async ({
+  types,
+  userId,
+  currentUserId,
+  limit = 20,
+  offset = 0,
+}: {
+  userId: string;
+  types: "following" | "followedBy";
+  currentUserId?: number;
+  limit?: number;
+  offset?: number;
+}) => {
   const user = await User.findUnique({
     where: {
       id: Number(userId),
@@ -185,22 +194,12 @@ export const findFollowUserByUserId = async (
           AND: userWhereAndInput(currentUserId),
         },
         select: {
-          id: true,
-          fullName: true,
-          isOnline: true,
-          username: true,
-          firstName: true,
-          lastName: true,
-          profile: {
-            select: {
-              avatarImage: {
-                select: {
-                  id: true,
-                  src: true,
-                },
-              },
-            },
-          },
+          ...selectUserSimplified,
+        },
+        skip: offset,
+        take: limit,
+        orderBy: {
+          fullName: "asc",
         },
       },
       _count: {
@@ -214,13 +213,13 @@ export const findFollowUserByUserId = async (
   if (!user) throw new RequestError(NotFound.USER, 404);
 
   return {
-    [types]: [
+    data: [
       ...(user?.[types]?.map(({ profile, ...rest }) => ({
         ...rest,
         avatarImage: getCompleteFileUrlPath((profile as any)?.avatarImage),
       })) ?? []),
     ],
-    total: user?._count ?? 0,
+    total: (user?._count?.[types as any] as unknown as number) ?? 0,
   };
 };
 

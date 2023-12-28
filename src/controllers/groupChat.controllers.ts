@@ -6,7 +6,11 @@ import {
 } from "../types/request";
 import { ApiResponse } from "../utils/response";
 import { ChatRoom, ChatRoomParticipant } from "../models/chat.models";
-import { selectChatRoomPWL, selectRoomParticipant } from "../lib/query/chat";
+import {
+  selectChatRoom,
+  selectChatRoomPWL,
+  selectRoomParticipant,
+} from "../lib/query/chat";
 import { selectUserSimplified } from "../lib/query/user";
 import { emitSocketEvent } from "../socket/socket.utils";
 import { Socket_Event } from "../socket/event";
@@ -16,6 +20,8 @@ import Image from "../models/image.models";
 import { checkParticipants, deleteUploadedImage, getFileDest } from "../utils";
 import { ParticipantsField } from "../types/chat";
 import { NotFound } from "../lib/messages";
+import { normalizeChatParticipant } from "../utils/chat/chat.normalize";
+import { Socket_Id } from "../lib/consts";
 
 export const createGroupChat = async (
   req: express.Request,
@@ -37,7 +43,7 @@ export const createGroupChat = async (
   createdGroupChat.participants.users.forEach((participant) => {
     emitSocketEvent(
       req,
-      participant.id.toString(),
+      Socket_Id(participant.id, "USER"),
       Socket_Event.JOIN_ROOM,
       createdGroupChat
     );
@@ -99,7 +105,7 @@ export const joinGroupChat = async (
 
     emitSocketEvent(
       req,
-      participant.user.id.toString(),
+      Socket_Id(participant.user.id, "USER"),
       Socket_Event.JOIN_ROOM,
       normalizedRoom
     );
@@ -159,9 +165,9 @@ export const leaveGroupChat = async (
 
     emitSocketEvent(
       req,
-      participant.user.id.toString(),
-      Socket_Event.JOIN_ROOM,
-      normalizedRoom
+      Socket_Id(participant.user.id, "USER"),
+      Socket_Event.LEAVE_ROOM,
+      normalizedRoom.id
     );
   });
 
@@ -174,6 +180,7 @@ export const updateGroupChat = async (
   req: express.Request,
   res: express.Response
 ) => {
+  const { userId } = req as ExpressRequestExtended;
   const { groupId } = req.params;
   const image = req.file;
   const { userRole } = req as ExpressRequestProtectedGroup;
@@ -210,17 +217,7 @@ export const updateGroupChat = async (
         ],
       },
     },
-    include: {
-      participants: {
-        select: { userId: true },
-      },
-      groupPicture: {
-        select: {
-          id: true,
-          src: true,
-        },
-      },
-    },
+    select: { ...selectChatRoomPWL(Number(userId)) },
   });
 
   if (image) {
@@ -242,12 +239,17 @@ export const updateGroupChat = async (
     }
   }
 
+  const normalizedRoom = await normalizeChatRooms(updatedChatRoom);
+
   updatedChatRoom.participants.forEach((participant) => {
     emitSocketEvent(
       req,
-      participant.userId.toString(),
+      Socket_Id(participant.user.id, "USER"),
       Socket_Event.UPDATE_ROOM,
-      updatedChatRoom.id
+      {
+        updating: "details",
+        data: normalizedRoom,
+      }
     );
   });
 
@@ -286,7 +288,7 @@ export const deleteGroupChat = async (
   deletedRoom.participants.forEach((participant) => {
     emitSocketEvent(
       req,
-      participant.userId.toString(),
+      Socket_Id(participant.userId, "USER"),
       Socket_Event.DELETE_ROOM,
       deletedRoom.id
     );
@@ -301,6 +303,7 @@ export const updateGroupChatParticipants = async (
   req: express.Request,
   res: express.Response
 ) => {
+  const { userId } = req as ExpressRequestExtended;
   const { roomId } = req.params;
   const { participants } = req.body;
   const { userRole } = req as ExpressRequestProtectedGroup;
@@ -342,12 +345,21 @@ export const updateGroupChatParticipants = async (
     },
   });
 
+  const normalizedParticipants = await Promise.all(
+    updatedGroupChat.participants.map((participant) =>
+      Promise.resolve(normalizeChatParticipant(participant))
+    )
+  );
+
   updatedGroupChat.participants.forEach((participant) => {
     emitSocketEvent(
       req,
-      participant.user.id.toString(),
+      Socket_Id(participant.user.id, "USER"),
       Socket_Event.UPDATE_ROOM,
-      updatedGroupChat
+      {
+        updating: "participants",
+        data: normalizedParticipants,
+      }
     );
   });
 
@@ -367,7 +379,8 @@ export const deleteGroupParticipants = async (
   res: express.Response
 ) => {
   const { roomId } = req.params;
-  const { userRole } = req as ExpressRequestProtectedGroup;
+  const { userRole, userId } = req as ExpressRequestProtectedGroup &
+    ExpressRequestExtended;
   const { ids } = req.body;
   const rId = Number(roomId);
 
@@ -394,9 +407,9 @@ export const deleteGroupParticipants = async (
   chatRoomAfterDeletingParticipants.participants.forEach((participant) => {
     emitSocketEvent(
       req,
-      participant.userId.toString(),
+      Socket_Id(participant.userId, "USER"),
       Socket_Event.UPDATE_ROOM,
-      chatRoomAfterDeletingParticipants
+      chatRoomAfterDeletingParticipants.participants.map((p) => p.userId)
     );
   });
 

@@ -20,6 +20,7 @@ export const Socket_Event = Object.freeze({
   UPDATE_ROOM: "updateRoom",
   CREATE_ROOM: "createRoom",
   VISIT_ROOM: "visitRoom",
+  UNVISIT_ROOM: "unvisitRoom",
   USER_TYPING: "userTyping",
   USER_TYPING_END: "userTypingEnd",
 });

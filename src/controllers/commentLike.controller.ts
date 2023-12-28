@@ -10,6 +10,9 @@ import {
 } from "../lib/query/user";
 import { findCommentById } from "../utils/comment/comment.utils";
 import { NotFound } from "../lib/messages";
+import { getPagingObject, parsePaging } from "../utils/paging";
+import { UserSimplified } from "../types/user";
+import { getCompleteFileUrlPath } from "../utils";
 // /continue
 export const getCommentLikesByCommentId = async (
   req: express.Request,
@@ -17,6 +20,7 @@ export const getCommentLikesByCommentId = async (
 ) => {
   const { userId } = req as ExpressRequestExtended;
   const { commentId } = req.params;
+  const { limit, offset } = parsePaging(req);
   const uId = Number(userId);
   const cId = Number(commentId);
 
@@ -40,6 +44,8 @@ export const getCommentLikesByCommentId = async (
         select: selectUserSimplified,
       },
     },
+    take: limit,
+    skip: offset,
   });
 
   const count = await CommentLike.count({
@@ -51,24 +57,23 @@ export const getCommentLikesByCommentId = async (
   const normalizedLikes = await Promise.all(
     likes.map((like) =>
       Promise.resolve({
-        id: like.userId,
+        avatarImage: getCompleteFileUrlPath(like.user.profile?.avatarImage),
         firstName: like.user.firstName,
+        fullName: like.user.fullName,
+        id: like.userId,
+        isOnline: like.user.isOnline,
         lastName: like.user.lastName,
         username: like.user.username,
-        profilePhoto: like.user.profile?.avatarImage,
-      })
+      } as UserSimplified)
     )
   );
 
   return res.status(200).json(
-    new ApiResponse(
-      {
-        commentId: cId,
-        likedBy: normalizedLikes,
-        total: count,
-      },
-      200
-    )
+    await getPagingObject({
+      req,
+      total_records: count,
+      data: normalizedLikes,
+    })
   );
 };
 

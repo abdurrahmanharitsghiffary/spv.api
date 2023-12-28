@@ -25,7 +25,7 @@ import {
   validateParamsV2,
 } from "../middlewares/validator.middlewares";
 import { z } from "zod";
-import { zIntOrStringId, zText, zfdInt } from "../schema";
+import { zIntOrStringId, zLimit, zOffset, zText, zfdInt } from "../schema";
 import { zfd } from "zod-form-data";
 
 const router = express.Router();
@@ -89,7 +89,20 @@ router
 
 router
   .route("/:commentId/likes")
-  .get(validateParamsV2("commentId"), tryCatch(getCommentLikesByCommentId))
+  .get(
+    validate(
+      z.object({
+        params: z.object({
+          commentId: zIntOrStringId,
+        }),
+        query: z.object({
+          offset: zOffset,
+          limit: zLimit,
+        }),
+      })
+    ),
+    tryCatch(getCommentLikesByCommentId)
+  )
   .post(validateParamsV2("commentId"), tryCatch(createLike))
   .delete(validateParamsV2("commentId"), tryCatch(deleteLike));
 

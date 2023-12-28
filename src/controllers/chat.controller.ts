@@ -7,16 +7,13 @@ import {
   findChatById,
 } from "../utils/chat/chat.utils";
 import { getPagingObject } from "../utils/paging";
-import Image from "../models/image.models";
-import { deleteUploadedImage, getFileDest } from "../utils";
+import { deleteUploadedImage } from "../utils";
 import { ApiResponse } from "../utils/response";
 import { emitSocketEvent } from "../socket/socket.utils";
 import { normalizeChat } from "../utils/chat/chat.normalize";
 import { Socket_Event } from "../socket/event";
-import {
-  findAllUserChatRoom,
-  findChatRoomById,
-} from "../utils/chat/chatRoom.utils";
+import { findAllUserChatRoom } from "../utils/chat/chatRoom.utils";
+import { Socket_Id } from "../lib/consts";
 
 export const getAllChatsByUserId = async (
   req: express.Request,
@@ -55,7 +52,7 @@ export const deleteChatById = async (
   deletedChat.chatRoom.participants.forEach((participant) => {
     emitSocketEvent(
       req,
-      participant.userId.toString(),
+      Socket_Id(participant.userId, "USER"),
       Socket_Event.DELETE_MESSAGE,
       normalizedChat.id
     );
@@ -91,7 +88,7 @@ export const updateChatById = async (
   updatedChat.chatRoom.participants.forEach((participant) => {
     emitSocketEvent(
       req,
-      participant.userId.toString(),
+      Socket_Id(participant.userId, "USER"),
       Socket_Event.UPDATE_MESSAGE,
       normalizedChat
     );
@@ -125,7 +122,7 @@ export const createChat = async (
   createdChat.chatRoom.participants.forEach((participant) => {
     emitSocketEvent(
       req,
-      participant.userId.toString(),
+      Socket_Id(participant.userId, "USER"),
       Socket_Event.RECEIVE_MESSAGE,
       normalizedChat
     );

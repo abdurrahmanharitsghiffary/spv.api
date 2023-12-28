@@ -25,6 +25,18 @@ import { getAllBlockedUsers } from "../controllers/block.controller";
 const router = express.Router();
 router.use(verifyToken);
 
+const validateFExtended = validate(
+  z.object({
+    params: z.object({
+      userId: zIntOrStringId,
+    }),
+    query: z.object({
+      limit: zLimit,
+      offset: zOffset,
+    }),
+  })
+);
+
 router.route("/").get(validatePagingOptions, isAdmin, tryCatch(getAllUsers));
 
 router
@@ -52,10 +64,10 @@ router
   .delete(isAdmin, validateParamsV2("userId"), tryCatch(deleteUser));
 router
   .route("/:userId/following")
-  .get(validateParamsV2("userId"), tryCatch(getFollowedUsersById));
+  .get(validateFExtended, tryCatch(getFollowedUsersById));
 router
   .route("/:userId/followers")
-  .get(validateParamsV2("userId"), tryCatch(getUserFollowersById));
+  .get(validateFExtended, tryCatch(getUserFollowersById));
 
 router
   .route("/:userId/followed")

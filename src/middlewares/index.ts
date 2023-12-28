@@ -88,6 +88,7 @@ export const checkMessageAccess = tryCatchMiddleware(
     });
 
     if (!message?.chatRoom.participants?.[0]?.userId) {
+      console.log(message, "Forbiddened");
       throw new ForbiddenError();
     }
 

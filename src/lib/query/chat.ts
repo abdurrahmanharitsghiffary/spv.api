@@ -5,6 +5,30 @@ import {
   selectUserSimplified,
 } from "./user";
 
+const unreadMessagesFilter = (currentUserId: number) =>
+  ({
+    select: {
+      messages: {
+        where: {
+          authorId: {
+            not: currentUserId,
+          },
+          AND: [
+            {
+              readedBy: {
+                every: {
+                  userId: {
+                    not: currentUserId,
+                  },
+                },
+              },
+            },
+          ],
+        },
+      },
+    },
+  } satisfies Prisma.ChatRoomSelect["_count"]);
+
 export const selectChat = (currentUserId: number) =>
   ({
     id: true,
@@ -115,15 +139,7 @@ export const selectChatRoom = (currentUserId: number) =>
       select: {
         participants: true,
         messages: {
-          where: {
-            readedBy: {
-              every: {
-                userId: {
-                  not: currentUserId,
-                },
-              },
-            },
-          },
+          ...unreadMessagesFilter(currentUserId).select.messages,
         },
       },
     },
@@ -301,15 +317,7 @@ export const selectChatRoomWithWhereInput = (userId: number) =>
       select: {
         participants: true,
         messages: {
-          where: {
-            readedBy: {
-              every: {
-                userId: {
-                  not: userId,
-                },
-              },
-            },
-          },
+          ...unreadMessagesFilter(userId).select.messages,
         },
       },
     },

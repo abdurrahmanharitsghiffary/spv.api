@@ -82,65 +82,73 @@ export const findAllUserChatRoom = async ({
   const groupFilter =
     type === "group" ? true : type === "personal" ? false : undefined;
 
+  const filter = () => ({
+    AND: [
+      {
+        participants: {
+          some: {
+            userId: {
+              in: [userId],
+            },
+          },
+        },
+      },
+    ],
+    OR: [
+      {
+        isGroupChat: false,
+        participants: {
+          some: {
+            AND: [
+              {
+                user: {
+                  fullName: {
+                    contains: q,
+                  },
+                  id: {
+                    not: userId,
+                  },
+                },
+              },
+            ],
+          },
+        },
+        AND: [
+          {
+            participants: {
+              every: {
+                user: {
+                  ...excludeBlockedUser(userId),
+                  ...excludeBlockingUser(userId),
+                },
+              },
+            },
+          },
+        ],
+      },
+      {
+        isGroupChat: true,
+        AND: [
+          { title: { contains: q } },
+          {
+            participants: {
+              some: {
+                user: {
+                  ...excludeBlockedUser(userId),
+                  ...excludeBlockingUser(userId),
+                },
+              },
+            },
+          },
+        ],
+      },
+    ],
+  });
+
   const rooms = await ChatRoom.findMany({
     where: {
       isGroupChat: groupFilter,
-      OR: [
-        {
-          isGroupChat: false,
-          participants: {
-            some: {
-              AND: [
-                {
-                  user: {
-                    fullName: {
-                      contains: q,
-                    },
-                  },
-                },
-              ],
-              userId: {
-                in: [userId],
-              },
-            },
-          },
-          AND: [
-            {
-              participants: {
-                every: {
-                  user: {
-                    ...excludeBlockedUser(userId),
-                    ...excludeBlockingUser(userId),
-                  },
-                },
-              },
-            },
-          ],
-        },
-        {
-          isGroupChat: true,
-          participants: {
-            some: {
-              userId: {
-                in: [userId],
-              },
-            },
-          },
-          AND: [
-            { title: { contains: q } },
-            {
-              participants: {
-                some: {
-                  user: {
-                    ...excludeBlockedUser(userId),
-                    ...excludeBlockingUser(userId),
-                  },
-                },
-              },
-            },
-          ],
-        },
-      ],
+      ...filter(),
     },
     skip: offset,
     take: limit,
@@ -153,63 +161,7 @@ export const findAllUserChatRoom = async ({
   const totalRooms = await ChatRoom.count({
     where: {
       isGroupChat: groupFilter,
-      OR: [
-        {
-          isGroupChat: false,
-          participants: {
-            some: {
-              AND: [
-                {
-                  user: {
-                    fullName: {
-                      contains: q,
-                    },
-                  },
-                },
-              ],
-              userId: {
-                in: [userId],
-              },
-            },
-          },
-          AND: [
-            {
-              participants: {
-                every: {
-                  user: {
-                    ...excludeBlockedUser(userId),
-                    ...excludeBlockingUser(userId),
-                  },
-                },
-              },
-            },
-          ],
-        },
-        {
-          isGroupChat: true,
-          participants: {
-            some: {
-              userId: {
-                in: [userId],
-              },
-            },
-          },
-          AND: [
-            { title: { contains: q } },
-
-            {
-              participants: {
-                some: {
-                  user: {
-                    ...excludeBlockedUser(userId),
-                    ...excludeBlockingUser(userId),
-                  },
-                },
-              },
-            },
-          ],
-        },
-      ],
+      ...filter(),
     },
   });
 

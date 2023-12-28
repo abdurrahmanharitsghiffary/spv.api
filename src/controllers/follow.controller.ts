@@ -1,9 +1,7 @@
 import express from "express";
 import { ExpressRequestExtended } from "../types/request";
 import {
-  findFollowUserByUserEmail,
   findFollowUserByUserId,
-  findUserById,
   findUserPublic,
 } from "../utils/user/user.utils";
 import User from "../models/user.models";
@@ -11,28 +9,27 @@ import { RequestError } from "../lib/error";
 import { ApiResponse } from "../utils/response";
 import { excludeBlockedUser, excludeBlockingUser } from "../lib/query/user";
 import { NotFound } from "../lib/messages";
+import { getPagingObject, parsePaging } from "../utils/paging";
 
 export const getFollowedUser = async (
   req: express.Request,
   res: express.Response
 ) => {
-  const { userEmail, userId } = req as ExpressRequestExtended;
-
-  const followedUserIds = await findFollowUserByUserEmail(
-    userEmail,
-    "following",
-    Number(userId)
-  );
+  const { userId } = req as ExpressRequestExtended;
+  const { limit, offset } = parsePaging(req);
+  const followedUsers = await findFollowUserByUserId({
+    types: "following",
+    userId,
+    limit,
+    offset,
+  });
 
   return res.status(200).json(
-    new ApiResponse(
-      {
-        followedUserIds: followedUserIds.following,
-        // @ts-ignore
-        total: followedUserIds.total.following,
-      },
-      200
-    )
+    await getPagingObject({
+      req,
+      total_records: followedUsers.total,
+      data: followedUsers.data,
+    })
   );
 };
 
@@ -40,24 +37,24 @@ export const getMyFollowers = async (
   req: express.Request,
   res: express.Response
 ) => {
-  const { userEmail, userId } = req as ExpressRequestExtended;
+  const { userId } = req as ExpressRequestExtended;
+  const { limit, offset } = parsePaging(req);
+  const followers = await findFollowUserByUserId({
+    types: "followedBy",
+    userId,
+    limit,
+    offset,
+  });
 
-  const followerIds = await findFollowUserByUserEmail(
-    userEmail,
-    "followedBy",
-    Number(userId)
-  );
-
-  return res.status(200).json(
-    new ApiResponse(
-      {
-        followerIds: followerIds.followedBy,
-        // @ts-ignore
-        total: followerIds.total.followedBy,
-      },
-      200
-    )
-  );
+  return res
+    .status(200)
+    .json(
+      await getPagingObject({
+        req,
+        data: followers.data,
+        total_records: followers.total,
+      })
+    );
 };
 
 export const getUserFollowersById = async (
@@ -65,23 +62,24 @@ export const getUserFollowersById = async (
   res: express.Response
 ) => {
   const { userId: currentUserId } = req as ExpressRequestExtended;
+  let { limit = 20, offset = 0 } = req.query;
+  limit = Number(limit);
+  offset = Number(offset);
   const { userId } = req.params;
-  const userFollowers = await findFollowUserByUserId(
+  const userFollowers = await findFollowUserByUserId({
     userId,
-    "followedBy",
-    Number(currentUserId)
-  );
+    types: "followedBy",
+    currentUserId: Number(currentUserId),
+    limit,
+    offset,
+  });
 
   return res.status(200).json(
-    new ApiResponse(
-      {
-        userId: Number(userId),
-        followers: userFollowers.followedBy,
-        // @ts-ignore
-        total: userFollowers.total.followedBy,
-      },
-      200
-    )
+    await getPagingObject({
+      req,
+      total_records: userFollowers.total,
+      data: userFollowers.data,
+    })
   );
 };
 
@@ -90,23 +88,25 @@ export const getFollowedUsersById = async (
   res: express.Response
 ) => {
   const { userId: currentUserId } = req as ExpressRequestExtended;
+  let { limit = 20, offset = 0 } = req.query;
+  limit = Number(limit);
+  offset = Number(offset);
   const { userId } = req.params;
-  const userFollowers = await findFollowUserByUserId(
+
+  const userFollowers = await findFollowUserByUserId({
     userId,
-    "following",
-    Number(currentUserId)
-  );
+    types: "following",
+    currentUserId: Number(currentUserId),
+    limit,
+    offset,
+  });
 
   return res.status(200).json(
-    new ApiResponse(
-      {
-        userId: Number(userId),
-        followedUsers: userFollowers.following,
-        // @ts-ignore
-        total: userFollowers.total.following,
-      },
-      200
-    )
+    await getPagingObject({
+      req,
+      total_records: userFollowers.total,
+      data: userFollowers.data,
+    })
   );
 };
 

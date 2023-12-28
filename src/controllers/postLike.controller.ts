@@ -9,8 +9,10 @@ import {
   selectUserSimplified,
 } from "../lib/query/user";
 import { findPostById } from "../utils/post/post.utils";
-import { NotFound } from "../lib/messages";
 import { findPostIsLiked } from "../utils/post/postLike.utils";
+import { UserSimplified } from "../types/user";
+import { getCompleteFileUrlPath } from "../utils";
+import { getPagingObject, parsePaging } from "../utils/paging";
 // CONTINUe
 export const getPostLikesByPostId = async (
   req: express.Request,
@@ -18,9 +20,9 @@ export const getPostLikesByPostId = async (
 ) => {
   const { userId } = req as ExpressRequestExtended;
   const { postId } = req.params;
-
+  const { limit, offset } = parsePaging(req);
   await findPostById(postId, Number(userId));
-  selectUserSimplified;
+
   const likes = await PostLike.findMany({
     where: {
       postId: Number(postId),
@@ -38,6 +40,8 @@ export const getPostLikesByPostId = async (
         },
       },
     },
+    take: limit,
+    skip: offset,
   });
 
   const count = await PostLike.count({
@@ -53,21 +57,22 @@ export const getPostLikesByPostId = async (
         firstName: like.user.firstName,
         lastName: like.user.lastName,
         username: like.user.username,
-        profilePhoto: like.user.profile?.avatarImage,
-      })
+        avatarImage: getCompleteFileUrlPath(like.user.profile?.avatarImage),
+        fullName: like.user.fullName,
+        isOnline: like.user.isOnline,
+      } as UserSimplified)
     )
   );
 
-  return res.status(200).json(
-    new ApiResponse(
-      {
-        postId: Number(postId),
-        likedBy: normalizedLikes,
-        total: count,
-      },
-      200
-    )
-  );
+  return res
+    .status(200)
+    .json(
+      await getPagingObject({
+        req,
+        total_records: count,
+        data: normalizedLikes,
+      })
+    );
 };
 
 export const createLike = async (

@@ -4,8 +4,10 @@ import JWT from "jsonwebtoken";
 import User from "../models/user.models";
 import { Socket_Event } from "./event";
 import { RequestError, UnauthorizedError } from "../lib/error";
-import { ACCESS_TOKEN_SECRET } from "../lib/consts";
+import { ACCESS_TOKEN_SECRET, Socket_Id } from "../lib/consts";
 import Chat, { ChatRoomParticipant, ReadChat } from "../models/chat.models";
+import { UserSimplified } from "../types/user";
+import { selectRoomParticipant } from "../lib/query/chat";
 
 export const ioInit = (
   io: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>
@@ -45,7 +47,7 @@ export const ioInit = (
       console.log("Connected");
       const user = socket.data.user;
       // console.log(user, "Logged socket user");
-      socket.join(user.id.toString());
+      socket.join(Socket_Id(user.id, "USER"));
 
       await User.update({
         where: {
@@ -55,7 +57,7 @@ export const ioInit = (
           isOnline: true,
         },
       });
-      io.emit(Socket_Event.ONLINE, user.id.toString());
+      io.emit(Socket_Event.ONLINE, Socket_Id(user.id, "USER"));
 
       socket.on(Socket_Event.OPEN, async () => {});
 
@@ -68,13 +70,15 @@ export const ioInit = (
             isOnline: false,
           },
         });
-        io.emit(Socket_Event.OFFLINE, user.id.toString());
+        io.emit(Socket_Event.OFFLINE, Socket_Id(user.id, "USER"));
       });
 
       socket.on(Socket_Event.VISIT_ROOM, (roomId: number) => {
-        console.log("Joined Room: ", roomId);
-        socket.join(roomId.toString());
-        console.log("JOINED ROOMS", socket.rooms);
+        socket.join(Socket_Id(roomId, "ROOM"));
+      });
+
+      socket.on(Socket_Event.UNVISIT_ROOM, (roomId: number) => {
+        socket.leave(Socket_Id(roomId, "ROOM"));
       });
 
       socket.on(
@@ -85,9 +89,10 @@ export const ioInit = (
           fullName: string;
           username: string;
         }) => {
-          console.log(data.userId, " Typing...");
-          console.log("Chat id: ", data.chatId);
-          io.in(data.chatId.toString()).emit(Socket_Event.USER_TYPING, data);
+          io.in(Socket_Id(data.chatId, "ROOM")).emit(
+            Socket_Event.USER_TYPING,
+            data
+          );
         }
       );
 
@@ -99,7 +104,7 @@ export const ioInit = (
           fullName: string;
           username: string;
         }) => {
-          io.in(data.chatId.toString()).emit(
+          io.in(Socket_Id(data.chatId, "ROOM")).emit(
             Socket_Event.USER_TYPING_END,
             data
           );
@@ -108,16 +113,15 @@ export const ioInit = (
 
       socket.on(
         Socket_Event.READ_MESSAGE,
-        async (data: { userId: number; chatId: number }) => {
+        async (data: { userId: number; chatId: number; roomId: number }) => {
           const isParticipated = await ChatRoomParticipant.findUnique({
             where: {
               chatRoomId_userId: {
-                chatRoomId: data.chatId,
+                chatRoomId: data.roomId,
                 userId: data.userId,
               },
             },
           });
-
           if (!isParticipated) return;
 
           const isDuplicated = await ReadChat.findUnique({
@@ -128,46 +132,61 @@ export const ioInit = (
               },
             },
           });
-
           if (isDuplicated) return;
 
-          const readedMessage = await ReadChat.create({
-            data: {
-              userId: data.userId,
-              chatId: data.chatId,
-            },
-            select: {
-              chat: {
-                select: {
-                  id: true,
-                  chatRoom: {
-                    select: {
-                      id: true,
-                      participants: {
-                        select: {
-                          userId: true,
+          try {
+            const readedMessage = await ReadChat.create({
+              data: {
+                userId: data.userId,
+                chatId: data.chatId,
+              },
+              select: {
+                createdAt: true,
+                chat: {
+                  select: {
+                    id: true,
+                    chatRoom: {
+                      select: {
+                        id: true,
+                        participants: {
+                          select: {
+                            ...selectRoomParticipant,
+                          },
                         },
                       },
                     },
                   },
                 },
               },
-            },
-          });
+            });
 
-          readedMessage.chat.chatRoom.participants.forEach((participant) => {
-            socket
-              .to(participant.userId.toString())
-              .emit(Socket_Event.READED_MESSAGE, {
-                chatId: readedMessage.chat.id,
-                roomId: readedMessage.chat.chatRoom.id,
-              });
-          });
+            readedMessage.chat.chatRoom.participants.forEach((participant) => {
+              const chatReader: UserSimplified & { readedAt: Date } = {
+                avatarImage: participant.user.profile?.avatarImage,
+                firstName: participant.user.firstName,
+                fullName: participant.user.fullName,
+                id: participant.user.id,
+                isOnline: participant.user.isOnline,
+                lastName: participant.user.lastName,
+                readedAt: readedMessage.createdAt,
+                username: participant.user.username,
+              };
+              io.in(Socket_Id(participant.user.id, "USER")).emit(
+                Socket_Event.READED_MESSAGE,
+                {
+                  ...chatReader,
+                  roomId: participant.chatRoomId,
+                  chatId: readedMessage.chat.id,
+                }
+              );
+            });
+          } catch (err) {
+            console.error(err);
+          }
         }
       );
 
       socket.on("disconnect", async () => {
-        console.log("Disconnected");
         const offlineUser = await User.update({
           where: {
             id: Number(user.id),
@@ -177,7 +196,7 @@ export const ioInit = (
           },
         });
 
-        io.emit(Socket_Event.OFFLINE, offlineUser.id.toString());
+        io.emit(Socket_Event.OFFLINE, Socket_Id(offlineUser.id, "USER"));
       });
     } catch (err: any) {
       socket.emit(

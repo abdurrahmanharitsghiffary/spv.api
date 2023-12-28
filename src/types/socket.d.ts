@@ -1,6 +1,7 @@
 import { $Enums } from "@prisma/client";
 import { Server } from "socket.io";
 import { DefaultEventsMap } from "socket.io/dist/typed-events";
+import { ChatRoom, ChatRoomParticipant } from "./chat";
 
 export type SocketData = {
   user:
@@ -29,3 +30,20 @@ export type IoServer = Server<
   DefaultEventsMap,
   SocketData
 >;
+
+type URP = {
+  updating: "participants";
+  data: ChatRoomParticipant[];
+};
+
+type URD = {
+  updating: "details";
+  data: ChatRoom;
+};
+
+type URDEL = {
+  updating: "delete-participants";
+  data: number[];
+};
+
+export type UpdateRoom = URP | URD | URDEL;

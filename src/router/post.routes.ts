@@ -30,7 +30,7 @@ import {
   validateParamsV2,
 } from "../middlewares/validator.middlewares";
 import { z } from "zod";
-import { zIntOrStringId, zfdText, zfdTitle } from "../schema";
+import { zIntOrStringId, zLimit, zOffset, zfdText, zfdTitle } from "../schema";
 import { postCommentValidationQuery } from "../schema/comment.schema";
 import { zfd } from "zod-form-data";
 
@@ -103,7 +103,20 @@ router
 
 router
   .route("/:postId/likes")
-  .get(validateParamsV2("postId"), tryCatch(getPostLikesByPostId))
+  .get(
+    validate(
+      z.object({
+        params: z.object({
+          postId: zIntOrStringId,
+        }),
+        query: z.object({
+          limit: zLimit,
+          offset: zOffset,
+        }),
+      })
+    ),
+    tryCatch(getPostLikesByPostId)
+  )
   .post(validateParamsV2("postId"), tryCatch(createLike))
   .delete(validateParamsV2("postId"), tryCatch(deleteLike));
 

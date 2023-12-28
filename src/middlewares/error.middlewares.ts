@@ -1,5 +1,6 @@
 import express from "express";
 import { ApiError } from "../utils/response";
+import { errorsMessage } from "../lib/consts";
 
 export const error = async (
   err: any,
@@ -11,6 +12,9 @@ export const error = async (
   let message = err?.message ?? "";
   let name = err?.name ?? "";
   let errors = err?.errors ?? [];
+  if (err.code === "LIMIT_FILE_SIZE") {
+    return res.status(413).json(new ApiError(413, errorsMessage.FILE_TOO_BIG));
+  }
   console.log(message, "ErrMessage");
   console.log("Error: ", err);
   switch (name) {

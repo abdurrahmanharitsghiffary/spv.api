@@ -16,6 +16,7 @@ import { excludeBlockedUser, excludeBlockingUser } from "../lib/query/user";
 import { RequestError } from "../lib/error";
 import { NotFound } from "../lib/messages";
 import { normalizeChatParticipant } from "../utils/chat/chat.normalize";
+import { Socket_Id } from "../lib/consts";
 
 export const createChatRoom = async (
   req: express.Request,
@@ -32,7 +33,7 @@ export const createChatRoom = async (
   createdRoom.participants.users.forEach((user) => {
     emitSocketEvent(
       req,
-      user.id.toString(),
+      Socket_Id(user.id, "USER"),
       Socket_Event.JOIN_ROOM,
       createdRoom
     );

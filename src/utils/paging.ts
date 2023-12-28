@@ -2,8 +2,6 @@ import express from "express";
 import { BASE_URL } from "../lib/consts";
 import { ApiPagingObjectResponse } from "../types/response";
 import { SearchAllData } from "../controllers/search.controllers";
-import { z } from "zod";
-import { zLimit, zOffset } from "../schema";
 
 export const getCurrentUrl = (req: express.Request) =>
   new URL(req.originalUrl, BASE_URL).href;
@@ -91,4 +89,12 @@ export const getPagingObject = async <T>({
       limit,
     },
   });
+};
+
+export const parsePaging = (req: express.Request) => {
+  let { limit = 20, offset = 0 } = req.query;
+  limit = Number(limit);
+  offset = Number(offset);
+
+  return { limit, offset };
 };
