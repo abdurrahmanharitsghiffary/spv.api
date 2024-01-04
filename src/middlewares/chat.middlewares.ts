@@ -1,5 +1,5 @@
 import express from "express";
-import { findChatById } from "../utils/chat/chat.utils";
+import { findMessageById } from "../utils/chat/chat.utils";
 import { ExpressRequestExtended } from "../types/request";
 import { ForbiddenError } from "../lib/error";
 
@@ -11,7 +11,7 @@ export const protectChat = async (
   const { userId } = req as ExpressRequestExtended;
   const { messageId } = req.params;
 
-  const chat = await findChatById(Number(messageId), Number(userId));
+  const chat = await findMessageById(Number(messageId), Number(userId));
   if (chat.author.id !== Number(userId)) throw new ForbiddenError();
 
   return next();

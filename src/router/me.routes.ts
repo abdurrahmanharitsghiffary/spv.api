@@ -26,7 +26,6 @@ import { uploadImage } from "../middlewares/multer.middlewares";
 import { getAllChatsByUserId } from "../controllers/chat.controller";
 import {
   clearNotifications,
-  createNotification,
   getAllUserNotifications,
 } from "../controllers/notification.controllers";
 import { blockUserById, unblockUser } from "../controllers/block.controller";
@@ -44,13 +43,11 @@ import {
   zIntId,
   zLastName,
   zLimit,
-  zNotificationType,
   zOffset,
   zPassword,
   zProfileImageType,
   zUsername,
 } from "../schema";
-import { isNullOrUndefined } from "../utils";
 
 const router = express.Router();
 
@@ -208,59 +205,6 @@ router
       })
     ),
     tryCatch(clearNotifications)
-  )
-  .post(
-    validateBody(
-      z
-        .object({
-          type: zNotificationType,
-          postId: zIntId("postId").optional(),
-          commentId: zIntId("commentId").optional(),
-          receiverId: zIntId("receiverId"),
-        })
-        .refine(
-          (arg) => {
-            if (
-              (arg.type === "comment" || arg.type === "replying_comment") &&
-              isNullOrUndefined(arg.postId)
-            )
-              return false;
-            return true;
-          },
-          {
-            message:
-              "postId is required for comment and replying_comment notification type",
-            path: ["postId"],
-          }
-        )
-        .refine(
-          (arg) => {
-            if (
-              arg.type === "liking_comment" &&
-              isNullOrUndefined(arg.commentId)
-            )
-              return false;
-            return true;
-          },
-          {
-            message:
-              "commentId is required for liking_comment notification type",
-            path: ["commentId"],
-          }
-        )
-        .refine(
-          (arg) => {
-            if (arg.type === "liking_post" && isNullOrUndefined(arg.postId))
-              return false;
-            return true;
-          },
-          {
-            message: "postId is required for liking_post notification type",
-            path: ["postId"],
-          }
-        )
-    ),
-    tryCatch(createNotification)
   );
 
 router
@@ -278,3 +222,57 @@ router
   .delete(validateParamsV2("followId"), tryCatch(unfollowUser));
 
 export default router;
+
+// .post(
+//   validateBody(
+//     z
+//       .object({
+//         type: zNotificationType,
+//         postId: zIntId("postId").optional(),
+//         commentId: zIntId("commentId").optional(),
+//         receiverId: zIntId("receiverId"),
+//       })
+//       .refine(
+//         (arg) => {
+//           if (
+//             (arg.type === "comment" || arg.type === "replying_comment") &&
+//             isNullOrUndefined(arg.postId)
+//           )
+//             return false;
+//           return true;
+//         },
+//         {
+//           message:
+//             "postId is required for comment and replying_comment notification type",
+//           path: ["postId"],
+//         }
+//       )
+//       .refine(
+//         (arg) => {
+//           if (
+//             arg.type === "liking_comment" &&
+//             isNullOrUndefined(arg.commentId)
+//           )
+//             return false;
+//           return true;
+//         },
+//         {
+//           message:
+//             "commentId is required for liking_comment notification type",
+//           path: ["commentId"],
+//         }
+//       )
+//       .refine(
+//         (arg) => {
+//           if (arg.type === "liking_post" && isNullOrUndefined(arg.postId))
+//             return false;
+//           return true;
+//         },
+//         {
+//           message: "postId is required for liking_post notification type",
+//           path: ["postId"],
+//         }
+//       )
+//   ),
+//   tryCatch(createNotification)
+// );

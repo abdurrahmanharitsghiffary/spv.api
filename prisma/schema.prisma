@@ -249,12 +249,9 @@ model Chat {
   chatRoomId Int
   chatRoom ChatRoom @relation(fields: [chatRoomId], references: [id], onDelete: Cascade) 
   chatImage Image[] @relation("ChatImage")
-  // chatImage Image[]
   readedBy MessageRead[]
   authorId Int
   author User @relation("AuthoredChat",fields: [authorId], references: [id], onDelete: Cascade)
-  // recipientId Int
-  // recipient User @relation("ReceivedChat",fields: [recipientId],references: [id],onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

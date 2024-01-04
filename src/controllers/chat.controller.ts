@@ -4,7 +4,7 @@ import {
   deleteChatById as deleteChatWithId,
   updateChatById as updateChatWithId,
   createChatWithRoomIdAndAuthorId,
-  findChatById,
+  findMessageById,
 } from "../utils/chat/chat.utils";
 import { getPagingObject } from "../utils/paging";
 import { deleteUploadedImage } from "../utils";
@@ -54,7 +54,7 @@ export const deleteChatById = async (
       req,
       Socket_Id(participant.userId, "USER"),
       Socket_Event.DELETE_MESSAGE,
-      normalizedChat.id
+      { chatId: normalizedChat.id, roomId: normalizedChat.roomId }
     );
   });
 
@@ -139,7 +139,7 @@ export const getMessagesById = async (
 ) => {
   const { messageId } = req.params;
   const { userId } = req as ExpressRequestExtended;
-  const message = await findChatById(Number(messageId), Number(userId));
+  const message = await findMessageById(Number(messageId), Number(userId));
 
   return res.status(200).json(new ApiResponse(message, 200));
 };

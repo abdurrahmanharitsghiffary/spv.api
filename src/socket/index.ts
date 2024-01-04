@@ -8,6 +8,9 @@ import { ACCESS_TOKEN_SECRET, Socket_Id } from "../lib/consts";
 import Chat, { ChatRoomParticipant, ReadChat } from "../models/chat.models";
 import { UserSimplified } from "../types/user";
 import { selectRoomParticipant } from "../lib/query/chat";
+import { selectUserSimplified } from "../lib/query/user";
+import { simplifyUserWF } from "../utils/user/user.normalize";
+import Notification from "../models/notification.models";
 
 export const ioInit = (
   io: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>
@@ -58,6 +61,45 @@ export const ioInit = (
         },
       });
       io.emit(Socket_Event.ONLINE, Socket_Id(user.id, "USER"));
+      const countMessage = await Chat.count({
+        where: {
+          chatRoom: {
+            participants: {
+              some: {
+                userId: user.id,
+              },
+            },
+          },
+          AND: [
+            {
+              readedBy: {
+                every: {
+                  userId: { not: user.id },
+                },
+              },
+            },
+          ],
+        },
+      });
+
+      const countNotification = await Notification.count({
+        where: {
+          isRead: false,
+          receiverId: user.id,
+        },
+      });
+
+      console.log(countNotification, "Count notification");
+      console.log(countMessage, "Count message");
+
+      io.in(Socket_Id(user.id, "USER")).emit(
+        Socket_Event.COUNT_MESSAGE,
+        countMessage
+      );
+      io.in(Socket_Id(user.id, "USER")).emit(
+        Socket_Event.COUNT_NOTIFICATION,
+        countNotification
+      );
 
       socket.on(Socket_Event.OPEN, async () => {});
 
@@ -75,10 +117,12 @@ export const ioInit = (
 
       socket.on(Socket_Event.VISIT_ROOM, (roomId: number) => {
         socket.join(Socket_Id(roomId, "ROOM"));
+        console.log(socket.rooms, "Rooms");
       });
 
       socket.on(Socket_Event.UNVISIT_ROOM, (roomId: number) => {
         socket.leave(Socket_Id(roomId, "ROOM"));
+        console.log(socket.rooms, "Rooms");
       });
 
       socket.on(
@@ -142,6 +186,11 @@ export const ioInit = (
               },
               select: {
                 createdAt: true,
+                user: {
+                  select: {
+                    ...selectUserSimplified,
+                  },
+                },
                 chat: {
                   select: {
                     id: true,
@@ -160,21 +209,20 @@ export const ioInit = (
               },
             });
 
+            const readingUser = readedMessage.user;
+
+            const simplifiedUser = await simplifyUserWF(readingUser);
+
+            const normalizedReader: UserSimplified & { readedAt: Date } = {
+              ...simplifiedUser,
+              readedAt: readedMessage.createdAt,
+            };
+
             readedMessage.chat.chatRoom.participants.forEach((participant) => {
-              const chatReader: UserSimplified & { readedAt: Date } = {
-                avatarImage: participant.user.profile?.avatarImage,
-                firstName: participant.user.firstName,
-                fullName: participant.user.fullName,
-                id: participant.user.id,
-                isOnline: participant.user.isOnline,
-                lastName: participant.user.lastName,
-                readedAt: readedMessage.createdAt,
-                username: participant.user.username,
-              };
               io.in(Socket_Id(participant.user.id, "USER")).emit(
                 Socket_Event.READED_MESSAGE,
                 {
-                  ...chatReader,
+                  ...normalizedReader,
                   roomId: participant.chatRoomId,
                   chatId: readedMessage.chat.id,
                 }

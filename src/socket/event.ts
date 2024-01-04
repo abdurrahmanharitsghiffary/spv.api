@@ -3,7 +3,7 @@ export const Socket_Event = Object.freeze({
   LEAVE_ROOM: "leaveRoom",
   JOIN_ROOM: "joinRoom",
   LEAVE: "leave",
-  // MESSAGE: "message",
+  NOTIFY: "notify",
   READ_MESSAGE: "readMessage",
   READED_MESSAGE: "readedMessage",
   NOTIFICATION: "notification",
@@ -23,6 +23,8 @@ export const Socket_Event = Object.freeze({
   UNVISIT_ROOM: "unvisitRoom",
   USER_TYPING: "userTyping",
   USER_TYPING_END: "userTypingEnd",
+  COUNT_MESSAGE: "countMessage",
+  COUNT_NOTIFICATION: "countNotification",
 });
 type ValueOf<T> = T[keyof T];
 export type SOCKETEVENT = ValueOf<typeof Socket_Event>;

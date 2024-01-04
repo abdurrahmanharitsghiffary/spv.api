@@ -10,6 +10,7 @@ import { ApiResponse } from "../utils/response";
 import { excludeBlockedUser, excludeBlockingUser } from "../lib/query/user";
 import { NotFound } from "../lib/messages";
 import { getPagingObject, parsePaging } from "../utils/paging";
+import { notify } from "../utils/notification/notification.utils";
 
 export const getFollowedUser = async (
   req: express.Request,
@@ -46,15 +47,13 @@ export const getMyFollowers = async (
     offset,
   });
 
-  return res
-    .status(200)
-    .json(
-      await getPagingObject({
-        req,
-        data: followers.data,
-        total_records: followers.total,
-      })
-    );
+  return res.status(200).json(
+    await getPagingObject({
+      req,
+      data: followers.data,
+      total_records: followers.total,
+    })
+  );
 };
 
 export const getUserFollowersById = async (
@@ -159,6 +158,8 @@ export const followUser = async (
     },
   });
 
+  await notify(req, { type: "follow", receiverId: uId, userId: CUID });
+
   return res
     .status(201)
     .json(new ApiResponse(createdFollow, 201, "User successfully followed."));
@@ -199,12 +200,12 @@ export const unfollowUser = async (
 
   await User.update({
     where: {
-      id: fId,
+      id: Number(userId),
     },
     data: {
       following: {
         disconnect: {
-          id: Number(followId),
+          id: fId,
         },
       },
     },

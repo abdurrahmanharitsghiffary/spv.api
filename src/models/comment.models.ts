@@ -24,6 +24,13 @@ export const createOneComment = async ({
         postId,
         userId,
       },
+      include: {
+        post: {
+          select: {
+            authorId: true,
+          },
+        },
+      },
     });
 
     if (image && typeof image !== "string") {

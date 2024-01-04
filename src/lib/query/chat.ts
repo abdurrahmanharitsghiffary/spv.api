@@ -29,43 +29,42 @@ const unreadMessagesFilter = (currentUserId: number) =>
     },
   } satisfies Prisma.ChatRoomSelect["_count"]);
 
-export const selectChat = (currentUserId: number) =>
-  ({
-    id: true,
-    message: true,
-    chatImage: {
-      select: {
-        id: true,
-        src: true,
+export const selectChat = {
+  id: true,
+  message: true,
+  chatImage: {
+    select: {
+      id: true,
+      src: true,
+    },
+  },
+  chatRoom: {
+    select: {
+      isGroupChat: true,
+    },
+  },
+  readedBy: {
+    select: {
+      createdAt: true,
+      user: {
+        select: selectUserSimplified,
       },
     },
-    chatRoom: {
-      select: {
-        isGroupChat: true,
-      },
+    // where: {
+    //   userId: {
+    //     not: currentUserId,
+    //   },
+    // },
+  },
+  author: {
+    select: {
+      ...selectUserSimplified,
     },
-    readedBy: {
-      select: {
-        createdAt: true,
-        user: {
-          select: selectUserSimplified,
-        },
-      },
-      // where: {
-      //   userId: {
-      //     not: currentUserId,
-      //   },
-      // },
-    },
-    author: {
-      select: {
-        ...selectUserSimplified,
-      },
-    },
-    chatRoomId: true,
-    createdAt: true,
-    updatedAt: true,
-  } satisfies Prisma.ChatSelect);
+  },
+  chatRoomId: true,
+  createdAt: true,
+  updatedAt: true,
+} satisfies Prisma.ChatSelect;
 
 export type SelectChatPayload = {
   id: number;
@@ -132,7 +131,7 @@ export const selectChatRoom = (currentUserId: number) =>
     updatedAt: true,
     messages: {
       select: {
-        ...selectChat(currentUserId),
+        ...selectChat,
       },
     },
     _count: {
@@ -296,7 +295,7 @@ export const selectChatRoomWithWhereInput = (userId: number) =>
     updatedAt: true,
     messages: {
       select: {
-        ...selectChat(userId),
+        ...selectChat,
       },
       orderBy: {
         createdAt: "desc",

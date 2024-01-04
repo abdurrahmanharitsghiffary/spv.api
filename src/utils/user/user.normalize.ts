@@ -6,6 +6,7 @@ import {
 import {
   UserAccount,
   UserAccountPublic,
+  UserSimplified,
   UserSimplifiedWF,
 } from "../../types/user";
 import { getCompleteFileUrlPath } from "..";
@@ -114,6 +115,24 @@ export const simplifyUser = (
   new Promise((resolve) => {
     return resolve({
       isFollowed,
+      avatarImage: getCompleteFileUrlPath(user.profile?.avatarImage),
+      firstName: user.firstName,
+      lastName: user.lastName,
+      fullName: user?.fullName,
+      id: user.id,
+      isOnline: user.isOnline,
+      username: user.username,
+    });
+  });
+
+export const simplifyUserWF = (
+  user:
+    | SelectUserPayloadExtended
+    | SelectUserSimplifiedPayload
+    | SelectUserPublicPayloadExtended
+): Promise<UserSimplified> =>
+  new Promise((resolve) => {
+    return resolve({
       avatarImage: getCompleteFileUrlPath(user.profile?.avatarImage),
       firstName: user.firstName,
       lastName: user.lastName,

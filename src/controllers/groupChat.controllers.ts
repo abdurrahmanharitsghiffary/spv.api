@@ -22,6 +22,7 @@ import { ParticipantsField } from "../types/chat";
 import { NotFound } from "../lib/messages";
 import { normalizeChatParticipant } from "../utils/chat/chat.normalize";
 import { Socket_Id } from "../lib/consts";
+import { Prisma } from "@prisma/client";
 
 export const createGroupChat = async (
   req: express.Request,
@@ -160,14 +161,13 @@ export const leaveGroupChat = async (
     },
   });
 
-  joinedRoom.chatRoom.participants.forEach(async (participant) => {
-    const normalizedRoom = await normalizeChatRooms(joinedRoom.chatRoom);
-
+  const normalizedRoom = await normalizeChatRooms(joinedRoom.chatRoom);
+  joinedRoom.chatRoom.participants.forEach((participant) => {
     emitSocketEvent(
       req,
       Socket_Id(participant.user.id, "USER"),
       Socket_Event.LEAVE_ROOM,
-      normalizedRoom.id
+      { roomId: normalizedRoom.id, userId: uId }
     );
   });
 
@@ -188,7 +188,7 @@ export const updateGroupChat = async (
   const gId = Number(groupId);
   participants = participants.map((p: any) => ({ ...p, id: Number(p.id) }));
   await checkParticipants(participants, gId, userRole);
-
+  const selectRoom = selectChatRoomPWL(Number(userId));
   const updatedChatRoom = await ChatRoom.update({
     where: {
       id: gId,
@@ -217,9 +217,15 @@ export const updateGroupChat = async (
         ],
       },
     },
-    select: { ...selectChatRoomPWL(Number(userId)) },
+    select: {
+      ...selectRoom,
+      messages: {
+        ...selectRoom.messages,
+        take: 10,
+      },
+    },
   });
-
+  console.log(updatedChatRoom, "updated");
   if (image) {
     await Image.upsert({
       create: {
@@ -303,14 +309,13 @@ export const updateGroupChatParticipants = async (
   req: express.Request,
   res: express.Response
 ) => {
-  const { userId } = req as ExpressRequestExtended;
   const { roomId } = req.params;
   const { participants } = req.body;
   const { userRole } = req as ExpressRequestProtectedGroup;
   const rId = Number(roomId);
 
   await checkParticipants(participants, rId, userRole);
-
+  console.log(participants, "Participants");
   const updatedGroupChat = await ChatRoom.update({
     where: {
       id: rId,
@@ -339,14 +344,26 @@ export const updateGroupChatParticipants = async (
     select: {
       participants: {
         select: {
-          ...selectRoomParticipant,
+          userId: true,
         },
       },
     },
   });
 
+  const updatedParticipants = await ChatRoomParticipant.findMany({
+    where: {
+      chatRoomId: rId,
+      OR: (participants as ParticipantsField).map((participant) => ({
+        userId: participant.id,
+      })),
+    },
+    select: {
+      ...selectRoomParticipant,
+    },
+  });
+
   const normalizedParticipants = await Promise.all(
-    updatedGroupChat.participants.map((participant) =>
+    updatedParticipants.map((participant) =>
       Promise.resolve(normalizeChatParticipant(participant))
     )
   );
@@ -354,10 +371,11 @@ export const updateGroupChatParticipants = async (
   updatedGroupChat.participants.forEach((participant) => {
     emitSocketEvent(
       req,
-      Socket_Id(participant.user.id, "USER"),
+      Socket_Id(participant.userId, "USER"),
       Socket_Event.UPDATE_ROOM,
       {
         updating: "participants",
+        roomId: rId,
         data: normalizedParticipants,
       }
     );
@@ -409,7 +427,11 @@ export const deleteGroupParticipants = async (
       req,
       Socket_Id(participant.userId, "USER"),
       Socket_Event.UPDATE_ROOM,
-      chatRoomAfterDeletingParticipants.participants.map((p) => p.userId)
+      {
+        updating: "delete-participants",
+        roomId: rId,
+        data: ids,
+      }
     );
   });
 

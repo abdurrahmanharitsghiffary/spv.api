@@ -13,6 +13,7 @@ import { findPostIsLiked } from "../utils/post/postLike.utils";
 import { UserSimplified } from "../types/user";
 import { getCompleteFileUrlPath } from "../utils";
 import { getPagingObject, parsePaging } from "../utils/paging";
+import { notify } from "../utils/notification/notification.utils";
 // CONTINUe
 export const getPostLikesByPostId = async (
   req: express.Request,
@@ -64,15 +65,13 @@ export const getPostLikesByPostId = async (
     )
   );
 
-  return res
-    .status(200)
-    .json(
-      await getPagingObject({
-        req,
-        total_records: count,
-        data: normalizedLikes,
-      })
-    );
+  return res.status(200).json(
+    await getPagingObject({
+      req,
+      total_records: count,
+      data: normalizedLikes,
+    })
+  );
 };
 
 export const createLike = async (
@@ -90,9 +89,23 @@ export const createLike = async (
 
   const createdLike = await PostLike.create({
     data: {
-      userId: Number(userId),
-      postId: Number(postId),
+      userId: uId,
+      postId: pId,
     },
+    select: {
+      post: {
+        select: {
+          authorId: true,
+        },
+      },
+    },
+  });
+
+  await notify(req, {
+    type: "liking_post",
+    postId: pId,
+    receiverId: createdLike.post.authorId,
+    userId: uId,
   });
 
   return res.status(201).json(new ApiResponse(createdLike, 201));

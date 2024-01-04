@@ -1,6 +1,6 @@
 import express from "express";
 import { ExpressRequestExtended } from "../types/request";
-import { findChatByRoomId } from "../utils/chat/chat.utils";
+import { findMessageByRoomId } from "../utils/chat/chat.utils";
 import {
   createChatRoom as createChatRoomUts,
   findChatRoomById,
@@ -94,7 +94,7 @@ export const getChatRoomMessagesByRoomId = async (
   limit = Number(limit);
   offset = Number(offset);
 
-  const messages = await findChatByRoomId({
+  const messages = await findMessageByRoomId({
     roomId: Number(roomId),
     currentUserId: Number(userId),
     limit,

@@ -5,9 +5,8 @@ import { excludeBlockedUser, excludeBlockingUser } from "../../lib/query/user";
 import Chat from "../../models/chat.models";
 import { normalizeChat } from "./chat.normalize";
 import { ChatRoom } from "../../models/chat.models";
-import Image from "../../models/image.models";
 import { NotFound } from "../../lib/messages";
-import { getFileDest, imageUploadErrorHandler, prismaImageUploader } from "..";
+import { prismaImageUploader } from "..";
 import prisma from "../../config/prismaClient";
 
 const selectChatRoomParticipants = {
@@ -32,7 +31,7 @@ const chatWhereAndInput = (currentUserId?: number) =>
     },
   ] satisfies Prisma.ChatWhereInput["AND"];
 
-export const findChatByRoomId = async ({
+export const findMessageByRoomId = async ({
   currentUserId,
   roomId,
   limit = 20,
@@ -46,9 +45,9 @@ export const findChatByRoomId = async ({
   const messages = await Chat.findMany({
     where: {
       chatRoomId: roomId,
-      AND: chatWhereAndInput(currentUserId),
+      // AND: chatWhereAndInput(currentUserId),
     },
-    select: selectChat(currentUserId),
+    select: { ...selectChat },
     take: limit,
     orderBy: {
       createdAt: "desc",
@@ -70,13 +69,16 @@ export const findChatByRoomId = async ({
   };
 };
 
-export const findChatById = async (chatId: number, currentUserId: number) => {
+export const findMessageById = async (
+  chatId: number,
+  currentUserId: number
+) => {
   const chat = await Chat.findUnique({
     where: {
       id: chatId,
-      AND: chatWhereAndInput(currentUserId),
+      // AND: chatWhereAndInput(currentUserId),
     },
-    select: selectChat(currentUserId),
+    select: selectChat,
   });
 
   if (!chat) throw new RequestError(NotFound.MESSAGE, 404);
@@ -128,7 +130,7 @@ export const findChatByParticipantIds = async ({
       },
       messages: {
         select: {
-          ...selectChat(currentUserId),
+          ...selectChat,
         },
         where: {
           AND: chatWhereAndInput(currentUserId),
@@ -170,7 +172,7 @@ export const createChatWithRoomIdAndAuthorId = async (createOptions: {
         message,
       },
       select: {
-        ...selectChat(senderId),
+        ...selectChat,
         chatRoom: {
           select: {
             isGroupChat: true,
@@ -199,13 +201,13 @@ export const createChatWithRoomIdAndAuthorId = async (createOptions: {
 };
 
 export const deleteChatById = async (chatId: number, currentUserId: number) => {
-  await findChatById(chatId, currentUserId);
+  await findMessageById(chatId, currentUserId);
   return await Chat.delete({
     where: {
       id: chatId,
     },
     select: {
-      ...selectChat(currentUserId),
+      ...selectChat,
       chatRoom: {
         select: {
           isGroupChat: true,
@@ -221,7 +223,7 @@ export const updateChatById = async (
   currentUserId: number,
   message?: string
 ) => {
-  await findChatById(chatId, currentUserId);
+  await findMessageById(chatId, currentUserId);
   return await Chat.update({
     where: {
       id: chatId,
@@ -230,7 +232,7 @@ export const updateChatById = async (
       message,
     },
     select: {
-      ...selectChat(currentUserId),
+      ...selectChat,
       chatRoom: {
         select: {
           isGroupChat: true,

@@ -8,6 +8,7 @@ import {
 import { ApiResponse } from "../utils/response";
 import { findPostByIdCustomMessage } from "../utils/post/post.utils";
 import { deleteUploadedImage } from "../utils";
+import { notify } from "../utils/notification/notification.utils";
 
 export const getComment = async (
   req: express.Request,
@@ -111,6 +112,14 @@ export const createComment = async (
     parentId: parentId || parentId === 0 ? prId : null,
   });
 
+  await notify(req, {
+    type: "comment",
+    commentId: result.id,
+    postId: result.postId,
+    receiverId: result.post?.authorId!,
+    userId: uId,
+  });
+
   return res
     .status(201)
     .json(new ApiResponse(result, 201, "Comment successfully created."));
@@ -136,6 +145,14 @@ export const createReplyComment = async (
     userId: uId,
     image: imageSrc ? imageSrc : image,
     parentId: currentComment.id,
+  });
+
+  await notify(req, {
+    type: "replying_comment",
+    commentId: result.id,
+    postId: result.postId,
+    receiverId: result.post?.authorId!,
+    userId: uId,
   });
 
   return res
