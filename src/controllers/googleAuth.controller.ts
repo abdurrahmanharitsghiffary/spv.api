@@ -112,6 +112,7 @@ export const googleAuthCallback = async (
     res.cookie("x.spv.session", refresh_token, {
       sameSite: "strict",
       secure: true,
+      path: "/",
       httpOnly: true,
       maxAge: 60000 * 60 * 24 * 7,
     });

@@ -55,6 +55,7 @@ export const login = async (req: express.Request, res: express.Response) => {
   res.cookie("x.spv.session", refresh_token, {
     sameSite: "strict",
     secure: true,
+    path: "/",
     httpOnly: true,
     maxAge: 60000 * 60 * 24 * 7,
   });
@@ -116,6 +117,7 @@ export const signUp = async (req: express.Request, res: express.Response) => {
   res.cookie("x.spv.session", refresh_token, {
     sameSite: "strict",
     secure: true,
+    path: "/",
     httpOnly: true,
     maxAge: 60000 * 60 * 24 * 7,
   });
