@@ -41,7 +41,7 @@ router.use(verifyToken);
 router
   .route("/")
   .post(
-    uploadImage.array("images"),
+    uploadImage.array("images[]"),
     validateBody(
       zfd.formData(
         z.object({
@@ -62,7 +62,7 @@ router
   .route("/:postId")
   .get(validateParamsV2("postId"), tryCatch(getPost))
   .patch(
-    uploadImage.array("images"),
+    uploadImage.array("images[]"),
     validate(
       z.object({
         body: zfd.formData(

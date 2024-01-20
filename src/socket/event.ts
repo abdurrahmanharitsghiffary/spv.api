@@ -25,6 +25,8 @@ export const Socket_Event = Object.freeze({
   USER_TYPING_END: "userTypingEnd",
   COUNT_MESSAGE: "countMessage",
   COUNT_NOTIFICATION: "countNotification",
+  READ_NOTIFICATION: "readNotification",
+  READED_NOTIFICATION: "readedNotification",
 });
 type ValueOf<T> = T[keyof T];
 export type SOCKETEVENT = ValueOf<typeof Socket_Event>;

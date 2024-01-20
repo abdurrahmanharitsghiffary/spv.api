@@ -31,7 +31,7 @@ const router = express.Router();
 router.use(verifyToken);
 
 router.route("/").post(
-  uploadImage.array("images"),
+  uploadImage.array("images[]"),
   validateBody(
     zfd.formData(
       z.object({

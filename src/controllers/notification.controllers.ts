@@ -115,7 +115,7 @@ export const getAllUserNotifications = async (
 ) => {
   const { offset = 0, limit = 20, order_by = "latest" } = req.query;
   const { userId } = req as ExpressRequestExtended;
-
+  console.log(order_by, "Order By");
   const notifications = await Notification.findMany({
     where: {
       receiverId: Number(userId),
@@ -125,12 +125,7 @@ export const getAllUserNotifications = async (
       ...selectNotificationSimplified,
     },
     orderBy: {
-      createdAt:
-        order_by === "latest"
-          ? "desc"
-          : order_by === undefined
-          ? undefined
-          : "asc",
+      createdAt: order_by === "latest" ? "desc" : "asc",
     },
     take: Number(limit),
     skip: Number(offset),
@@ -166,7 +161,7 @@ export const clearNotifications = async (
     where: {
       receiverId: Number(userId),
       createdAt: {
-        lt: before_timestamp
+        gt: before_timestamp
           ? new Date(Date.now() - getTimeQuery(before_timestamp as string))
           : undefined,
       },

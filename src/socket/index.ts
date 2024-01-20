@@ -11,6 +11,8 @@ import { selectRoomParticipant } from "../lib/query/chat";
 import { selectUserSimplified } from "../lib/query/user";
 import { simplifyUserWF } from "../utils/user/user.normalize";
 import Notification from "../models/notification.models";
+import { selectNotificationSimplified } from "../lib/query/notification";
+import { normalizeNotification } from "../utils/notification/notification.normalize";
 
 export const ioInit = (
   io: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>
@@ -72,6 +74,11 @@ export const ioInit = (
           },
           AND: [
             {
+              authorId: {
+                not: user.id,
+              },
+            },
+            {
               readedBy: {
                 every: {
                   userId: { not: user.id },
@@ -92,14 +99,8 @@ export const ioInit = (
       console.log(countNotification, "Count notification");
       console.log(countMessage, "Count message");
 
-      io.in(Socket_Id(user.id, "USER")).emit(
-        Socket_Event.COUNT_MESSAGE,
-        countMessage
-      );
-      io.in(Socket_Id(user.id, "USER")).emit(
-        Socket_Event.COUNT_NOTIFICATION,
-        countNotification
-      );
+      socket.emit(Socket_Event.COUNT_MESSAGE, countMessage);
+      socket.emit(Socket_Event.COUNT_NOTIFICATION, countNotification);
 
       socket.on(Socket_Event.OPEN, async () => {});
 
@@ -231,6 +232,36 @@ export const ioInit = (
           } catch (err) {
             console.error(err);
           }
+        }
+      );
+
+      socket.on(
+        Socket_Event.READ_NOTIFICATION,
+        async (data: { notificationId: number }) => {
+          const notification = await Notification.findUnique({
+            where: {
+              id: data.notificationId,
+            },
+          });
+
+          if (notification?.receiverId !== user.id || notification?.isRead)
+            return null;
+
+          const updatedNotification = await Notification.update({
+            where: {
+              id: data.notificationId,
+            },
+            data: { isRead: true },
+            select: {
+              ...selectNotificationSimplified,
+            },
+          });
+
+          const normalizedNotification = await normalizeNotification(
+            updatedNotification
+          );
+
+          socket.emit(Socket_Event.READED_NOTIFICATION, normalizedNotification);
         }
       );
 
