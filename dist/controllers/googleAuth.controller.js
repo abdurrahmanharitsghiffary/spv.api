@@ -98,7 +98,7 @@ const googleAuthCallback = (req, res) => __awaiter(void 0, void 0, void 0, funct
             username: user.username,
         });
         res.cookie("x.spv.session", refresh_token, {
-            sameSite: "strict",
+            // sameSite: "strict",
             secure: true,
             path: "/",
             httpOnly: true,

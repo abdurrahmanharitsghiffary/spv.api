@@ -110,7 +110,7 @@ export const googleAuthCallback = async (
     });
 
     res.cookie("x.spv.session", refresh_token, {
-      sameSite: "strict",
+      // sameSite: "strict",
       secure: true,
       path: "/",
       httpOnly: true,

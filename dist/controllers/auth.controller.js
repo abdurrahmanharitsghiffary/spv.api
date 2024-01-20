@@ -60,7 +60,7 @@ const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         username: user.username,
     });
     res.cookie("x.spv.session", refresh_token, {
-        sameSite: "strict",
+        // sameSite: "strict",
         secure: true,
         path: "/",
         httpOnly: true,
@@ -108,7 +108,7 @@ const signUp = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         username,
     });
     res.cookie("x.spv.session", refresh_token, {
-        sameSite: "strict",
+        // sameSite: "strict",
         secure: true,
         path: "/",
         httpOnly: true,

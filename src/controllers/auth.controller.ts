@@ -53,7 +53,7 @@ export const login = async (req: express.Request, res: express.Response) => {
   });
 
   res.cookie("x.spv.session", refresh_token, {
-    sameSite: "strict",
+    // sameSite: "strict",
     secure: true,
     path: "/",
     httpOnly: true,
@@ -115,7 +115,7 @@ export const signUp = async (req: express.Request, res: express.Response) => {
   });
 
   res.cookie("x.spv.session", refresh_token, {
-    sameSite: "strict",
+    // sameSite: "strict",
     secure: true,
     path: "/",
     httpOnly: true,
