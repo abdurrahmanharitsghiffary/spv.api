@@ -17,3 +17,4 @@ spec.txt
 src/public/assets/uploads
 validateBody.ts
 problem.txt
+/migrations
