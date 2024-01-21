@@ -34,18 +34,23 @@ app.use(express_1.default.json());
 app.use(express_1.default.static("./src"));
 app.use(express_1.default.urlencoded({ extended: true }));
 app.use((0, cookie_parser_1.default)(consts_1.COOKIE_SECRET));
+app.use(express_1.default.urlencoded({ extended: false }));
 app.use((0, cors_1.default)({
     credentials: true,
-    origin: (origin, cb) => {
-        if (!origin)
-            return cb(null, true);
-        if (allowlist.indexOf(origin !== null && origin !== void 0 ? origin : "") !== -1) {
-            return cb(null, true);
-        }
-        return cb(new Error("The CORS policy for this site does not allow access from the specified Origin."), false);
-    },
+    origin: allowlist[2],
+    // origin: (origin, cb) => {
+    //   if (!origin) return cb(null, true);
+    //   if (allowlist.indexOf(origin ?? "") !== -1) {
+    //     return cb(null, true);
+    //   }
+    //   return cb(
+    //     new Error(
+    //       "The CORS policy for this site does not allow access from the specified Origin."
+    //     ),
+    //     false
+    //   );
+    // },
 }));
-app.use(express_1.default.urlencoded({ extended: false }));
 (0, passport_middlewares_1.passportGoogle)();
 app.use(passport_1.default.initialize());
 app.use((0, morgan_1.default)("dev"));

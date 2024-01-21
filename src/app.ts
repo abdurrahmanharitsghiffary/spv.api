@@ -30,25 +30,26 @@ app.use(express.json());
 app.use(express.static("./src"));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser(COOKIE_SECRET));
+app.use(express.urlencoded({ extended: false }));
 app.use(
   cors({
     credentials: true,
-    origin: (origin, cb) => {
-      if (!origin) return cb(null, true);
-      if (allowlist.indexOf(origin ?? "") !== -1) {
-        return cb(null, true);
-      }
-      return cb(
-        new Error(
-          "The CORS policy for this site does not allow access from the specified Origin."
-        ),
-        false
-      );
-    },
+    origin: allowlist[2],
+    // origin: (origin, cb) => {
+    //   if (!origin) return cb(null, true);
+    //   if (allowlist.indexOf(origin ?? "") !== -1) {
+    //     return cb(null, true);
+    //   }
+    //   return cb(
+    //     new Error(
+    //       "The CORS policy for this site does not allow access from the specified Origin."
+    //     ),
+    //     false
+    //   );
+    // },
   })
 );
 
-app.use(express.urlencoded({ extended: false }));
 passportGoogle();
 app.use(passport.initialize());
 app.use(morgan("dev"));
