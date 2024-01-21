@@ -62,7 +62,6 @@ const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     res.cookie("x.spv.session", refresh_token, {
         sameSite: "none",
         secure: true,
-        path: "/",
         httpOnly: true,
         maxAge: 60000 * 60 * 24 * 7,
     });
@@ -110,7 +109,6 @@ const signUp = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     res.cookie("x.spv.session", refresh_token, {
         sameSite: "none",
         secure: true,
-        path: "/",
         httpOnly: true,
         maxAge: 60000 * 60 * 24 * 7,
     });
@@ -151,7 +149,6 @@ const signOut = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     res.clearCookie("x.spv.session", {
         sameSite: "none",
         secure: true,
-        path: "/",
         httpOnly: true,
         maxAge: 60000 * 60 * 24 * 7,
     });

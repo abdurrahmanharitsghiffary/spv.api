@@ -39,7 +39,6 @@ const deleteGoogleAccount = (req, res) => __awaiter(void 0, void 0, void 0, func
     res.clearCookie("x.spv.session", {
         sameSite: "none",
         secure: true,
-        path: "/",
         httpOnly: true,
         maxAge: 60000 * 60 * 24 * 7,
     });
@@ -101,7 +100,6 @@ const googleAuthCallback = (req, res) => __awaiter(void 0, void 0, void 0, funct
         res.cookie("x.spv.session", refresh_token, {
             sameSite: "none",
             secure: true,
-            path: "/",
             httpOnly: true,
             maxAge: 60000 * 60 * 24 * 7,
         });

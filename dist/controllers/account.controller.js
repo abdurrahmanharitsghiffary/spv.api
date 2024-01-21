@@ -154,7 +154,6 @@ const deleteMyAccount = (req, res) => __awaiter(void 0, void 0, void 0, function
     res.clearCookie("x.spv.session", {
         sameSite: "none",
         secure: true,
-        path: "/",
         httpOnly: true,
         maxAge: 60000 * 60 * 24 * 7,
     });

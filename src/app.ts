@@ -11,7 +11,10 @@ import { sanitizer } from "./middlewares/sanitizer.middlewares";
 import passport from "passport";
 import { passportGoogle } from "./middlewares/passport.middlewares";
 import { createServer } from "http";
-import { COOKIE_SECRET } from "./lib/consts";
+import { BASE_CLIENT_URL, COOKIE_SECRET } from "./lib/consts";
+import { ioInit } from "./socket";
+import { IoServer } from "./types/socket";
+import { Server } from "socket.io";
 dotenv.config();
 
 const allowlist = [
@@ -22,10 +25,10 @@ const allowlist = [
 
 const app = express();
 export const server = createServer(app);
-// export const io: IoServer = new Server(server, {
-//   cors: { origin: BASE_CLIENT_URL, credentials: true },
-// });
-// app.set("io", io);
+export const io: IoServer = new Server(server, {
+  cors: { origin: BASE_CLIENT_URL, credentials: true },
+});
+app.set("io", io);
 app.use(express.json());
 app.use(express.static("./src"));
 app.use(express.urlencoded({ extended: true }));
@@ -70,7 +73,7 @@ app.use(
   })
 );
 
-// ioInit(io);
+ioInit(io);
 
 router(app);
 

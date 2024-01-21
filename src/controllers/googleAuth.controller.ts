@@ -33,7 +33,6 @@ export const deleteGoogleAccount = async (
   res.clearCookie("x.spv.session", {
     sameSite: "none",
     secure: true,
-    path: "/",
     httpOnly: true,
     maxAge: 60000 * 60 * 24 * 7,
   });
@@ -113,7 +112,6 @@ export const googleAuthCallback = async (
     res.cookie("x.spv.session", refresh_token, {
       sameSite: "none",
       secure: true,
-      path: "/",
       httpOnly: true,
       maxAge: 60000 * 60 * 24 * 7,
     });
