@@ -10,11 +10,8 @@ import helmet from "helmet";
 import { sanitizer } from "./middlewares/sanitizer.middlewares";
 import passport from "passport";
 import { passportGoogle } from "./middlewares/passport.middlewares";
-import { IoServer } from "./types/socket";
 import { createServer } from "http";
-import { Server } from "socket.io";
-import { ioInit } from "./socket";
-import { BASE_CLIENT_URL, COOKIE_SECRET } from "./lib/consts";
+import { COOKIE_SECRET } from "./lib/consts";
 dotenv.config();
 
 const allowlist = [

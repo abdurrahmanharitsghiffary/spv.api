@@ -60,7 +60,7 @@ const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         username: user.username,
     });
     res.cookie("x.spv.session", refresh_token, {
-        sameSite: "none",
+        sameSite: "strict",
         secure: true,
         path: "/",
         httpOnly: true,
@@ -108,7 +108,7 @@ const signUp = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         username,
     });
     res.cookie("x.spv.session", refresh_token, {
-        sameSite: "none",
+        sameSite: "strict",
         secure: true,
         path: "/",
         httpOnly: true,
@@ -149,7 +149,7 @@ const signOut = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     if (!token)
         throw new error_1.RequestError("You are unauthenticated!", 401);
     res.clearCookie("x.spv.session", {
-        sameSite: "none",
+        sameSite: "strict",
         secure: true,
         httpOnly: true,
         maxAge: 60000 * 60 * 24 * 7,
