@@ -152,8 +152,9 @@ const deleteMyAccount = (req, res) => __awaiter(void 0, void 0, void 0, function
     if (!isMatch)
         throw new error_1.RequestError("Incorrect password. Please try again.", 400);
     res.clearCookie("x.spv.session", {
-        sameSite: "strict",
+        sameSite: "none",
         secure: true,
+        path: "/",
         httpOnly: true,
         maxAge: 60000 * 60 * 24 * 7,
     });
