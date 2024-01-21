@@ -37,19 +37,14 @@ app.use((0, cookie_parser_1.default)(consts_1.COOKIE_SECRET));
 app.use(express_1.default.urlencoded({ extended: false }));
 app.use((0, cors_1.default)({
     credentials: true,
-    origin: allowlist[2],
-    // origin: (origin, cb) => {
-    //   if (!origin) return cb(null, true);
-    //   if (allowlist.indexOf(origin ?? "") !== -1) {
-    //     return cb(null, true);
-    //   }
-    //   return cb(
-    //     new Error(
-    //       "The CORS policy for this site does not allow access from the specified Origin."
-    //     ),
-    //     false
-    //   );
-    // },
+    origin: (origin, cb) => {
+        if (!origin)
+            return cb(null, true);
+        if (allowlist.indexOf(origin !== null && origin !== void 0 ? origin : "") !== -1) {
+            return cb(null, true);
+        }
+        return cb(new Error("The CORS policy for this site does not allow access from the specified Origin."), false);
+    },
 }));
 (0, passport_middlewares_1.passportGoogle)();
 app.use(passport_1.default.initialize());

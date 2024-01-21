@@ -34,19 +34,18 @@ app.use(express.urlencoded({ extended: false }));
 app.use(
   cors({
     credentials: true,
-    origin: allowlist[2],
-    // origin: (origin, cb) => {
-    //   if (!origin) return cb(null, true);
-    //   if (allowlist.indexOf(origin ?? "") !== -1) {
-    //     return cb(null, true);
-    //   }
-    //   return cb(
-    //     new Error(
-    //       "The CORS policy for this site does not allow access from the specified Origin."
-    //     ),
-    //     false
-    //   );
-    // },
+    origin: (origin, cb) => {
+      if (!origin) return cb(null, true);
+      if (allowlist.indexOf(origin ?? "") !== -1) {
+        return cb(null, true);
+      }
+      return cb(
+        new Error(
+          "The CORS policy for this site does not allow access from the specified Origin."
+        ),
+        false
+      );
+    },
   })
 );
 
