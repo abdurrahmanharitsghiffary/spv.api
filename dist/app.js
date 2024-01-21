@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.io = exports.server = void 0;
+exports.server = void 0;
 const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const dotenv_1 = __importDefault(require("dotenv"));
@@ -17,8 +17,6 @@ const sanitizer_middlewares_1 = require("./middlewares/sanitizer.middlewares");
 const passport_1 = __importDefault(require("passport"));
 const passport_middlewares_1 = require("./middlewares/passport.middlewares");
 const http_1 = require("http");
-const socket_io_1 = require("socket.io");
-const socket_1 = require("./socket");
 const consts_1 = require("./lib/consts");
 dotenv_1.default.config();
 const allowlist = [
@@ -28,10 +26,10 @@ const allowlist = [
 ];
 const app = (0, express_1.default)();
 exports.server = (0, http_1.createServer)(app);
-exports.io = new socket_io_1.Server(exports.server, {
-    cors: { origin: consts_1.BASE_CLIENT_URL, credentials: true },
-});
-app.set("io", exports.io);
+// export const io: IoServer = new Server(server, {
+//   cors: { origin: BASE_CLIENT_URL, credentials: true },
+// });
+// app.set("io", io);
 app.use(express_1.default.json());
 app.use(express_1.default.static("./src"));
 app.use(express_1.default.urlencoded({ extended: true }));
@@ -64,7 +62,7 @@ app.use((0, cors_1.default)({
         return cb(new Error("The CORS policy for this site does not allow access from the specified Origin."), false);
     },
 }));
-(0, socket_1.ioInit)(exports.io);
+// ioInit(io);
 (0, router_1.router)(app);
 app.use(middlewares_1.default);
 app.use(error_middlewares_1.error);

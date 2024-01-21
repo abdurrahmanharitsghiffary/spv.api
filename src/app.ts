@@ -25,10 +25,10 @@ const allowlist = [
 
 const app = express();
 export const server = createServer(app);
-export const io: IoServer = new Server(server, {
-  cors: { origin: BASE_CLIENT_URL, credentials: true },
-});
-app.set("io", io);
+// export const io: IoServer = new Server(server, {
+//   cors: { origin: BASE_CLIENT_URL, credentials: true },
+// });
+// app.set("io", io);
 
 app.use(express.json());
 app.use(express.static("./src"));
@@ -72,7 +72,7 @@ app.use(
     },
   })
 );
-ioInit(io);
+// ioInit(io);
 
 router(app);
 
