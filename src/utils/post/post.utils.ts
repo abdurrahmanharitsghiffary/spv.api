@@ -206,25 +206,25 @@ export const findAllPosts = async ({
   };
 };
 
-export const findPostByFollowedUserIds = async ({
-  followedUserIds,
+export const findFollowedUserPosts = async ({
   limit = 20,
   offset = 0,
   currentUserId,
 }: {
   limit?: number;
   offset?: number;
-  currentUserId?: number;
-  followedUserIds: number[];
+  currentUserId: number;
 }) => {
   const posts = await Post.findMany({
     where: {
       AND: postWhereAndInput(currentUserId),
       ...postWhereInput,
-      authorId: {
-        in: currentUserId
-          ? [currentUserId, ...followedUserIds]
-          : [...followedUserIds],
+      author: {
+        followedBy: {
+          some: {
+            id: currentUserId,
+          },
+        },
       },
     },
     orderBy: { createdAt: "desc" },
@@ -238,8 +238,12 @@ export const findPostByFollowedUserIds = async ({
     where: {
       AND: postWhereAndInput(currentUserId),
       ...postWhereInput,
-      authorId: {
-        in: [...followedUserIds],
+      author: {
+        followedBy: {
+          some: {
+            id: currentUserId,
+          },
+        },
       },
     },
   });

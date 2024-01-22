@@ -3,20 +3,15 @@ import Post from "../models/post.models";
 import { ExpressRequestExtended } from "../types/request";
 import {
   findAllPosts,
-  findPostByFollowedUserIds,
+  findFollowedUserPosts,
   findPostById,
   findPostsByAuthorId,
   findSavedPost,
 } from "../utils/post/post.utils";
 import { findCommentsByPostId } from "../utils/comment/comment.utils";
 import Image from "../models/image.models";
-import {
-  getFileDest,
-  imageUploadErrorHandler,
-  prismaImageUploader,
-} from "../utils";
+import { prismaImageUploader } from "../utils";
 import { getPagingObject } from "../utils/paging";
-import User from "../models/user.models";
 import { deleteUploadedImage } from "../utils";
 import { ApiResponse } from "../utils/response";
 import prisma from "../config/prismaClient";
@@ -57,19 +52,7 @@ export const getFollowedUserPost = async (
   const { limit = 20, offset = 0 } = req.query;
   const { userId } = req as ExpressRequestExtended;
 
-  const followedUser = await User.findUnique({
-    where: {
-      id: Number(userId),
-    },
-    select: {
-      following: { select: { id: true } },
-    },
-  });
-
-  const posts = await findPostByFollowedUserIds({
-    followedUserIds: [
-      ...(followedUser?.following.map((user) => user.id) ?? []),
-    ],
+  const posts = await findFollowedUserPosts({
     limit: Number(limit),
     offset: Number(offset),
     currentUserId: Number(userId),

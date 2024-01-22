@@ -18,6 +18,9 @@ import { tryCatch } from "../middlewares/handler.middlewares";
 import { validate } from "../middlewares/validator.middlewares";
 import { z } from "zod";
 import { zLimit, zOffset } from "../schema";
+import User from "../models/user.models";
+import { selectUser } from "../lib/query/user";
+import { normalizeUser } from "../utils/user/user.normalize";
 
 export function router(app: Express) {
   app.use("/api/auth/google", googleRouter);
@@ -46,4 +49,13 @@ export function router(app: Express) {
     tryCatch(getSearchResults)
   );
   app.post("/api/refresh", verifyRefreshToken, refreshToken);
+  app.get("/test/endpoint", async (req, res) => {
+    const users = await User.findMany({ select: selectUser });
+
+    const normalizedUsers = await Promise.all(
+      users.map((u) => normalizeUser(u, false))
+    );
+
+    res.status(200).json(normalizedUsers);
+  });
 }

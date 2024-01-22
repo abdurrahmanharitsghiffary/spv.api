@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.searchPosts = exports.findSavedPost = exports.findPostByFollowedUserIds = exports.findAllPosts = exports.findPostsByAuthorId = exports.findPostById = exports.findPostByIdCustomMessage = void 0;
+exports.searchPosts = exports.findSavedPost = exports.findFollowedUserPosts = exports.findAllPosts = exports.findPostsByAuthorId = exports.findPostById = exports.findPostByIdCustomMessage = void 0;
 const error_1 = require("../../lib/error");
 const post_models_1 = __importDefault(require("../../models/post.models"));
 const post_1 = require("../../lib/query/post");
@@ -155,12 +155,14 @@ const findAllPosts = ({ limit, offset, currentUserId, }) => __awaiter(void 0, vo
     };
 });
 exports.findAllPosts = findAllPosts;
-const findPostByFollowedUserIds = ({ followedUserIds, limit = 20, offset = 0, currentUserId, }) => __awaiter(void 0, void 0, void 0, function* () {
+const findFollowedUserPosts = ({ limit = 20, offset = 0, currentUserId, }) => __awaiter(void 0, void 0, void 0, function* () {
     const posts = yield post_models_1.default.findMany({
-        where: Object.assign(Object.assign({ AND: postWhereAndInput(currentUserId) }, postWhereInput), { authorId: {
-                in: currentUserId
-                    ? [currentUserId, ...followedUserIds]
-                    : [...followedUserIds],
+        where: Object.assign(Object.assign({ AND: postWhereAndInput(currentUserId) }, postWhereInput), { author: {
+                followedBy: {
+                    some: {
+                        id: currentUserId,
+                    },
+                },
             } }),
         orderBy: { createdAt: "desc" },
         skip: offset,
@@ -169,8 +171,12 @@ const findPostByFollowedUserIds = ({ followedUserIds, limit = 20, offset = 0, cu
         select: postSelectExtended(currentUserId),
     });
     const postsTotal = yield post_models_1.default.count({
-        where: Object.assign(Object.assign({ AND: postWhereAndInput(currentUserId) }, postWhereInput), { authorId: {
-                in: [...followedUserIds],
+        where: Object.assign(Object.assign({ AND: postWhereAndInput(currentUserId) }, postWhereInput), { author: {
+                followedBy: {
+                    some: {
+                        id: currentUserId,
+                    },
+                },
             } }),
     });
     return {
@@ -178,7 +184,7 @@ const findPostByFollowedUserIds = ({ followedUserIds, limit = 20, offset = 0, cu
         total: postsTotal,
     };
 });
-exports.findPostByFollowedUserIds = findPostByFollowedUserIds;
+exports.findFollowedUserPosts = findFollowedUserPosts;
 const findSavedPost = ({ userId, limit = 20, offset = 0, currentUserId, }) => __awaiter(void 0, void 0, void 0, function* () {
     const savedPosts = yield prismaClient_1.default.savedPost.findMany({
         where: {

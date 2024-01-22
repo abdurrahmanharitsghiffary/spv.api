@@ -1,4 +1,13 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -20,6 +29,9 @@ const handler_middlewares_1 = require("../middlewares/handler.middlewares");
 const validator_middlewares_1 = require("../middlewares/validator.middlewares");
 const zod_1 = require("zod");
 const schema_1 = require("../schema");
+const user_models_1 = __importDefault(require("../models/user.models"));
+const user_1 = require("../lib/query/user");
+const user_normalize_1 = require("../utils/user/user.normalize");
 function router(app) {
     app.use("/api/auth/google", googleAuth_routes_1.default);
     app.use("/api/auth", auth_routes_1.default);
@@ -40,5 +52,10 @@ function router(app) {
         }),
     })), auth_middlewares_1.verifyToken, (0, handler_middlewares_1.tryCatch)(search_controllers_1.getSearchResults));
     app.post("/api/refresh", auth_middlewares_1.verifyRefreshToken, auth_controller_1.refreshToken);
+    app.get("/test/endpoint", (req, res) => __awaiter(this, void 0, void 0, function* () {
+        const users = yield user_models_1.default.findMany({ select: user_1.selectUser });
+        const normalizedUsers = yield Promise.all(users.map((u) => (0, user_normalize_1.normalizeUser)(u, false)));
+        res.status(200).json(normalizedUsers);
+    }));
 }
 exports.router = router;

@@ -55,7 +55,7 @@ app.use(
 passportGoogle();
 app.use(passport.initialize());
 app.use(morgan("dev"));
-app.use(sanitizer());
+// app.use(sanitizer());
 app.use(
   helmet({
     xFrameOptions: {

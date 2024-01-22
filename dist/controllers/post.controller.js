@@ -19,7 +19,6 @@ const comment_utils_1 = require("../utils/comment/comment.utils");
 const image_models_1 = __importDefault(require("../models/image.models"));
 const utils_1 = require("../utils");
 const paging_1 = require("../utils/paging");
-const user_models_1 = __importDefault(require("../models/user.models"));
 const utils_2 = require("../utils");
 const response_1 = require("../utils/response");
 const prismaClient_1 = __importDefault(require("../config/prismaClient"));
@@ -45,21 +44,9 @@ const getAllMyPosts = (req, res) => __awaiter(void 0, void 0, void 0, function* 
 });
 exports.getAllMyPosts = getAllMyPosts;
 const getFollowedUserPost = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
     const { limit = 20, offset = 0 } = req.query;
     const { userId } = req;
-    const followedUser = yield user_models_1.default.findUnique({
-        where: {
-            id: Number(userId),
-        },
-        select: {
-            following: { select: { id: true } },
-        },
-    });
-    const posts = yield (0, post_utils_1.findPostByFollowedUserIds)({
-        followedUserIds: [
-            ...((_a = followedUser === null || followedUser === void 0 ? void 0 : followedUser.following.map((user) => user.id)) !== null && _a !== void 0 ? _a : []),
-        ],
+    const posts = yield (0, post_utils_1.findFollowedUserPosts)({
         limit: Number(limit),
         offset: Number(offset),
         currentUserId: Number(userId),
@@ -166,7 +153,7 @@ const savePost = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
 });
 exports.savePost = savePost;
 const deleteSavedPost = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _b, _c;
+    var _a, _b;
     const { userId } = req;
     const { postId } = req.params;
     const pId = Number(postId);
@@ -193,7 +180,7 @@ const deleteSavedPost = (req, res) => __awaiter(void 0, void 0, void 0, function
     });
     if (!post)
         throw new error_1.RequestError(messages_1.NotFound.POST, 404);
-    if (!((_c = (_b = post.follower) === null || _b === void 0 ? void 0 : _b[0]) === null || _c === void 0 ? void 0 : _c.userId))
+    if (!((_b = (_a = post.follower) === null || _a === void 0 ? void 0 : _a[0]) === null || _b === void 0 ? void 0 : _b.userId))
         throw new error_1.RequestError("Post is not saved", 404);
     yield prismaClient_1.default.savedPost.delete({
         where: {
@@ -231,10 +218,10 @@ const deletePost = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
 });
 exports.deletePost = deletePost;
 const updatePost = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _d;
+    var _c;
     const { title, content } = req.body;
     const { postId } = req.params;
-    const images = (_d = req.files) !== null && _d !== void 0 ? _d : [];
+    const images = (_c = req.files) !== null && _c !== void 0 ? _c : [];
     yield prismaClient_1.default.$transaction((tx) => __awaiter(void 0, void 0, void 0, function* () {
         yield tx.post.update({
             where: {
@@ -256,8 +243,8 @@ const updatePost = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
 });
 exports.updatePost = updatePost;
 const createPost = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _e;
-    const images = (_e = req.files) !== null && _e !== void 0 ? _e : [];
+    var _d;
+    const images = (_d = req.files) !== null && _d !== void 0 ? _d : [];
     const { userId } = req;
     const { title, content } = req.body;
     const result = yield prismaClient_1.default.$transaction((tx) => __awaiter(void 0, void 0, void 0, function* () {
