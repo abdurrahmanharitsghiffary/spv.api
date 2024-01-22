@@ -85,7 +85,7 @@ export function router(app: Express) {
 
     res.status(200).json(normalizedUsers);
   });
-  app.get("/test/endpoint5", async (req, res) => {
+  app.get("/test/endpoint6", async (req, res) => {
     const users = await User.findMany({ select: selectUser });
 
     res.status(200).json(users);

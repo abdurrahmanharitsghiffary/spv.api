@@ -71,7 +71,7 @@ function router(app) {
         const normalizedUsers = yield Promise.all(users.map((u) => (0, user_normalize_1.simplifyUser)(u, false)));
         res.status(200).json(normalizedUsers);
     }));
-    app.get("/test/endpoint5", (req, res) => __awaiter(this, void 0, void 0, function* () {
+    app.get("/test/endpoint6", (req, res) => __awaiter(this, void 0, void 0, function* () {
         const users = yield user_models_1.default.findMany({ select: user_1.selectUser });
         res.status(200).json(users);
     }));
