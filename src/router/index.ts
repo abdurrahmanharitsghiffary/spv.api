@@ -15,7 +15,10 @@ import {
 } from "../middlewares/auth.middlewares";
 import { getSearchResults } from "../controllers/search.controllers";
 import { tryCatch } from "../middlewares/handler.middlewares";
-import { validate } from "../middlewares/validator.middlewares";
+import {
+  validate,
+  validatePagingOptions,
+} from "../middlewares/validator.middlewares";
 import { z } from "zod";
 import { zLimit, zOffset } from "../schema";
 import User from "../models/user.models";
@@ -25,6 +28,7 @@ import {
   normalizeUserPublic,
   simplifyUser,
 } from "../utils/user/user.normalize";
+import { getPagingObject, parsePaging } from "../utils/paging";
 
 export function router(app: Express) {
   app.use("/api/auth/google", googleRouter);
@@ -53,6 +57,7 @@ export function router(app: Express) {
     tryCatch(getSearchResults)
   );
   app.post("/api/refresh", verifyRefreshToken, refreshToken);
+  // 4500 - 5000ms
   app.get("/test/endpoint", async (req, res) => {
     const users = await User.findMany({ select: selectUser });
 
@@ -62,11 +67,17 @@ export function router(app: Express) {
 
     res.status(200).json(normalizedUsers);
   });
+  // 950 - 1200 ms
   app.get("/test/endpoint2", async (req, res) => {
     const users = await User.findMany();
 
     res.status(200).json(users);
   });
+  // 180++ ms
+  app.get("/test/endpoint3", async (req, res) => {
+    res.status(200).json("lol");
+  });
+  // Error because normalizing invalid payload
   app.get("/test/endpoint4", async (req, res) => {
     const users = await User.findMany();
 
@@ -76,6 +87,7 @@ export function router(app: Express) {
 
     res.status(200).json(normalizedUsers);
   });
+  // 970 - 1190 ms
   app.get("/test/endpoint5", async (req, res) => {
     const users = await User.findMany();
 
@@ -85,12 +97,69 @@ export function router(app: Express) {
 
     res.status(200).json(normalizedUsers);
   });
+  // 4500++ ms
   app.get("/test/endpoint6", async (req, res) => {
     const users = await User.findMany({ select: selectUser });
 
     res.status(200).json(users);
   });
-  app.get("/test/endpoint3", async (req, res) => {
-    res.status(200).json("lol");
+
+  app.get("/test/ep", validatePagingOptions, async (req, res) => {
+    const { limit = 20, offset = 0 } = parsePaging(req);
+    const users = await User.findMany({
+      skip: offset,
+      take: limit,
+      select: selectUser,
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+    return res
+      .status(200)
+      .json(
+        await getPagingObject({ data: users, total_records: users.length, req })
+      );
+  });
+
+  app.get("/test/ep2", validatePagingOptions, async (req, res) => {
+    const { limit = 20, offset = 0 } = parsePaging(req);
+    const users = await User.findMany({
+      skip: offset,
+      take: limit,
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+    return res
+      .status(200)
+      .json(
+        await getPagingObject({ data: users, total_records: users.length, req })
+      );
+  });
+
+  app.get("/test/ep3", validatePagingOptions, async (req, res) => {
+    const { limit = 20, offset = 0 } = parsePaging(req);
+    const users = await User.findMany({
+      skip: offset,
+      take: limit,
+      select: selectUser,
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    const normalizedUsers = await Promise.all(
+      users.map((u) => Promise.resolve(normalizeUserPublic(u, false)))
+    );
+
+    return res.status(200).json(
+      await getPagingObject({
+        data: normalizedUsers,
+        total_records: users.length,
+        req,
+      })
+    );
   });
 }
+
+// The main problem why the query is really slow is because inneficient selectUserQuery??

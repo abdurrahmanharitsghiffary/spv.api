@@ -32,6 +32,7 @@ const schema_1 = require("../schema");
 const user_models_1 = __importDefault(require("../models/user.models"));
 const user_1 = require("../lib/query/user");
 const user_normalize_1 = require("../utils/user/user.normalize");
+const paging_1 = require("../utils/paging");
 function router(app) {
     app.use("/api/auth/google", googleAuth_routes_1.default);
     app.use("/api/auth", auth_routes_1.default);
@@ -52,31 +53,82 @@ function router(app) {
         }),
     })), auth_middlewares_1.verifyToken, (0, handler_middlewares_1.tryCatch)(search_controllers_1.getSearchResults));
     app.post("/api/refresh", auth_middlewares_1.verifyRefreshToken, auth_controller_1.refreshToken);
+    // 4500 - 5000ms
     app.get("/test/endpoint", (req, res) => __awaiter(this, void 0, void 0, function* () {
         const users = yield user_models_1.default.findMany({ select: user_1.selectUser });
         const normalizedUsers = yield Promise.all(users.map((u) => (0, user_normalize_1.normalizeUser)(u, false)));
         res.status(200).json(normalizedUsers);
     }));
+    // 950 - 1200 ms
     app.get("/test/endpoint2", (req, res) => __awaiter(this, void 0, void 0, function* () {
         const users = yield user_models_1.default.findMany();
         res.status(200).json(users);
     }));
+    // 180++ ms
+    app.get("/test/endpoint3", (req, res) => __awaiter(this, void 0, void 0, function* () {
+        res.status(200).json("lol");
+    }));
+    // Error because normalizing invalid payload
     app.get("/test/endpoint4", (req, res) => __awaiter(this, void 0, void 0, function* () {
         const users = yield user_models_1.default.findMany();
         const normalizedUsers = yield Promise.all(users.map((u) => (0, user_normalize_1.normalizeUserPublic)(u, false)));
         res.status(200).json(normalizedUsers);
     }));
+    // 970 - 1190 ms
     app.get("/test/endpoint5", (req, res) => __awaiter(this, void 0, void 0, function* () {
         const users = yield user_models_1.default.findMany();
         const normalizedUsers = yield Promise.all(users.map((u) => (0, user_normalize_1.simplifyUser)(u, false)));
         res.status(200).json(normalizedUsers);
     }));
+    // 4500++ ms
     app.get("/test/endpoint6", (req, res) => __awaiter(this, void 0, void 0, function* () {
         const users = yield user_models_1.default.findMany({ select: user_1.selectUser });
         res.status(200).json(users);
     }));
-    app.get("/test/endpoint3", (req, res) => __awaiter(this, void 0, void 0, function* () {
-        res.status(200).json("lol");
+    app.get("/test/ep", validator_middlewares_1.validatePagingOptions, (req, res) => __awaiter(this, void 0, void 0, function* () {
+        const { limit = 20, offset = 0 } = (0, paging_1.parsePaging)(req);
+        const users = yield user_models_1.default.findMany({
+            skip: offset,
+            take: limit,
+            select: user_1.selectUser,
+            orderBy: {
+                createdAt: "desc",
+            },
+        });
+        return res
+            .status(200)
+            .json(yield (0, paging_1.getPagingObject)({ data: users, total_records: users.length, req }));
+    }));
+    app.get("/test/ep2", validator_middlewares_1.validatePagingOptions, (req, res) => __awaiter(this, void 0, void 0, function* () {
+        const { limit = 20, offset = 0 } = (0, paging_1.parsePaging)(req);
+        const users = yield user_models_1.default.findMany({
+            skip: offset,
+            take: limit,
+            orderBy: {
+                createdAt: "desc",
+            },
+        });
+        return res
+            .status(200)
+            .json(yield (0, paging_1.getPagingObject)({ data: users, total_records: users.length, req }));
+    }));
+    app.get("/test/ep3", validator_middlewares_1.validatePagingOptions, (req, res) => __awaiter(this, void 0, void 0, function* () {
+        const { limit = 20, offset = 0 } = (0, paging_1.parsePaging)(req);
+        const users = yield user_models_1.default.findMany({
+            skip: offset,
+            take: limit,
+            select: user_1.selectUser,
+            orderBy: {
+                createdAt: "desc",
+            },
+        });
+        const normalizedUsers = yield Promise.all(users.map((u) => Promise.resolve((0, user_normalize_1.normalizeUserPublic)(u, false))));
+        return res.status(200).json(yield (0, paging_1.getPagingObject)({
+            data: normalizedUsers,
+            total_records: users.length,
+            req,
+        }));
     }));
 }
 exports.router = router;
+// The main problem why the query is really slow is because inneficient selectUserQuery??
