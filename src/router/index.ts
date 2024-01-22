@@ -20,7 +20,11 @@ import { z } from "zod";
 import { zLimit, zOffset } from "../schema";
 import User from "../models/user.models";
 import { selectUser } from "../lib/query/user";
-import { normalizeUser } from "../utils/user/user.normalize";
+import {
+  normalizeUser,
+  normalizeUserPublic,
+  simplifyUser,
+} from "../utils/user/user.normalize";
 
 export function router(app: Express) {
   app.use("/api/auth/google", googleRouter);
@@ -63,7 +67,25 @@ export function router(app: Express) {
 
     res.status(200).json(users);
   });
-  app.get("/test/endpoint2", async (req, res) => {
+  app.get("/test/endpoint4", async (req, res) => {
+    const users = await User.findMany();
+
+    const normalizedUsers = await Promise.all(
+      users.map((u) => normalizeUserPublic(u as any, false))
+    );
+
+    res.status(200).json(normalizedUsers);
+  });
+  app.get("/test/endpoint5", async (req, res) => {
+    const users = await User.findMany();
+
+    const normalizedUsers = await Promise.all(
+      users.map((u) => simplifyUser(u as any, false))
+    );
+
+    res.status(200).json(normalizedUsers);
+  });
+  app.get("/test/endpoint3", async (req, res) => {
     res.status(200).json("lol");
   });
 }

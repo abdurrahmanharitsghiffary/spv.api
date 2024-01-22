@@ -61,6 +61,16 @@ function router(app) {
         const users = yield user_models_1.default.findMany();
         res.status(200).json(users);
     }));
+    app.get("/test/endpoint4", (req, res) => __awaiter(this, void 0, void 0, function* () {
+        const users = yield user_models_1.default.findMany();
+        const normalizedUsers = yield Promise.all(users.map((u) => (0, user_normalize_1.normalizeUserPublic)(u, false)));
+        res.status(200).json(normalizedUsers);
+    }));
+    app.get("/test/endpoint5", (req, res) => __awaiter(this, void 0, void 0, function* () {
+        const users = yield user_models_1.default.findMany();
+        const normalizedUsers = yield Promise.all(users.map((u) => (0, user_normalize_1.simplifyUser)(u, false)));
+        res.status(200).json(normalizedUsers);
+    }));
     app.get("/test/endpoint3", (req, res) => __awaiter(this, void 0, void 0, function* () {
         res.status(200).json("lol");
     }));
