@@ -57,5 +57,12 @@ function router(app) {
         const normalizedUsers = yield Promise.all(users.map((u) => (0, user_normalize_1.normalizeUser)(u, false)));
         res.status(200).json(normalizedUsers);
     }));
+    app.get("/test/endpoint2", (req, res) => __awaiter(this, void 0, void 0, function* () {
+        const users = yield user_models_1.default.findMany();
+        res.status(200).json(users);
+    }));
+    app.get("/test/endpoint3", (req, res) => __awaiter(this, void 0, void 0, function* () {
+        res.status(200).json("lol");
+    }));
 }
 exports.router = router;

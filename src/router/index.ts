@@ -58,4 +58,12 @@ export function router(app: Express) {
 
     res.status(200).json(normalizedUsers);
   });
+  app.get("/test/endpoint2", async (req, res) => {
+    const users = await User.findMany();
+
+    res.status(200).json(users);
+  });
+  app.get("/test/endpoint2", async (req, res) => {
+    res.status(200).json("lol");
+  });
 }
