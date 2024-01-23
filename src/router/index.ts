@@ -22,7 +22,7 @@ import {
 import { z } from "zod";
 import { zLimit, zOffset } from "../schema";
 import User from "../models/user.models";
-import { selectUser } from "../lib/query/user";
+import { selectUser, selectUserSimplified } from "../lib/query/user";
 import {
   normalizeUser,
   normalizeUserPublic,
@@ -104,6 +104,7 @@ export function router(app: Express) {
     res.status(200).json(users);
   });
 
+  // 4500 - 4700 ms
   app.get("/test/ep", validatePagingOptions, async (req, res) => {
     const { limit = 20, offset = 0 } = parsePaging(req);
     const users = await User.findMany({
@@ -120,7 +121,7 @@ export function router(app: Express) {
         await getPagingObject({ data: users, total_records: users.length, req })
       );
   });
-
+  // 980 - 1150 ms
   app.get("/test/ep2", validatePagingOptions, async (req, res) => {
     const { limit = 20, offset = 0 } = parsePaging(req);
     const users = await User.findMany({
@@ -136,7 +137,7 @@ export function router(app: Express) {
         await getPagingObject({ data: users, total_records: users.length, req })
       );
   });
-
+  // 4450 - 4650 ms
   app.get("/test/ep3", validatePagingOptions, async (req, res) => {
     const { limit = 20, offset = 0 } = parsePaging(req);
     const users = await User.findMany({
@@ -159,6 +160,17 @@ export function router(app: Express) {
         req,
       })
     );
+  });
+
+  app.get("/test/us", async (req, res) => {
+    const users = await User.findMany({
+      select: selectUserSimplified,
+    });
+
+    const normalized = await Promise.all(
+      users.map((u) => simplifyUser(u, false))
+    );
+    return res.status(200).json(normalized);
   });
 }
 

@@ -85,6 +85,7 @@ function router(app) {
         const users = yield user_models_1.default.findMany({ select: user_1.selectUser });
         res.status(200).json(users);
     }));
+    // 4500 - 4700 ms
     app.get("/test/ep", validator_middlewares_1.validatePagingOptions, (req, res) => __awaiter(this, void 0, void 0, function* () {
         const { limit = 20, offset = 0 } = (0, paging_1.parsePaging)(req);
         const users = yield user_models_1.default.findMany({
@@ -99,6 +100,7 @@ function router(app) {
             .status(200)
             .json(yield (0, paging_1.getPagingObject)({ data: users, total_records: users.length, req }));
     }));
+    // 980 - 1150 ms
     app.get("/test/ep2", validator_middlewares_1.validatePagingOptions, (req, res) => __awaiter(this, void 0, void 0, function* () {
         const { limit = 20, offset = 0 } = (0, paging_1.parsePaging)(req);
         const users = yield user_models_1.default.findMany({
@@ -112,6 +114,7 @@ function router(app) {
             .status(200)
             .json(yield (0, paging_1.getPagingObject)({ data: users, total_records: users.length, req }));
     }));
+    // 4450 - 4650 ms
     app.get("/test/ep3", validator_middlewares_1.validatePagingOptions, (req, res) => __awaiter(this, void 0, void 0, function* () {
         const { limit = 20, offset = 0 } = (0, paging_1.parsePaging)(req);
         const users = yield user_models_1.default.findMany({
@@ -128,6 +131,13 @@ function router(app) {
             total_records: users.length,
             req,
         }));
+    }));
+    app.get("/test/us", (req, res) => __awaiter(this, void 0, void 0, function* () {
+        const users = yield user_models_1.default.findMany({
+            select: user_1.selectUserSimplified,
+        });
+        const normalized = yield Promise.all(users.map((u) => (0, user_normalize_1.simplifyUser)(u, false)));
+        return res.status(200).json(normalized);
     }));
 }
 exports.router = router;
