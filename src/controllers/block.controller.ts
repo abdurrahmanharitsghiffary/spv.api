@@ -44,8 +44,7 @@ export const getAllBlockedUsers = async (
     await getPagingObject({
       data: await Promise.all(
         (user?.blocked ?? []).map((user) => {
-          const isFollowed = getUserIsFollowed(user, uId);
-          return Promise.resolve(normalizeUserPublic(user, isFollowed));
+          return Promise.resolve(normalizeUserPublic(user));
         })
       ),
       req,

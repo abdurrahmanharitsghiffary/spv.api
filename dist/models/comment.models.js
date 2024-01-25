@@ -14,7 +14,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CommentLike = exports.createOneComment = void 0;
 const prismaClient_1 = __importDefault(require("../config/prismaClient"));
-const utils_1 = require("../utils");
 const Comment = prismaClient_1.default.comment;
 const CommentLike = prismaClient_1.default.commentLike;
 exports.CommentLike = CommentLike;
@@ -35,15 +34,7 @@ const createOneComment = ({ comment, postId, userId, parentId, image, }) => __aw
                 },
             },
         });
-        if (image && typeof image !== "string") {
-            yield tx.image.create({
-                data: {
-                    src: (0, utils_1.getFileDest)(image),
-                    commentId: createdComment.id,
-                },
-            });
-        }
-        else if (image) {
+        if (image) {
             yield tx.image.create({
                 data: {
                     src: image,

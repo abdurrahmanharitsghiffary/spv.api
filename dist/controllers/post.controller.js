@@ -1,4 +1,27 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -17,14 +40,13 @@ const post_models_1 = __importDefault(require("../models/post.models"));
 const post_utils_1 = require("../utils/post/post.utils");
 const comment_utils_1 = require("../utils/comment/comment.utils");
 const image_models_1 = __importDefault(require("../models/image.models"));
-const utils_1 = require("../utils");
 const paging_1 = require("../utils/paging");
-const utils_2 = require("../utils");
 const response_1 = require("../utils/response");
 const prismaClient_1 = __importDefault(require("../config/prismaClient"));
 const error_1 = require("../lib/error");
 const user_1 = require("../lib/query/user");
 const messages_1 = require("../lib/messages");
+const cloudinary_1 = __importStar(require("../lib/cloudinary"));
 const getAllMyPosts = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     let { offset = 0, limit = 20 } = req.query;
     const { userId } = req;
@@ -76,7 +98,10 @@ const getPostCommentsById = (req, res) => __awaiter(void 0, void 0, void 0, func
     const { postId } = req.params;
     offset = Number(offset);
     limit = Number(limit);
-    yield (0, post_utils_1.findPostById)(postId, Number(userId));
+    yield (0, post_utils_1.checkPostIsFound)({
+        postId: Number(postId),
+        currentUserId: Number(userId),
+    });
     const comments = yield (0, comment_utils_1.findCommentsByPostId)(Number(postId), offset, limit, !order_by ? undefined : order_by.split(","), Number(userId));
     return res.status(200).json(yield (0, paging_1.getPagingObject)({
         data: comments.data,
@@ -130,7 +155,10 @@ const savePost = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { postId } = req.body;
     const pId = Number(postId);
     const uId = Number(userId);
-    yield (0, post_utils_1.findPostById)(postId, Number(userId));
+    yield (0, post_utils_1.checkPostIsFound)({
+        postId: Number(postId),
+        currentUserId: Number(userId),
+    });
     const savedPost = yield prismaClient_1.default.savedPost.findUnique({
         where: {
             postId_userId: {
@@ -209,7 +237,7 @@ const deletePost = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
     });
     if (deletedPost.images.length > 0) {
         deletedPost.images.forEach((image) => __awaiter(void 0, void 0, void 0, function* () {
-            yield (0, utils_2.deleteUploadedImage)(image.src);
+            yield cloudinary_1.default.uploader.destroy(image.src);
         }));
     }
     return res
@@ -218,10 +246,9 @@ const deletePost = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
 });
 exports.deletePost = deletePost;
 const updatePost = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _c;
     const { title, content } = req.body;
     const { postId } = req.params;
-    const images = (_c = req.files) !== null && _c !== void 0 ? _c : [];
+    const images = (0, cloudinary_1.getCloudinaryImage)(req);
     yield prismaClient_1.default.$transaction((tx) => __awaiter(void 0, void 0, void 0, function* () {
         yield tx.post.update({
             where: {
@@ -233,7 +260,9 @@ const updatePost = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
             },
         });
         if (images && images.length > 0) {
-            yield (0, utils_1.prismaImageUploader)(tx, images, Number(postId), "post");
+            yield tx.image.createMany({
+                data: images.map((src) => ({ postId: Number(postId), src })),
+            });
         }
         return;
     }));
@@ -243,8 +272,7 @@ const updatePost = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
 });
 exports.updatePost = updatePost;
 const createPost = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _d;
-    const images = (_d = req.files) !== null && _d !== void 0 ? _d : [];
+    const images = (0, cloudinary_1.getCloudinaryImage)(req);
     const { userId } = req;
     const { title, content } = req.body;
     const result = yield prismaClient_1.default.$transaction((tx) => __awaiter(void 0, void 0, void 0, function* () {
@@ -256,8 +284,10 @@ const createPost = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
             },
         });
         if (images && images.length > 0) {
-            const sources = yield (0, utils_1.prismaImageUploader)(tx, images, post.id, "post");
-            post.images = sources;
+            yield tx.image.createMany({
+                data: images.map((src) => ({ postId: post.id, src })),
+            });
+            post.images = images.map((src) => ({ src }));
         }
         return post;
     }));
@@ -274,7 +304,7 @@ const deletePostImageById = (req, res) => __awaiter(void 0, void 0, void 0, func
             postId: Number(postId),
         },
     });
-    yield (0, utils_2.deleteUploadedImage)(deletedImage.src);
+    yield cloudinary_1.default.uploader.destroy(deletedImage.src);
     return res.status(204).json(new response_1.ApiResponse(null, 204));
 });
 exports.deletePostImageById = deletePostImageById;
@@ -291,7 +321,7 @@ const deletePostImagesByPostId = (req, res) => __awaiter(void 0, void 0, void 0,
         },
     });
     yield Promise.all(images.map((img) => __awaiter(void 0, void 0, void 0, function* () {
-        yield (0, utils_2.deleteUploadedImage)(img.src);
+        yield cloudinary_1.default.uploader.destroy(img.src);
     })));
     return res.status(204).json(new response_1.ApiResponse(null, 204));
 });

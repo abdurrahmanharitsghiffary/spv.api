@@ -10,13 +10,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.normalizeChatRooms = void 0;
-const __1 = require("..");
 const chat_normalize_1 = require("./chat.normalize");
 const normalizeChatRooms = (room) => new Promise((resolve) => __awaiter(void 0, void 0, void 0, function* () {
     return resolve({
         createdAt: room.createdAt,
         id: room.id,
-        picture: (0, __1.getCompleteFileUrlPath)(room.groupPicture),
+        picture: room.groupPicture,
         isGroupChat: room.isGroupChat,
         messages: yield Promise.all(room.messages.map((message) => Promise.resolve((0, chat_normalize_1.normalizeChat)(message)))),
         unreadMessages: { total: room._count.messages },

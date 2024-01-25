@@ -15,9 +15,10 @@ const zod_1 = require("zod");
 const chat_schema_1 = require("../schema/chat.schema");
 const schema_1 = require("../schema");
 const middlewares_1 = require("../middlewares");
+const cloudinary_middleware_1 = require("../middlewares/cloudinary.middleware");
 const router = express_1.default.Router();
 router.use(auth_middlewares_1.verifyToken);
-router.route("/").post(multer_middlewares_1.uploadImage.array("images[]"), (0, validator_middlewares_1.validateBody)(zod_form_data_1.zfd.formData(zod_1.z.object({
+router.route("/").post(multer_middlewares_1.uploadImageV2.array("images[]"), cloudinary_middleware_1.uploadFilesToCloudinary, (0, validator_middlewares_1.validateBody)(zod_form_data_1.zfd.formData(zod_1.z.object({
     message: chat_schema_1.zfdChatMessage,
     chatRoomId: (0, schema_1.zfdInt)("chatRoomId"),
 }))), (0, middlewares_1.checkIsParticipatedInChatRoom)({

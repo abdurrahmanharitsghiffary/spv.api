@@ -37,8 +37,8 @@ const comment_models_1 = __importStar(require("../models/comment.models"));
 const comment_utils_1 = require("../utils/comment/comment.utils");
 const response_1 = require("../utils/response");
 const post_utils_1 = require("../utils/post/post.utils");
-const utils_1 = require("../utils");
 const notification_utils_1 = require("../utils/notification/notification.utils");
+const cloudinary_1 = __importStar(require("../lib/cloudinary"));
 const getComment = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { userId } = req;
     const { commentId } = req.params;
@@ -60,7 +60,7 @@ const deleteComment = (req, res) => __awaiter(void 0, void 0, void 0, function* 
         },
     });
     if ((_a = deletedComment.image) === null || _a === void 0 ? void 0 : _a.src) {
-        yield (0, utils_1.deleteUploadedImage)(deletedComment.image.src);
+        yield cloudinary_1.default.uploader.destroy(deletedComment.image.src);
     }
     return res
         .status(204)
@@ -85,24 +85,28 @@ const updateComment = (req, res) => __awaiter(void 0, void 0, void 0, function* 
 });
 exports.updateComment = updateComment;
 const createComment = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _b;
-    const image = req.file;
+    var _b, _c;
+    const image = (_b = (0, cloudinary_1.getCloudinaryImage)(req)) === null || _b === void 0 ? void 0 : _b[0];
     const { userId } = req;
     const { comment, postId, parentId, imageSrc } = req.body;
     const pId = Number(postId);
     const prId = Number(parentId);
     const uId = Number(userId);
     if (parentId) {
-        yield (0, comment_utils_1.findCommentByIdCustomMessage)({
+        yield (0, comment_utils_1.checkCommentIsFound)({
+            customMessage: {
+                message: "Can't found comment with provided parentId",
+                statusCode: 404,
+            },
             commentId: prId,
-            message: "Can't found comment with provided parentId",
-            statusCode: 404,
             currentUserId: uId,
         });
     }
-    yield (0, post_utils_1.findPostByIdCustomMessage)({
-        statusCode: 404,
-        message: "Can't found post with provided postId",
+    yield (0, post_utils_1.checkPostIsFound)({
+        customMessage: {
+            message: "Can't found post with provided postId",
+            statusCode: 404,
+        },
         postId: pId,
         currentUserId: uId,
     });
@@ -117,7 +121,7 @@ const createComment = (req, res) => __awaiter(void 0, void 0, void 0, function* 
         type: "comment",
         commentId: result.id,
         postId: result.postId,
-        receiverId: (_b = result.post) === null || _b === void 0 ? void 0 : _b.authorId,
+        receiverId: (_c = result.post) === null || _c === void 0 ? void 0 : _c.authorId,
         userId: uId,
     });
     return res
@@ -126,13 +130,16 @@ const createComment = (req, res) => __awaiter(void 0, void 0, void 0, function* 
 });
 exports.createComment = createComment;
 const createReplyComment = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _c;
-    const image = req.file;
+    var _d, _e;
+    const image = (_d = (0, cloudinary_1.getCloudinaryImage)(req)) === null || _d === void 0 ? void 0 : _d[0];
     const { userId } = req;
     const { commentId } = req.params;
     const { comment, imageSrc } = req.body;
     const uId = Number(userId);
-    const currentComment = yield (0, comment_utils_1.findCommentById)(Number(commentId), uId);
+    const currentComment = yield (0, comment_utils_1.checkCommentIsFound)({
+        commentId: Number(commentId),
+        currentUserId: uId,
+    });
     const result = yield (0, comment_models_1.createOneComment)({
         comment,
         postId: currentComment.postId,
@@ -144,7 +151,7 @@ const createReplyComment = (req, res) => __awaiter(void 0, void 0, void 0, funct
         type: "replying_comment",
         commentId: result.id,
         postId: result.postId,
-        receiverId: (_c = result.post) === null || _c === void 0 ? void 0 : _c.authorId,
+        receiverId: (_e = result.post) === null || _e === void 0 ? void 0 : _e.authorId,
         userId: uId,
     });
     return res

@@ -2,13 +2,13 @@ import express from "express";
 import Comment, { createOneComment } from "../models/comment.models";
 import { ExpressRequestExtended } from "../types/request";
 import {
-  findCommentByIdCustomMessage,
   findCommentById,
+  checkCommentIsFound,
 } from "../utils/comment/comment.utils";
 import { ApiResponse } from "../utils/response";
-import { findPostByIdCustomMessage } from "../utils/post/post.utils";
-import { deleteUploadedImage } from "../utils";
+import { checkPostIsFound } from "../utils/post/post.utils";
 import { notify } from "../utils/notification/notification.utils";
+import cloudinary, { getCloudinaryImage } from "../lib/cloudinary";
 
 export const getComment = async (
   req: express.Request,
@@ -40,7 +40,7 @@ export const deleteComment = async (
   });
 
   if (deletedComment.image?.src) {
-    await deleteUploadedImage(deletedComment.image.src);
+    await cloudinary.uploader.destroy(deletedComment.image.src);
   }
 
   return res
@@ -74,7 +74,7 @@ export const createComment = async (
   req: express.Request,
   res: express.Response
 ) => {
-  const image = req.file;
+  const image = getCloudinaryImage(req)?.[0];
   const { userId } = req as ExpressRequestExtended;
 
   const { comment, postId, parentId, imageSrc } = req.body as {
@@ -89,17 +89,21 @@ export const createComment = async (
   const uId = Number(userId);
 
   if (parentId) {
-    await findCommentByIdCustomMessage({
+    await checkCommentIsFound({
+      customMessage: {
+        message: "Can't found comment with provided parentId",
+        statusCode: 404,
+      },
       commentId: prId,
-      message: "Can't found comment with provided parentId",
-      statusCode: 404,
       currentUserId: uId,
     });
   }
 
-  await findPostByIdCustomMessage({
-    statusCode: 404,
-    message: "Can't found post with provided postId",
+  await checkPostIsFound({
+    customMessage: {
+      message: "Can't found post with provided postId",
+      statusCode: 404,
+    },
     postId: pId,
     currentUserId: uId,
   });
@@ -129,7 +133,7 @@ export const createReplyComment = async (
   req: express.Request,
   res: express.Response
 ) => {
-  const image = req.file;
+  const image = getCloudinaryImage(req)?.[0];
   const { userId } = req as ExpressRequestExtended;
   const { commentId } = req.params;
   const { comment, imageSrc } = req.body as {
@@ -137,7 +141,10 @@ export const createReplyComment = async (
     imageSrc?: string;
   };
   const uId = Number(userId);
-  const currentComment = await findCommentById(Number(commentId), uId);
+  const currentComment = await checkCommentIsFound({
+    commentId: Number(commentId),
+    currentUserId: uId,
+  });
 
   const result = await createOneComment({
     comment,

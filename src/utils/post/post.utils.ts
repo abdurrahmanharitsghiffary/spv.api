@@ -89,27 +89,6 @@ const postWhereAndInput = (currentUserId?: number) =>
     },
   ] satisfies Prisma.PostWhereInput["AND"];
 
-export const findPostByIdCustomMessage = async ({
-  statusCode = 404,
-  currentUserId,
-  postId,
-  message = NotFound.POST,
-}: {
-  statusCode?: number;
-  postId: number;
-  currentUserId?: number;
-  message: string;
-}) => {
-  const post = await Post.findUnique({
-    where: postFindUniqueWhereInput(postId, Number(currentUserId)),
-    select: postSelectExtended(currentUserId),
-  });
-
-  if (!post) throw new RequestError(message, statusCode ?? 400);
-  const normalizedPost = await normalizePost(post);
-  return normalizedPost;
-};
-
 export const findPostById = async (postId: string, currentUserId?: number) => {
   const post = await Post.findUnique({
     where: postFindUniqueWhereInput(postId, Number(currentUserId)),
@@ -387,4 +366,32 @@ export const searchPosts = async ({
     ),
     total: resultsTotal,
   };
+};
+
+export const checkPostIsFound = async ({
+  postId,
+  currentUserId,
+  customMessage,
+}: {
+  postId: number;
+  currentUserId?: number;
+  customMessage?: { message?: string; statusCode?: number };
+}) => {
+  const andInput = currentUserId ? postWhereAndInput(currentUserId) : undefined;
+
+  const post = await Post.findUnique({
+    where: {
+      id: postId,
+      AND: andInput,
+    },
+    select: { id: true },
+  });
+
+  if (!post)
+    throw new RequestError(
+      customMessage?.message ?? NotFound.POST,
+      customMessage?.statusCode ?? 404
+    );
+
+  return post ? true : false;
 };

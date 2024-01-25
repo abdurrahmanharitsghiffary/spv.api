@@ -7,13 +7,13 @@ import {
   findMessageById,
 } from "../utils/chat/chat.utils";
 import { getPagingObject } from "../utils/paging";
-import { deleteUploadedImage } from "../utils";
 import { ApiResponse } from "../utils/response";
 import { emitSocketEvent } from "../socket/socket.utils";
 import { normalizeChat } from "../utils/chat/chat.normalize";
 import { Socket_Event } from "../socket/event";
 import { findAllUserChatRoom } from "../utils/chat/chatRoom.utils";
 import { Socket_Id } from "../lib/consts";
+import cloudinary, { getCloudinaryImage } from "../lib/cloudinary";
 
 export const getAllChatsByUserId = async (
   req: express.Request,
@@ -46,7 +46,7 @@ export const deleteChatById = async (
   const { userId } = req as ExpressRequestExtended;
   const { messageId } = req.params;
 
-  const deletedChat = await deleteChatWithId(Number(messageId), Number(userId));
+  const deletedChat = await deleteChatWithId(Number(messageId));
   const normalizedChat = await normalizeChat(deletedChat);
 
   deletedChat.chatRoom.participants.forEach((participant) => {
@@ -60,7 +60,7 @@ export const deleteChatById = async (
 
   if (deletedChat.chatImage && deletedChat.chatImage.length > 0) {
     deletedChat.chatImage.forEach(async (image) => {
-      await deleteUploadedImage(image.src);
+      await cloudinary.uploader.destroy(image.src);
     });
   }
 
@@ -73,15 +73,10 @@ export const updateChatById = async (
   req: express.Request,
   res: express.Response
 ) => {
-  const { userId } = req as ExpressRequestExtended;
   const { messageId } = req.params;
   const { message } = req.body;
 
-  const updatedChat = await updateChatWithId(
-    Number(messageId),
-    Number(userId),
-    message
-  );
+  const updatedChat = await updateChatWithId(Number(messageId), message);
 
   const normalizedChat = await normalizeChat(updatedChat);
 
@@ -107,8 +102,7 @@ export const createChat = async (
   const { message, chatRoomId } = req.body;
   const cRId = Number(chatRoomId);
   const uId = Number(userId);
-  const images = (req.files as Express.Multer.File[]) ?? [];
-  console.log(images, "Images");
+  const images = getCloudinaryImage(req);
 
   const createdChat = await createChatWithRoomIdAndAuthorId({
     senderId: uId,
@@ -118,7 +112,6 @@ export const createChat = async (
   });
 
   const normalizedChat = await normalizeChat(createdChat);
-  console.log(createdChat.chatRoom.participants, "Participants");
   createdChat.chatRoom.participants.forEach((participant) => {
     emitSocketEvent(
       req,
@@ -139,7 +132,7 @@ export const getMessagesById = async (
 ) => {
   const { messageId } = req.params;
   const { userId } = req as ExpressRequestExtended;
-  const message = await findMessageById(Number(messageId), Number(userId));
+  const message = await findMessageById(Number(messageId));
 
   return res.status(200).json(new ApiResponse(message, 200));
 };

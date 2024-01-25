@@ -33,7 +33,6 @@ app.use(express.json());
 app.use(express.static("./src"));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser(COOKIE_SECRET));
-app.use(express.urlencoded({ extended: false }));
 app.use(
   cors({
     credentials: true,
@@ -51,11 +50,10 @@ app.use(
     },
   })
 );
-
 passportGoogle();
 app.use(passport.initialize());
-app.use(morgan("dev"));
-// app.use(sanitizer());
+process.env.NODE_ENV !== "production" && app.use(morgan("dev"));
+app.use(sanitizer());
 app.use(
   helmet({
     xFrameOptions: {

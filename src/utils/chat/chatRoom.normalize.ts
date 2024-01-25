@@ -1,4 +1,3 @@
-import { getCompleteFileUrlPath } from "..";
 import { SelectChatRoomPayload } from "../../lib/query/chat";
 import { ChatRoom } from "../../types/chat";
 import { normalizeChat, normalizeChatParticipant } from "./chat.normalize";
@@ -10,7 +9,7 @@ export const normalizeChatRooms = (
     return resolve({
       createdAt: room.createdAt,
       id: room.id,
-      picture: getCompleteFileUrlPath(room.groupPicture),
+      picture: room.groupPicture,
       isGroupChat: room.isGroupChat,
       messages: await Promise.all(
         room.messages.map((message) => Promise.resolve(normalizeChat(message)))

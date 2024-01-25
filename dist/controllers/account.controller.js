@@ -38,18 +38,17 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.sendVerifyToken = exports.verifyAccount = exports.changeMyAccountPassword = exports.deleteAccountImage = exports.deleteMyAccount = exports.updateMyAccount = exports.updateAccountImage = exports.getMyAccountInfo = void 0;
 const user_models_1 = __importDefault(require("../models/user.models"));
 const user_utils_1 = require("../utils/user/user.utils");
-const utils_1 = require("../utils");
 const image_models_1 = __importDefault(require("../models/image.models"));
 const error_1 = require("../lib/error");
-const utils_2 = require("../utils");
 const token_models_1 = __importDefault(require("../models/token.models"));
-const utils_3 = require("../utils");
+const utils_1 = require("../utils");
 const email_utils_1 = require("../utils/email.utils");
 const response_1 = require("../utils/response");
 const bcrypt = __importStar(require("bcrypt"));
 const image_models_2 = require("../models/image.models");
 const consts_1 = require("../lib/consts");
 const messages_1 = require("../lib/messages");
+const cloudinary_1 = __importStar(require("../lib/cloudinary"));
 const getMyAccountInfo = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { userId } = req;
     const myAccount = yield (0, user_utils_1.findUserById)(Number(userId));
@@ -57,17 +56,21 @@ const getMyAccountInfo = (req, res) => __awaiter(void 0, void 0, void 0, functio
 });
 exports.getMyAccountInfo = getMyAccountInfo;
 const updateAccountImage = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, _b, _c, _d;
+    var _a, _b, _c, _d, _e;
     const { userId, userEmail } = req;
     const { type = "profile" } = req.query;
     let src;
-    const image = req.file;
-    const user = yield (0, user_utils_1.findUserById)(Number(userId));
+    const image = (_a = (0, cloudinary_1.getCloudinaryImage)(req)) === null || _a === void 0 ? void 0 : _a[0];
+    const user = yield (0, user_utils_1.checkIsUserFound)({
+        userId: Number(userId),
+        currentUserId: Number(userId),
+        select: { profile: { select: { avatarImage: { select: { src: true } } } } },
+    });
     if (!user)
         throw new error_1.RequestError("Something went wrong!", 404);
     if (type === "profile") {
         if (image) {
-            src = (_b = (_a = user === null || user === void 0 ? void 0 : user.profile) === null || _a === void 0 ? void 0 : _a.avatarImage) === null || _b === void 0 ? void 0 : _b.src;
+            src = (_c = (_b = user === null || user === void 0 ? void 0 : user.profile) === null || _b === void 0 ? void 0 : _b.avatarImage) === null || _c === void 0 ? void 0 : _c.src;
             yield user_models_1.default.update({
                 where: {
                     email: userEmail,
@@ -77,7 +80,7 @@ const updateAccountImage = (req, res) => __awaiter(void 0, void 0, void 0, funct
                         update: {
                             avatarImage: {
                                 create: {
-                                    src: (0, utils_1.getFileDest)(image),
+                                    src: image,
                                 },
                             },
                         },
@@ -85,12 +88,12 @@ const updateAccountImage = (req, res) => __awaiter(void 0, void 0, void 0, funct
                 },
             });
             if (src)
-                yield (0, utils_2.deleteUploadedImage)(src);
+                yield cloudinary_1.default.uploader.destroy(src);
         }
     }
     else {
         if (image) {
-            src = (_d = (_c = user === null || user === void 0 ? void 0 : user.profile) === null || _c === void 0 ? void 0 : _c.coverImage) === null || _d === void 0 ? void 0 : _d.src;
+            src = (_e = (_d = user === null || user === void 0 ? void 0 : user.profile) === null || _d === void 0 ? void 0 : _d.coverImage) === null || _e === void 0 ? void 0 : _e.src;
             yield user_models_1.default.update({
                 where: {
                     email: userEmail,
@@ -100,7 +103,7 @@ const updateAccountImage = (req, res) => __awaiter(void 0, void 0, void 0, funct
                         update: {
                             coverImage: {
                                 create: {
-                                    src: (0, utils_1.getFileDest)(image),
+                                    src: image,
                                 },
                             },
                         },
@@ -108,7 +111,7 @@ const updateAccountImage = (req, res) => __awaiter(void 0, void 0, void 0, funct
                 },
             });
             if (src)
-                yield (0, utils_2.deleteUploadedImage)(src);
+                yield cloudinary_1.default.uploader.destroy(src);
         }
     }
     return res
@@ -142,7 +145,7 @@ const updateMyAccount = (req, res) => __awaiter(void 0, void 0, void 0, function
 });
 exports.updateMyAccount = updateMyAccount;
 const deleteMyAccount = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _e, _f, _g, _h;
+    var _f, _g, _h, _j;
     const { userEmail } = req;
     const { currentPassword } = req.body;
     const user = yield user_models_1.default.findUnique({ where: { email: userEmail } });
@@ -170,11 +173,11 @@ const deleteMyAccount = (req, res) => __awaiter(void 0, void 0, void 0, function
             },
         },
     });
-    if ((_f = (_e = deletedUser.profile) === null || _e === void 0 ? void 0 : _e.coverImage) === null || _f === void 0 ? void 0 : _f.src) {
-        yield (0, utils_2.deleteUploadedImage)(deletedUser.profile.coverImage.src);
+    if ((_g = (_f = deletedUser.profile) === null || _f === void 0 ? void 0 : _f.coverImage) === null || _g === void 0 ? void 0 : _g.src) {
+        yield cloudinary_1.default.uploader.destroy(deletedUser.profile.coverImage.src);
     }
-    if ((_h = (_g = deletedUser.profile) === null || _g === void 0 ? void 0 : _g.avatarImage) === null || _h === void 0 ? void 0 : _h.src) {
-        yield (0, utils_2.deleteUploadedImage)(deletedUser.profile.avatarImage.src);
+    if ((_j = (_h = deletedUser.profile) === null || _h === void 0 ? void 0 : _h.avatarImage) === null || _j === void 0 ? void 0 : _j.src) {
+        yield cloudinary_1.default.uploader.destroy(deletedUser.profile.avatarImage.src);
     }
     return res
         .status(204)
@@ -182,7 +185,7 @@ const deleteMyAccount = (req, res) => __awaiter(void 0, void 0, void 0, function
 });
 exports.deleteMyAccount = deleteMyAccount;
 const deleteAccountImage = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _j, _k;
+    var _k, _l;
     const { userEmail } = req;
     const { type = "profile" } = req.query;
     const user = yield user_models_1.default.findUnique({
@@ -201,7 +204,7 @@ const deleteAccountImage = (req, res) => __awaiter(void 0, void 0, void 0, funct
     if (!user)
         throw new error_1.RequestError("Something went wrong!", 400);
     if (type === "profile") {
-        if (!((_j = user === null || user === void 0 ? void 0 : user.profile) === null || _j === void 0 ? void 0 : _j.avatarImage))
+        if (!((_k = user === null || user === void 0 ? void 0 : user.profile) === null || _k === void 0 ? void 0 : _k.avatarImage))
             throw new error_1.RequestError(messages_1.NotFound.PROFILE_IMAGE, 404);
         if (user.profile)
             yield image_models_1.default.delete({
@@ -209,10 +212,10 @@ const deleteAccountImage = (req, res) => __awaiter(void 0, void 0, void 0, funct
                     profileId: user.profile.id,
                 },
             });
-        yield (0, utils_2.deleteUploadedImage)(user.profile.avatarImage.src);
+        yield cloudinary_1.default.uploader.destroy(user.profile.avatarImage.src);
     }
     else {
-        if (!((_k = user === null || user === void 0 ? void 0 : user.profile) === null || _k === void 0 ? void 0 : _k.coverImage))
+        if (!((_l = user === null || user === void 0 ? void 0 : user.profile) === null || _l === void 0 ? void 0 : _l.coverImage))
             throw new error_1.RequestError(messages_1.NotFound.PROFILE_IMAGE, 404);
         if (user.profile)
             yield image_models_2.CoverImage.delete({
@@ -220,7 +223,7 @@ const deleteAccountImage = (req, res) => __awaiter(void 0, void 0, void 0, funct
                     profileId: user.profile.id,
                 },
             });
-        yield (0, utils_2.deleteUploadedImage)(user.profile.coverImage.src);
+        yield cloudinary_1.default.uploader.destroy(user.profile.coverImage.src);
     }
     return res
         .status(204)
@@ -300,7 +303,7 @@ const sendVerifyToken = (req, res) => __awaiter(void 0, void 0, void 0, function
             email,
         },
     });
-    const token = yield (0, utils_3.getRandomToken)();
+    const token = yield (0, utils_1.getRandomToken)();
     if (user && !user.verified) {
         yield token_models_1.default.create({
             data: {

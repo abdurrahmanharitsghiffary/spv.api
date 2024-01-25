@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.searchPosts = exports.findSavedPost = exports.findFollowedUserPosts = exports.findAllPosts = exports.findPostsByAuthorId = exports.findPostById = exports.findPostByIdCustomMessage = void 0;
+exports.checkPostIsFound = exports.searchPosts = exports.findSavedPost = exports.findFollowedUserPosts = exports.findAllPosts = exports.findPostsByAuthorId = exports.findPostById = void 0;
 const error_1 = require("../../lib/error");
 const post_models_1 = __importDefault(require("../../models/post.models"));
 const post_1 = require("../../lib/query/post");
@@ -73,17 +73,6 @@ const postWhereAndInput = (currentUserId) => [
         author: Object.assign(Object.assign({}, (0, user_1.excludeBlockedUser)(currentUserId)), (0, user_1.excludeBlockingUser)(currentUserId)),
     },
 ];
-const findPostByIdCustomMessage = ({ statusCode = 404, currentUserId, postId, message = messages_1.NotFound.POST, }) => __awaiter(void 0, void 0, void 0, function* () {
-    const post = yield post_models_1.default.findUnique({
-        where: postFindUniqueWhereInput(postId, Number(currentUserId)),
-        select: postSelectExtended(currentUserId),
-    });
-    if (!post)
-        throw new error_1.RequestError(message, statusCode !== null && statusCode !== void 0 ? statusCode : 400);
-    const normalizedPost = yield (0, post_normalize_1.normalizePost)(post);
-    return normalizedPost;
-});
-exports.findPostByIdCustomMessage = findPostByIdCustomMessage;
 const findPostById = (postId, currentUserId) => __awaiter(void 0, void 0, void 0, function* () {
     const post = yield post_models_1.default.findUnique({
         where: postFindUniqueWhereInput(postId, Number(currentUserId)),
@@ -278,3 +267,18 @@ const searchPosts = ({ query, limit = 20, offset = 0, currentUserId, }) => __awa
     };
 });
 exports.searchPosts = searchPosts;
+const checkPostIsFound = ({ postId, currentUserId, customMessage, }) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b;
+    const andInput = currentUserId ? postWhereAndInput(currentUserId) : undefined;
+    const post = yield post_models_1.default.findUnique({
+        where: {
+            id: postId,
+            AND: andInput,
+        },
+        select: { id: true },
+    });
+    if (!post)
+        throw new error_1.RequestError((_a = customMessage === null || customMessage === void 0 ? void 0 : customMessage.message) !== null && _a !== void 0 ? _a : messages_1.NotFound.POST, (_b = customMessage === null || customMessage === void 0 ? void 0 : customMessage.statusCode) !== null && _b !== void 0 ? _b : 404);
+    return post ? true : false;
+});
+exports.checkPostIsFound = checkPostIsFound;

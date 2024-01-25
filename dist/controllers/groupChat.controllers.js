@@ -1,4 +1,27 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -27,17 +50,19 @@ const utils_1 = require("../utils");
 const messages_1 = require("../lib/messages");
 const chat_normalize_1 = require("../utils/chat/chat.normalize");
 const consts_1 = require("../lib/consts");
+const cloudinary_1 = __importStar(require("../lib/cloudinary"));
 const createGroupChat = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
     const { userId } = req;
     const { participants, description, title } = req.body;
-    const image = req.file;
+    const imageSrc = (_a = (0, cloudinary_1.getCloudinaryImage)(req)) === null || _a === void 0 ? void 0 : _a[0];
     const createdGroupChat = yield (0, chatRoom_utils_1.createChatRoom)({
         isGroupChat: true,
         participants: participants,
         currentUserId: Number(userId),
         description,
         title,
-        image,
+        imageSrc,
     });
     createdGroupChat.participants.users.forEach((participant) => {
         (0, socket_utils_1.emitSocketEvent)(req, (0, consts_1.Socket_Id)(participant.id, "USER"), event_1.Socket_Event.JOIN_ROOM, createdGroupChat);
@@ -52,9 +77,13 @@ const joinGroupChat = (req, res) => __awaiter(void 0, void 0, void 0, function* 
     const { userId } = req;
     const gId = Number(groupId);
     const uId = Number(userId);
-    yield (0, chatRoom_utils_1.findChatRoomById)(gId, uId, {
-        message: messages_1.NotFound.GROUP_CHAT,
-        statusCode: 404,
+    yield (0, chatRoom_utils_1.isChatRoomFound)({
+        customMessage: {
+            message: messages_1.NotFound.GROUP_CHAT,
+            statusCode: 404,
+        },
+        chatRoomId: gId,
+        currentUserId: uId,
     });
     const participant = yield chat_models_1.ChatRoomParticipant.findUnique({
         where: {
@@ -138,10 +167,10 @@ const leaveGroupChat = (req, res) => __awaiter(void 0, void 0, void 0, function*
 });
 exports.leaveGroupChat = leaveGroupChat;
 const updateGroupChat = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
+    var _b, _c, _d;
     const { userId } = req;
     const { groupId } = req.params;
-    const image = req.file;
+    const imageSrc = (_b = (0, cloudinary_1.getCloudinaryImage)(req)) === null || _b === void 0 ? void 0 : _b[0];
     const { userRole } = req;
     let { participants = [], description, title } = req.body;
     const gId = Number(groupId);
@@ -179,21 +208,21 @@ const updateGroupChat = (req, res) => __awaiter(void 0, void 0, void 0, function
         select: Object.assign(Object.assign({}, selectRoom), { messages: Object.assign(Object.assign({}, selectRoom.messages), { take: 10 }) }),
     });
     console.log(updatedChatRoom, "updated");
-    if (image) {
+    if (imageSrc) {
         yield image_models_1.default.upsert({
             create: {
-                src: (0, utils_1.getFileDest)(image),
+                src: imageSrc,
                 groupId: updatedChatRoom.id,
             },
             where: {
                 groupId: updatedChatRoom.id,
             },
             update: {
-                src: (0, utils_1.getFileDest)(image),
+                src: imageSrc,
             },
         });
-        if ((_a = updatedChatRoom.groupPicture) === null || _a === void 0 ? void 0 : _a.src) {
-            yield (0, utils_1.deleteUploadedImage)(updatedChatRoom.groupPicture.src);
+        if ((_c = updatedChatRoom.groupPicture) === null || _c === void 0 ? void 0 : _c.src) {
+            yield cloudinary_1.default.uploader.destroy((_d = updatedChatRoom.groupPicture) === null || _d === void 0 ? void 0 : _d.src);
         }
     }
     const normalizedRoom = yield (0, chatRoom_normalize_1.normalizeChatRooms)(updatedChatRoom);
@@ -209,7 +238,7 @@ const updateGroupChat = (req, res) => __awaiter(void 0, void 0, void 0, function
 });
 exports.updateGroupChat = updateGroupChat;
 const deleteGroupChat = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _b;
+    var _e;
     const { groupId } = req.params;
     const deletedRoom = yield chat_models_1.ChatRoom.delete({
         where: {
@@ -227,8 +256,8 @@ const deleteGroupChat = (req, res) => __awaiter(void 0, void 0, void 0, function
             },
         },
     });
-    if ((_b = deletedRoom.groupPicture) === null || _b === void 0 ? void 0 : _b.src) {
-        yield (0, utils_1.deleteUploadedImage)(deletedRoom.groupPicture.src);
+    if ((_e = deletedRoom.groupPicture) === null || _e === void 0 ? void 0 : _e.src) {
+        yield cloudinary_1.default.uploader.destroy(deletedRoom.groupPicture.src);
     }
     deletedRoom.participants.forEach((participant) => {
         (0, socket_utils_1.emitSocketEvent)(req, (0, consts_1.Socket_Id)(participant.userId, "USER"), event_1.Socket_Event.DELETE_ROOM, deletedRoom.id);

@@ -1,16 +1,14 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.simplifyUserWF = exports.simplifyUser = exports.normalizeUser = exports.normalizeUserPublic = void 0;
-const __1 = require("..");
 const getIds = (data, types) => {
     var _a, _b;
     return [...((_b = (_a = data === null || data === void 0 ? void 0 : data[types]) === null || _a === void 0 ? void 0 : _a.map((user) => user === null || user === void 0 ? void 0 : user.id)) !== null && _b !== void 0 ? _b : [])];
 };
-const normalizeUserPublic = (user, isFollowed) => new Promise((resolve) => {
+const normalizeUserPublic = (user) => new Promise((resolve) => {
     var _a, _b;
     const normalizedUserPublic = {
         id: user === null || user === void 0 ? void 0 : user.id,
-        isFollowed,
         isOnline: user === null || user === void 0 ? void 0 : user.isOnline,
         firstName: user === null || user === void 0 ? void 0 : user.firstName,
         lastName: user === null || user === void 0 ? void 0 : user.lastName,
@@ -21,8 +19,8 @@ const normalizeUserPublic = (user, isFollowed) => new Promise((resolve) => {
                 birthDate: (_a = user.profile) === null || _a === void 0 ? void 0 : _a.birthDate,
                 gender: (_b = user.profile) === null || _b === void 0 ? void 0 : _b.gender,
                 description: user.profile.profileDescription,
-                avatarImage: (0, __1.getCompleteFileUrlPath)(user.profile.avatarImage),
-                coverImage: (0, __1.getCompleteFileUrlPath)(user.profile.coverImage),
+                avatarImage: user.profile.avatarImage,
+                coverImage: user.profile.coverImage,
             }
             : null,
         followedBy: {
@@ -40,11 +38,10 @@ const normalizeUserPublic = (user, isFollowed) => new Promise((resolve) => {
     return resolve(normalizedUserPublic);
 });
 exports.normalizeUserPublic = normalizeUserPublic;
-const normalizeUser = (user, isFollowed) => new Promise((resolve) => {
+const normalizeUser = (user) => new Promise((resolve) => {
     var _a, _b;
     const normalizedUser = {
         id: user === null || user === void 0 ? void 0 : user.id,
-        isFollowed,
         isOnline: user === null || user === void 0 ? void 0 : user.isOnline,
         provider: user === null || user === void 0 ? void 0 : user.provider,
         firstName: user === null || user === void 0 ? void 0 : user.firstName,
@@ -59,8 +56,8 @@ const normalizeUser = (user, isFollowed) => new Promise((resolve) => {
                 birthDate: (_a = user.profile) === null || _a === void 0 ? void 0 : _a.birthDate,
                 gender: (_b = user.profile) === null || _b === void 0 ? void 0 : _b.gender,
                 description: user.profile.profileDescription,
-                avatarImage: (0, __1.getCompleteFileUrlPath)(user.profile.avatarImage),
-                coverImage: (0, __1.getCompleteFileUrlPath)(user.profile.coverImage),
+                avatarImage: user.profile.avatarImage,
+                coverImage: user.profile.coverImage,
             }
             : null,
         followedBy: {
@@ -83,11 +80,10 @@ const normalizeUser = (user, isFollowed) => new Promise((resolve) => {
     return resolve(normalizedUser);
 });
 exports.normalizeUser = normalizeUser;
-const simplifyUser = (user, isFollowed) => new Promise((resolve) => {
+const simplifyUser = (user) => new Promise((resolve) => {
     var _a;
     return resolve({
-        isFollowed,
-        avatarImage: (0, __1.getCompleteFileUrlPath)((_a = user.profile) === null || _a === void 0 ? void 0 : _a.avatarImage),
+        avatarImage: (_a = user.profile) === null || _a === void 0 ? void 0 : _a.avatarImage,
         firstName: user.firstName,
         lastName: user.lastName,
         fullName: user === null || user === void 0 ? void 0 : user.fullName,
@@ -100,7 +96,7 @@ exports.simplifyUser = simplifyUser;
 const simplifyUserWF = (user) => new Promise((resolve) => {
     var _a;
     return resolve({
-        avatarImage: (0, __1.getCompleteFileUrlPath)((_a = user.profile) === null || _a === void 0 ? void 0 : _a.avatarImage),
+        avatarImage: (_a = user.profile) === null || _a === void 0 ? void 0 : _a.avatarImage,
         firstName: user.firstName,
         lastName: user.lastName,
         fullName: user === null || user === void 0 ? void 0 : user.fullName,

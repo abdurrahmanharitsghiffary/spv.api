@@ -1,11 +1,9 @@
 import express from "express";
 import User from "../models/user.models";
-import { findUserById } from "../utils/user/user.utils";
+import { checkIsUserFound, findUserById } from "../utils/user/user.utils";
 import { ExpressRequestExtended } from "../types/request";
-import { getFileDest } from "../utils";
 import Image from "../models/image.models";
 import { RequestError } from "../lib/error";
-import { deleteUploadedImage } from "../utils";
 import Token from "../models/token.models";
 import { getRandomToken } from "../utils";
 import { sendVerifyEmail } from "../utils/email.utils";
@@ -14,6 +12,7 @@ import * as bcrypt from "bcrypt";
 import { CoverImage } from "../models/image.models";
 import { BCRYPT_SALT } from "../lib/consts";
 import { NotFound } from "../lib/messages";
+import cloudinary, { getCloudinaryImage } from "../lib/cloudinary";
 
 export const getMyAccountInfo = async (
   req: express.Request,
@@ -34,14 +33,17 @@ export const updateAccountImage = async (
   const { type = "profile" } = req.query;
 
   let src: string | undefined;
-  const image = req.file;
-
-  const user = await findUserById(Number(userId));
+  const image = getCloudinaryImage(req)?.[0];
+  const user = await checkIsUserFound({
+    userId: Number(userId),
+    currentUserId: Number(userId),
+    select: { profile: { select: { avatarImage: { select: { src: true } } } } },
+  });
 
   if (!user) throw new RequestError("Something went wrong!", 404);
   if (type === "profile") {
     if (image) {
-      src = user?.profile?.avatarImage?.src;
+      src = (user as any)?.profile?.avatarImage?.src;
 
       await User.update({
         where: {
@@ -52,7 +54,7 @@ export const updateAccountImage = async (
             update: {
               avatarImage: {
                 create: {
-                  src: getFileDest(image) as string,
+                  src: image,
                 },
               },
             },
@@ -60,11 +62,11 @@ export const updateAccountImage = async (
         },
       });
 
-      if (src) await deleteUploadedImage(src);
+      if (src) await cloudinary.uploader.destroy(src);
     }
   } else {
     if (image) {
-      src = user?.profile?.coverImage?.src;
+      src = (user as any)?.profile?.coverImage?.src;
 
       await User.update({
         where: {
@@ -75,14 +77,14 @@ export const updateAccountImage = async (
             update: {
               coverImage: {
                 create: {
-                  src: getFileDest(image) as string,
+                  src: image,
                 },
               },
             },
           },
         },
       });
-      if (src) await deleteUploadedImage(src);
+      if (src) await cloudinary.uploader.destroy(src);
     }
   }
 
@@ -162,11 +164,11 @@ export const deleteMyAccount = async (
   });
 
   if (deletedUser.profile?.coverImage?.src) {
-    await deleteUploadedImage(deletedUser.profile.coverImage.src);
+    await cloudinary.uploader.destroy(deletedUser.profile.coverImage.src);
   }
 
   if (deletedUser.profile?.avatarImage?.src) {
-    await deleteUploadedImage(deletedUser.profile.avatarImage.src);
+    await cloudinary.uploader.destroy(deletedUser.profile.avatarImage.src);
   }
 
   return res
@@ -208,7 +210,7 @@ export const deleteAccountImage = async (
         },
       });
 
-    await deleteUploadedImage(user.profile.avatarImage.src);
+    await cloudinary.uploader.destroy(user.profile.avatarImage.src);
   } else {
     if (!user?.profile?.coverImage)
       throw new RequestError(NotFound.PROFILE_IMAGE, 404);
@@ -220,7 +222,7 @@ export const deleteAccountImage = async (
         },
       });
 
-    await deleteUploadedImage(user.profile.coverImage.src);
+    await cloudinary.uploader.destroy(user.profile.coverImage.src);
   }
 
   return res

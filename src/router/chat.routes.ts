@@ -28,10 +28,11 @@ import {
   updateGroupChat,
   updateGroupChatParticipants,
 } from "../controllers/groupChat.controllers";
-import { uploadImage } from "../middlewares/multer.middlewares";
+import { uploadImageV2 } from "../middlewares/multer.middlewares";
 import { zfd } from "zod-form-data";
 import { zParticipants, zfdParticipants } from "../schema/chat.schema";
 import { checkIsParticipatedInChatRoom } from "../middlewares";
+import { uploadFilesToCloudinary } from "../middlewares/cloudinary.middleware";
 
 const router = express.Router();
 
@@ -118,7 +119,8 @@ router.route("/:roomId/participants/:participantId").get(
 );
 
 router.route("/group").post(
-  uploadImage.single("image"),
+  uploadImageV2.single("image"),
+  uploadFilesToCloudinary,
   validateBody(
     zfd.formData(
       z.object({
@@ -134,7 +136,8 @@ router.route("/group").post(
 router
   .route("/group/:groupId")
   .patch(
-    uploadImage.single("image"),
+    uploadImageV2.single("image"),
+    uploadFilesToCloudinary,
     validate(
       z.object({
         body: zfd.formData(

@@ -15,8 +15,11 @@ const comment_utils_1 = require("../utils/comment/comment.utils");
 const protectComment = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { userId } = req;
     const { commentId } = req.params;
-    const comment = yield (0, comment_utils_1.findCommentById)(Number(commentId), Number(userId));
-    if ((comment === null || comment === void 0 ? void 0 : comment.user.id) !== Number(userId))
+    const comment = yield (0, comment_utils_1.checkCommentIsFound)({
+        commentId: Number(commentId),
+        currentUserId: Number(userId),
+    });
+    if ((comment === null || comment === void 0 ? void 0 : comment.userId) !== Number(userId))
         throw new error_1.ForbiddenError();
     return next();
 });

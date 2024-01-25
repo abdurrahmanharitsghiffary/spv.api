@@ -8,8 +8,6 @@ export type Post = {
   content: string;
   images: (Image & { id: number })[] | null;
   author: UserSimplifiedWF;
-  isLiked: boolean;
-  isBookmarked: boolean;
   total_likes: number;
   createdAt: Date;
   updatedAt: Date;

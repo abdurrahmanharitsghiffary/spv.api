@@ -9,7 +9,6 @@ export interface UserAccountPublic {
   lastName: string;
   fullName: string | null;
   username: string;
-  isFollowed: boolean;
   profile: {
     birthDate: Date | null;
     gender: $Enums.Gender | null;
@@ -48,10 +47,6 @@ export interface UserSimplified {
   lastName: string;
   username: string;
   avatarImage: Image;
-}
-
-export interface UserSimplifiedWF extends UserSimplified {
-  isFollowed: boolean;
 }
 
 export type SearchFilter = "followed" | "not_followed";

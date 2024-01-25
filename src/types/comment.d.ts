@@ -8,7 +8,6 @@ interface CommentSimplified {
   comment: string;
   image: Image;
   user: UserSimplifiedWF;
-  isLiked: boolean;
   createdAt: Date;
   updatedAt: Date;
   total_likes: number;

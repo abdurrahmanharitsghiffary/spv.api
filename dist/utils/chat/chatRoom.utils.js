@@ -12,13 +12,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createChatRoom = exports.findAllUserChatRoom = exports.findChatRoomById = exports.chatRoomWhereOrInput = void 0;
+exports.isChatRoomFound = exports.createChatRoom = exports.findAllUserChatRoom = exports.findChatRoomById = exports.chatRoomWhereOrInput = void 0;
 const user_1 = require("../../lib/query/user");
 const chat_models_1 = require("../../models/chat.models");
 const chat_1 = require("../../lib/query/chat");
 const error_1 = require("../../lib/error");
 const chatRoom_normalize_1 = require("./chatRoom.normalize");
-const __1 = require("..");
 const prismaClient_1 = __importDefault(require("../../config/prismaClient"));
 const user_utils_1 = require("../user/user.utils");
 const code_1 = require("../../lib/code");
@@ -132,7 +131,7 @@ const findAllUserChatRoom = ({ userId, limit, offset, type = "all", q, }) => __a
     return { data: chatRoom, total: totalRooms };
 });
 exports.findAllUserChatRoom = findAllUserChatRoom;
-const createChatRoom = ({ participants = [], currentUserId, isGroupChat = false, description, title, image, }) => __awaiter(void 0, void 0, void 0, function* () {
+const createChatRoom = ({ participants = [], currentUserId, isGroupChat = false, description, title, imageSrc, }) => __awaiter(void 0, void 0, void 0, function* () {
     participants = participants
         .map((item) => (Object.assign(Object.assign({}, item), { id: Number(item.id) })))
         .filter((item) => !isNaN(item.id));
@@ -210,11 +209,11 @@ const createChatRoom = ({ participants = [], currentUserId, isGroupChat = false,
             },
             select: Object.assign({}, (0, chat_1.selectChatRoomPWL)(currentUserId)),
         });
-        if (image) {
+        if (imageSrc) {
             yield tx.image.create({
                 data: {
                     groupId: chatRoom.id,
-                    src: (0, __1.getFileDest)(image),
+                    src: imageSrc,
                 },
             });
         }
@@ -223,3 +222,20 @@ const createChatRoom = ({ participants = [], currentUserId, isGroupChat = false,
     }));
 });
 exports.createChatRoom = createChatRoom;
+const isChatRoomFound = ({ chatRoomId, currentUserId, customMessage, }) => __awaiter(void 0, void 0, void 0, function* () {
+    var _c, _d;
+    const orInput = currentUserId
+        ? (0, exports.chatRoomWhereOrInput)(currentUserId)
+        : undefined;
+    const chatRoom = yield chat_models_1.ChatRoom.findUnique({
+        where: {
+            id: chatRoomId,
+            OR: orInput,
+        },
+        select: { id: true },
+    });
+    if (!chatRoom)
+        throw new error_1.RequestError((_c = customMessage === null || customMessage === void 0 ? void 0 : customMessage.message) !== null && _c !== void 0 ? _c : messages_1.NotFound.CHAT_ROOM, (_d = customMessage === null || customMessage === void 0 ? void 0 : customMessage.statusCode) !== null && _d !== void 0 ? _d : 404);
+    return chatRoom;
+});
+exports.isChatRoomFound = isChatRoomFound;

@@ -2,6 +2,7 @@ import express from "express";
 import Post from "../models/post.models";
 import { ExpressRequestExtended } from "../types/request";
 import {
+  checkPostIsFound,
   findAllPosts,
   findFollowedUserPosts,
   findPostById,
@@ -10,14 +11,13 @@ import {
 } from "../utils/post/post.utils";
 import { findCommentsByPostId } from "../utils/comment/comment.utils";
 import Image from "../models/image.models";
-import { prismaImageUploader } from "../utils";
 import { getPagingObject } from "../utils/paging";
-import { deleteUploadedImage } from "../utils";
 import { ApiResponse } from "../utils/response";
 import prisma from "../config/prismaClient";
 import { RequestError } from "../lib/error";
 import { excludeBlockedUser, excludeBlockingUser } from "../lib/query/user";
 import { NotFound } from "../lib/messages";
+import cloudinary, { getCloudinaryImage } from "../lib/cloudinary";
 
 export const getAllMyPosts = async (
   req: express.Request,
@@ -98,7 +98,10 @@ export const getPostCommentsById = async (
   offset = Number(offset);
   limit = Number(limit);
 
-  await findPostById(postId, Number(userId));
+  await checkPostIsFound({
+    postId: Number(postId),
+    currentUserId: Number(userId),
+  });
 
   const comments = await findCommentsByPostId(
     Number(postId),
@@ -176,7 +179,10 @@ export const savePost = async (req: express.Request, res: express.Response) => {
   const { postId } = req.body;
   const pId = Number(postId);
   const uId = Number(userId);
-  await findPostById(postId, Number(userId));
+  await checkPostIsFound({
+    postId: Number(postId),
+    currentUserId: Number(userId),
+  });
 
   const savedPost = await prisma.savedPost.findUnique({
     where: {
@@ -273,7 +279,7 @@ export const deletePost = async (
 
   if (deletedPost.images.length > 0) {
     deletedPost.images.forEach(async (image) => {
-      await deleteUploadedImage(image.src);
+      await cloudinary.uploader.destroy(image.src);
     });
   }
 
@@ -288,7 +294,7 @@ export const updatePost = async (
 ) => {
   const { title, content } = req.body;
   const { postId } = req.params;
-  const images = (req.files as Express.Multer.File[]) ?? [];
+  const images = getCloudinaryImage(req);
 
   await prisma.$transaction(async (tx) => {
     await tx.post.update({
@@ -302,7 +308,9 @@ export const updatePost = async (
     });
 
     if (images && images.length > 0) {
-      await prismaImageUploader(tx, images, Number(postId), "post");
+      await tx.image.createMany({
+        data: images.map((src) => ({ postId: Number(postId), src })),
+      });
     }
     return;
   });
@@ -316,7 +324,7 @@ export const createPost = async (
   req: express.Request,
   res: express.Response
 ) => {
-  const images = (req.files as Express.Multer.File[]) ?? [];
+  const images = getCloudinaryImage(req);
   const { userId } = req as ExpressRequestExtended;
   const { title, content } = req.body;
 
@@ -330,8 +338,10 @@ export const createPost = async (
     });
 
     if (images && images.length > 0) {
-      const sources = await prismaImageUploader(tx, images, post.id, "post");
-      (post as any).images = sources;
+      await tx.image.createMany({
+        data: images.map((src) => ({ postId: post.id, src })),
+      });
+      (post as any).images = images.map((src) => ({ src }));
     }
 
     return post;
@@ -355,7 +365,7 @@ export const deletePostImageById = async (
     },
   });
 
-  await deleteUploadedImage(deletedImage.src);
+  await cloudinary.uploader.destroy(deletedImage.src);
 
   return res.status(204).json(new ApiResponse(null, 204));
 };
@@ -380,7 +390,7 @@ export const deletePostImagesByPostId = async (
 
   await Promise.all(
     images.map(async (img) => {
-      await deleteUploadedImage(img.src);
+      await cloudinary.uploader.destroy(img.src);
     })
   );
 

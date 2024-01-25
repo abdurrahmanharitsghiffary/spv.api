@@ -2,16 +2,14 @@ import { $Enums, Prisma } from "@prisma/client";
 import { excludeBlockedUser, excludeBlockingUser } from "../../lib/query/user";
 import { ChatRoom } from "../../models/chat.models";
 import {
-  selectChatRoom,
   selectChatRoomPWL,
   selectChatRoomWithWhereInput,
 } from "../../lib/query/chat";
 import { RequestError } from "../../lib/error";
 import { ChatRoom as ChatRoomT } from "../../types/chat";
 import { normalizeChatRooms } from "./chatRoom.normalize";
-import { getFileDest } from "..";
 import prisma from "../../config/prismaClient";
-import { findUserById, userWhereAndInput } from "../user/user.utils";
+import { userWhereAndInput } from "../user/user.utils";
 import { Code } from "../../lib/code";
 import User from "../../models/user.models";
 import { NotFound } from "../../lib/messages";
@@ -178,7 +176,7 @@ type CreateChatRoomOptions = {
   isGroupChat?: boolean;
   description?: string;
   title?: string;
-  image?: Express.Multer.File;
+  imageSrc?: string;
 };
 
 export const createChatRoom = async ({
@@ -187,7 +185,7 @@ export const createChatRoom = async ({
   isGroupChat = false,
   description,
   title,
-  image,
+  imageSrc,
 }: CreateChatRoomOptions) => {
   participants = participants
     .map((item) => ({ ...item, id: Number(item.id) }))
@@ -282,11 +280,11 @@ export const createChatRoom = async ({
       },
     });
 
-    if (image) {
+    if (imageSrc) {
       await tx.image.create({
         data: {
           groupId: chatRoom.id,
-          src: getFileDest(image) as string,
+          src: imageSrc,
         },
       });
     }
@@ -294,4 +292,34 @@ export const createChatRoom = async ({
     const normalizedRoom = await normalizeChatRooms(chatRoom);
     return normalizedRoom;
   });
+};
+
+export const isChatRoomFound = async ({
+  chatRoomId,
+  currentUserId,
+  customMessage,
+}: {
+  customMessage?: { message?: string; statusCode?: number };
+  chatRoomId: number;
+  currentUserId?: number;
+}) => {
+  const orInput = currentUserId
+    ? chatRoomWhereOrInput(currentUserId)
+    : undefined;
+
+  const chatRoom = await ChatRoom.findUnique({
+    where: {
+      id: chatRoomId,
+      OR: orInput,
+    },
+    select: { id: true },
+  });
+
+  if (!chatRoom)
+    throw new RequestError(
+      customMessage?.message ?? NotFound.CHAT_ROOM,
+      customMessage?.statusCode ?? 404
+    );
+
+  return chatRoom;
 };

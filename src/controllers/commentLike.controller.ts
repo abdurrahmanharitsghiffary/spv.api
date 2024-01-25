@@ -8,11 +8,10 @@ import {
   excludeBlockingUser,
   selectUserSimplified,
 } from "../lib/query/user";
-import { findCommentById } from "../utils/comment/comment.utils";
+import { checkCommentIsFound } from "../utils/comment/comment.utils";
 import { NotFound } from "../lib/messages";
 import { getPagingObject, parsePaging } from "../utils/paging";
 import { UserSimplified } from "../types/user";
-import { getCompleteFileUrlPath } from "../utils";
 import { notify } from "../utils/notification/notification.utils";
 // /continue
 export const getCommentLikesByCommentId = async (
@@ -25,7 +24,7 @@ export const getCommentLikesByCommentId = async (
   const uId = Number(userId);
   const cId = Number(commentId);
 
-  await findCommentById(cId, uId);
+  await checkCommentIsFound({ commentId: cId, currentUserId: uId });
 
   const likes = await CommentLike.findMany({
     where: {
@@ -58,7 +57,7 @@ export const getCommentLikesByCommentId = async (
   const normalizedLikes = await Promise.all(
     likes.map((like) =>
       Promise.resolve({
-        avatarImage: getCompleteFileUrlPath(like.user.profile?.avatarImage),
+        avatarImage: like.user.profile?.avatarImage,
         firstName: like.user.firstName,
         fullName: like.user.fullName,
         id: like.userId,
@@ -87,7 +86,10 @@ export const createLike = async (
   const uId = Number(userId);
   const cId = Number(commentId);
 
-  const comment = await findCommentById(cId, uId);
+  const comment = await checkCommentIsFound({
+    commentId: cId,
+    currentUserId: uId,
+  });
 
   const commentAlreadyExist = await CommentLike.findUnique({
     where: {
@@ -112,7 +114,7 @@ export const createLike = async (
     type: "liking_comment",
     commentId: comment.id,
     postId: comment.postId,
-    receiverId: comment.user.id,
+    receiverId: comment.userId,
     userId: uId,
   });
 

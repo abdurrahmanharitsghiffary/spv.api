@@ -16,7 +16,6 @@ const response_1 = require("../utils/response");
 const user_1 = require("../lib/query/user");
 const post_utils_1 = require("../utils/post/post.utils");
 const postLike_utils_1 = require("../utils/post/postLike.utils");
-const utils_1 = require("../utils");
 const paging_1 = require("../utils/paging");
 const notification_utils_1 = require("../utils/notification/notification.utils");
 // CONTINUe
@@ -24,7 +23,10 @@ const getPostLikesByPostId = (req, res) => __awaiter(void 0, void 0, void 0, fun
     const { userId } = req;
     const { postId } = req.params;
     const { limit, offset } = (0, paging_1.parsePaging)(req);
-    yield (0, post_utils_1.findPostById)(postId, Number(userId));
+    yield (0, post_utils_1.checkPostIsFound)({
+        postId: Number(postId),
+        currentUserId: Number(userId),
+    });
     const likes = yield post_models_1.PostLike.findMany({
         where: {
             postId: Number(postId),
@@ -52,7 +54,7 @@ const getPostLikesByPostId = (req, res) => __awaiter(void 0, void 0, void 0, fun
             firstName: like.user.firstName,
             lastName: like.user.lastName,
             username: like.user.username,
-            avatarImage: (0, utils_1.getCompleteFileUrlPath)((_a = like.user.profile) === null || _a === void 0 ? void 0 : _a.avatarImage),
+            avatarImage: (_a = like.user.profile) === null || _a === void 0 ? void 0 : _a.avatarImage,
             fullName: like.user.fullName,
             isOnline: like.user.isOnline,
         });

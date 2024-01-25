@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.findCommentsByPostId = exports.findCommentByIdCustomMessage = exports.findCommentById = void 0;
+exports.checkCommentIsFound = exports.findCommentsByPostId = exports.findCommentById = void 0;
 const error_1 = require("../../lib/error");
 const comment_1 = require("../../lib/query/comment");
 const comment_models_1 = __importDefault(require("../../models/comment.models"));
@@ -82,20 +82,6 @@ const findCommentById = (commentId, currentUserId, shouldNormalize = true) => __
     return normalizedComment;
 });
 exports.findCommentById = findCommentById;
-const findCommentByIdCustomMessage = ({ message, statusCode, commentId, currentUserId, }) => __awaiter(void 0, void 0, void 0, function* () {
-    const comment = yield comment_models_1.default.findUnique({
-        where: {
-            id: commentId || commentId === 0 ? commentId : undefined,
-            AND: commentWhereAndInput(currentUserId),
-        },
-        select: selectCommentExtended(currentUserId),
-    });
-    if (!comment)
-        throw new error_1.RequestError(message, statusCode);
-    const normalizedComment = yield (0, comment_normalize_1.normalizeComment)(comment);
-    return normalizedComment;
-});
-exports.findCommentByIdCustomMessage = findCommentByIdCustomMessage;
 const findCommentsByPostId = (postId, offset, limit, sortBy = ["latest"], currentUserId) => __awaiter(void 0, void 0, void 0, function* () {
     const sortOptions = [];
     sortBy === null || sortBy === void 0 ? void 0 : sortBy.forEach((sort) => {
@@ -170,12 +156,24 @@ const findCommentsByPostId = (postId, offset, limit, sortBy = ["latest"], curren
     return { data: normalizedComments, total: totalComments };
 });
 exports.findCommentsByPostId = findCommentsByPostId;
-// export const findCommentOrThrowById = async (id: number) => {
-//   const comment = await Comment.findUnique({
-//     where: {
-//       id,
-//     },
-//   });
-//   if (!comment) throw new RequestError(NotFound.COMMENT, 404);
-//   return comment;
-// };
+const checkCommentIsFound = ({ commentId, currentUserId, customMessage, }) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b;
+    const andInput = currentUserId
+        ? commentWhereAndInput(currentUserId)
+        : undefined;
+    const comment = yield comment_models_1.default.findUnique({
+        where: {
+            id: commentId,
+            AND: andInput,
+        },
+        select: {
+            userId: true,
+            id: true,
+            postId: true,
+        },
+    });
+    if (!comment)
+        throw new error_1.RequestError((_a = customMessage === null || customMessage === void 0 ? void 0 : customMessage.message) !== null && _a !== void 0 ? _a : messages_1.NotFound.COMMENT, (_b = customMessage === null || customMessage === void 0 ? void 0 : customMessage.statusCode) !== null && _b !== void 0 ? _b : 404);
+    return comment;
+});
+exports.checkCommentIsFound = checkCommentIsFound;

@@ -12,7 +12,7 @@ import {
   tryCatchMiddleware,
 } from "../middlewares/handler.middlewares";
 import { protectComment } from "../middlewares/comment.middlewares";
-import { uploadImage } from "../middlewares/multer.middlewares";
+import { uploadImageV2 } from "../middlewares/multer.middlewares";
 import {
   createLike,
   deleteLike,
@@ -27,13 +27,15 @@ import {
 import { z } from "zod";
 import { zIntOrStringId, zLimit, zOffset, zText, zfdInt } from "../schema";
 import { zfd } from "zod-form-data";
+import { uploadFilesToCloudinary } from "../middlewares/cloudinary.middleware";
 
 const router = express.Router();
 
 router.use(verifyToken);
 
 router.route("/").post(
-  uploadImage.single("image"),
+  uploadImageV2.single("image"),
+  uploadFilesToCloudinary,
   validateBody(
     zfd.formData(
       z.object({
@@ -51,7 +53,8 @@ router
   .route("/:commentId")
   .get(validateParamsV2("commentId"), tryCatch(getComment))
   .post(
-    uploadImage.single("image"),
+    uploadImageV2.single("image"),
+    uploadFilesToCloudinary,
     validate(
       z.object({
         body: zfd.formData(

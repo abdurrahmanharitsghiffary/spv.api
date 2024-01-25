@@ -7,9 +7,7 @@ import {
   UserAccount,
   UserAccountPublic,
   UserSimplified,
-  UserSimplifiedWF,
 } from "../../types/user";
-import { getCompleteFileUrlPath } from "..";
 
 type SelectUserPublicPayloadExtended = SelectUserPublicPayload;
 type SelectUserPayloadExtended = SelectUserPayload;
@@ -22,13 +20,11 @@ const getIds = (
 };
 
 export const normalizeUserPublic = (
-  user: SelectUserPublicPayloadExtended,
-  isFollowed: boolean
+  user: SelectUserPublicPayloadExtended
 ): Promise<UserAccountPublic> =>
   new Promise((resolve) => {
     const normalizedUserPublic: UserAccountPublic = {
       id: user?.id,
-      isFollowed,
       isOnline: user?.isOnline,
       firstName: user?.firstName,
       lastName: user?.lastName,
@@ -39,8 +35,8 @@ export const normalizeUserPublic = (
             birthDate: user.profile?.birthDate,
             gender: user.profile?.gender,
             description: user.profile.profileDescription,
-            avatarImage: getCompleteFileUrlPath(user.profile.avatarImage),
-            coverImage: getCompleteFileUrlPath(user.profile.coverImage),
+            avatarImage: user.profile.avatarImage,
+            coverImage: user.profile.coverImage,
           }
         : null,
       followedBy: {
@@ -60,13 +56,11 @@ export const normalizeUserPublic = (
   });
 
 export const normalizeUser = (
-  user: SelectUserPayloadExtended,
-  isFollowed: boolean
+  user: SelectUserPayloadExtended
 ): Promise<UserAccount> =>
   new Promise((resolve) => {
     const normalizedUser: UserAccount = {
       id: user?.id,
-      isFollowed,
       isOnline: user?.isOnline,
       provider: user?.provider,
       firstName: user?.firstName,
@@ -81,8 +75,8 @@ export const normalizeUser = (
             birthDate: user.profile?.birthDate,
             gender: user.profile?.gender,
             description: user.profile.profileDescription,
-            avatarImage: getCompleteFileUrlPath(user.profile.avatarImage),
-            coverImage: getCompleteFileUrlPath(user.profile.coverImage),
+            avatarImage: user.profile.avatarImage,
+            coverImage: user.profile.coverImage,
           }
         : null,
       followedBy: {
@@ -109,13 +103,11 @@ export const simplifyUser = (
   user:
     | SelectUserPayloadExtended
     | SelectUserSimplifiedPayload
-    | SelectUserPublicPayloadExtended,
-  isFollowed: boolean
-): Promise<UserSimplifiedWF> =>
+    | SelectUserPublicPayloadExtended
+): Promise<UserSimplified> =>
   new Promise((resolve) => {
     return resolve({
-      isFollowed,
-      avatarImage: getCompleteFileUrlPath(user.profile?.avatarImage),
+      avatarImage: user.profile?.avatarImage,
       firstName: user.firstName,
       lastName: user.lastName,
       fullName: user?.fullName,
@@ -133,7 +125,7 @@ export const simplifyUserWF = (
 ): Promise<UserSimplified> =>
   new Promise((resolve) => {
     return resolve({
-      avatarImage: getCompleteFileUrlPath(user.profile?.avatarImage),
+      avatarImage: user.profile?.avatarImage,
       firstName: user.firstName,
       lastName: user.lastName,
       fullName: user?.fullName,

@@ -1,7 +1,7 @@
 import express from "express";
-import { findMessageById } from "../utils/chat/chat.utils";
 import { ExpressRequestExtended } from "../types/request";
 import { ForbiddenError } from "../lib/error";
+import Chat from "../models/chat.models";
 
 export const protectChat = async (
   req: express.Request,
@@ -11,8 +11,11 @@ export const protectChat = async (
   const { userId } = req as ExpressRequestExtended;
   const { messageId } = req.params;
 
-  const chat = await findMessageById(Number(messageId), Number(userId));
-  if (chat.author.id !== Number(userId)) throw new ForbiddenError();
+  const chat = await Chat.findUnique({
+    where: { id: Number(messageId) },
+    select: { authorId: true, id: true },
+  });
+  if (chat?.authorId !== Number(userId)) throw new ForbiddenError();
 
   return next();
 };

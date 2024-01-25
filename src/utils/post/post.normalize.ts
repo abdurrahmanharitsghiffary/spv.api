@@ -1,52 +1,26 @@
 import { SelectPostPayload } from "../../lib/query/post";
 import { PostExtended } from "../../types/post";
-import { getCompleteFileUrlPath } from "..";
 
-type SelectPostPayloadExtended = SelectPostPayload & {
-  assignedAt?: Date;
-  likes: {
-    userId: number;
-  }[];
-  follower: {
-    userId: number;
-  }[];
-  author: {
-    followedBy: {
-      id: number;
-    }[];
-  } & SelectPostPayload["author"];
-};
+type SelectPostPayloadExtended = SelectPostPayload & { assignedAt?: Date };
 
 const normalize = (
   post: SelectPostPayloadExtended
 ): Promise<PostExtended | (PostExtended & { assignedAt: Date })> =>
   new Promise((resolve) => {
-    console.log(post, "\nPost ext payload\n");
     const normalizedPost: PostExtended | (PostExtended & { assignedAt: Date }) =
       {
         id: post?.id,
         title: post?.title,
         content: post?.content,
-        images: (post?.images ?? []).map(
-          (image) =>
-            getCompleteFileUrlPath(image) as {
-              src: string;
-              id: number;
-            }
-        ),
-        isBookmarked: post?.follower?.[0]?.userId ? true : false,
-        isLiked: post?.likes?.[0]?.userId ? true : false,
+        images: post?.images ?? [],
         author: {
-          isFollowed: post?.author?.followedBy?.[0]?.id ? true : false,
           id: post?.author.id,
           fullName: post?.author?.fullName,
           isOnline: post?.author?.isOnline,
           firstName: post?.author?.firstName,
           lastName: post?.author?.lastName,
           username: post?.author.username,
-          avatarImage: getCompleteFileUrlPath(
-            post?.author?.profile?.avatarImage
-          ),
+          avatarImage: post?.author?.profile?.avatarImage,
         },
         total_likes: post._count.likes,
         comments: {

@@ -1,4 +1,27 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -12,13 +35,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.getMessagesById = exports.createChat = exports.updateChatById = exports.deleteChatById = exports.getAllChatsByUserId = void 0;
 const chat_utils_1 = require("../utils/chat/chat.utils");
 const paging_1 = require("../utils/paging");
-const utils_1 = require("../utils");
 const response_1 = require("../utils/response");
 const socket_utils_1 = require("../socket/socket.utils");
 const chat_normalize_1 = require("../utils/chat/chat.normalize");
 const event_1 = require("../socket/event");
 const chatRoom_utils_1 = require("../utils/chat/chatRoom.utils");
 const consts_1 = require("../lib/consts");
+const cloudinary_1 = __importStar(require("../lib/cloudinary"));
 const getAllChatsByUserId = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { userId } = req;
     const { limit = 20, offset = 0, type = "all", q } = req.query;
@@ -39,14 +62,14 @@ exports.getAllChatsByUserId = getAllChatsByUserId;
 const deleteChatById = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { userId } = req;
     const { messageId } = req.params;
-    const deletedChat = yield (0, chat_utils_1.deleteChatById)(Number(messageId), Number(userId));
+    const deletedChat = yield (0, chat_utils_1.deleteChatById)(Number(messageId));
     const normalizedChat = yield (0, chat_normalize_1.normalizeChat)(deletedChat);
     deletedChat.chatRoom.participants.forEach((participant) => {
         (0, socket_utils_1.emitSocketEvent)(req, (0, consts_1.Socket_Id)(participant.userId, "USER"), event_1.Socket_Event.DELETE_MESSAGE, { chatId: normalizedChat.id, roomId: normalizedChat.roomId });
     });
     if (deletedChat.chatImage && deletedChat.chatImage.length > 0) {
         deletedChat.chatImage.forEach((image) => __awaiter(void 0, void 0, void 0, function* () {
-            yield (0, utils_1.deleteUploadedImage)(image.src);
+            yield cloudinary_1.default.uploader.destroy(image.src);
         }));
     }
     return res
@@ -55,10 +78,9 @@ const deleteChatById = (req, res) => __awaiter(void 0, void 0, void 0, function*
 });
 exports.deleteChatById = deleteChatById;
 const updateChatById = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { userId } = req;
     const { messageId } = req.params;
     const { message } = req.body;
-    const updatedChat = yield (0, chat_utils_1.updateChatById)(Number(messageId), Number(userId), message);
+    const updatedChat = yield (0, chat_utils_1.updateChatById)(Number(messageId), message);
     const normalizedChat = yield (0, chat_normalize_1.normalizeChat)(updatedChat);
     updatedChat.chatRoom.participants.forEach((participant) => {
         (0, socket_utils_1.emitSocketEvent)(req, (0, consts_1.Socket_Id)(participant.userId, "USER"), event_1.Socket_Event.UPDATE_MESSAGE, normalizedChat);
@@ -69,13 +91,11 @@ const updateChatById = (req, res) => __awaiter(void 0, void 0, void 0, function*
 });
 exports.updateChatById = updateChatById;
 const createChat = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
     const { userId } = req;
     const { message, chatRoomId } = req.body;
     const cRId = Number(chatRoomId);
     const uId = Number(userId);
-    const images = (_a = req.files) !== null && _a !== void 0 ? _a : [];
-    console.log(images, "Images");
+    const images = (0, cloudinary_1.getCloudinaryImage)(req);
     const createdChat = yield (0, chat_utils_1.createChatWithRoomIdAndAuthorId)({
         senderId: uId,
         message,
@@ -83,7 +103,6 @@ const createChat = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
         images,
     });
     const normalizedChat = yield (0, chat_normalize_1.normalizeChat)(createdChat);
-    console.log(createdChat.chatRoom.participants, "Participants");
     createdChat.chatRoom.participants.forEach((participant) => {
         (0, socket_utils_1.emitSocketEvent)(req, (0, consts_1.Socket_Id)(participant.userId, "USER"), event_1.Socket_Event.RECEIVE_MESSAGE, normalizedChat);
     });
@@ -95,7 +114,7 @@ exports.createChat = createChat;
 const getMessagesById = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { messageId } = req.params;
     const { userId } = req;
-    const message = yield (0, chat_utils_1.findMessageById)(Number(messageId), Number(userId));
+    const message = yield (0, chat_utils_1.findMessageById)(Number(messageId));
     return res.status(200).json(new response_1.ApiResponse(message, 200));
 });
 exports.getMessagesById = getMessagesById;

@@ -12,8 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.prismaImageUploader = exports.imageUploadErrorHandler = exports.checkParticipants = exports.isNullOrUndefined = exports.getRandomToken = exports.getCompleteFileUrlPath = exports.getFileDest = exports.generateAccessToken = exports.generateRefreshToken = exports.deleteUploadedImage = void 0;
-const promises_1 = __importDefault(require("fs/promises"));
+exports.checkParticipants = exports.isNullOrUndefined = exports.getRandomToken = exports.generateAccessToken = exports.generateRefreshToken = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const crypto_1 = __importDefault(require("crypto"));
 const consts_1 = require("../lib/consts");
@@ -22,18 +21,6 @@ const user_models_1 = __importDefault(require("../models/user.models"));
 const code_1 = require("../lib/code");
 const error_1 = require("../lib/error");
 const messages_1 = require("../lib/messages");
-const deleteUploadedImage = (src) => __awaiter(void 0, void 0, void 0, function* () {
-    if (src.includes("giphy"))
-        return null;
-    const path = src.split("public/")[1];
-    try {
-        yield promises_1.default.unlink("src/public/" + path);
-    }
-    catch (err) {
-        throw new Error(err);
-    }
-});
-exports.deleteUploadedImage = deleteUploadedImage;
 const generateRefreshToken = (payload) => __awaiter(void 0, void 0, void 0, function* () {
     return yield jsonwebtoken_1.default.sign(payload, consts_1.REFRESH_TOKEN_SECRET, {
         expiresIn: "7d",
@@ -47,24 +34,6 @@ const generateAccessToken = (payload) => __awaiter(void 0, void 0, void 0, funct
     });
 });
 exports.generateAccessToken = generateAccessToken;
-const getFileDest = (file) => {
-    if (!file)
-        return null;
-    return (file === null || file === void 0 ? void 0 : file.destination.replace("src", "")) + `/${file === null || file === void 0 ? void 0 : file.filename}`;
-};
-exports.getFileDest = getFileDest;
-const getCompleteFileUrlPath = (profile) => {
-    if (!profile)
-        return null;
-    try {
-        const url = new URL(profile.src, consts_1.BASE_URL);
-        return Object.assign(Object.assign({}, profile), { src: url.href });
-    }
-    catch (err) {
-        return null;
-    }
-};
-exports.getCompleteFileUrlPath = getCompleteFileUrlPath;
 const getRandomToken = () => {
     return new Promise((resolve) => resolve(crypto_1.default.randomBytes(32).toString("hex")));
 };
@@ -173,50 +142,3 @@ const checkParticipants = (participants, groupId, currentUserRole, isDeleting = 
             : "Failed add participants into the group.", 400, errors);
 });
 exports.checkParticipants = checkParticipants;
-const imageUploadErrorHandler = (imageUploader, imageSources) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        const uploadedBatch = yield imageUploader;
-        console.log(uploadedBatch, "Uploaded Batch");
-    }
-    catch (err) {
-        console.log("Something goes wrong.", err);
-        if (imageSources instanceof Array) {
-            yield Promise.all(imageSources.map((image) => __awaiter(void 0, void 0, void 0, function* () {
-                yield (0, exports.deleteUploadedImage)(image.src);
-            })));
-        }
-        else {
-            yield (0, exports.deleteUploadedImage)(imageSources.src);
-        }
-    }
-});
-exports.imageUploadErrorHandler = imageUploadErrorHandler;
-const prismaImageUploader = (tx, images, id, imageType) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        const imageSources = [];
-        if (images instanceof Array) {
-            images.forEach((image) => {
-                const fileDest = (0, exports.getFileDest)(image);
-                if (fileDest)
-                    imageSources.push({
-                        src: fileDest,
-                        [imageType + "Id"]: id,
-                    });
-            });
-        }
-        else {
-            const fileDest = (0, exports.getFileDest)(images);
-            if (fileDest)
-                imageSources.push({
-                    src: fileDest,
-                    [imageType + "Id"]: id,
-                });
-        }
-        yield (0, exports.imageUploadErrorHandler)(tx.image.createMany({ data: imageSources }), imageSources);
-        return imageSources;
-    }
-    catch (err) {
-        console.error("Something went wrong when uploading images, Error: ", err);
-    }
-});
-exports.prismaImageUploader = prismaImageUploader;

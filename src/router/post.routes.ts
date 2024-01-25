@@ -16,7 +16,7 @@ import {
 } from "../controllers/post.controller";
 import { isAdmin, verifyToken } from "../middlewares/auth.middlewares";
 import { protectPost } from "../middlewares/post.middlewares";
-import { uploadImage } from "../middlewares/multer.middlewares";
+import { uploadImageV2 } from "../middlewares/multer.middlewares";
 import {
   createLike,
   deleteLike,
@@ -33,6 +33,7 @@ import { z } from "zod";
 import { zIntOrStringId, zLimit, zOffset, zfdText, zfdTitle } from "../schema";
 import { postCommentValidationQuery } from "../schema/comment.schema";
 import { zfd } from "zod-form-data";
+import { uploadFilesToCloudinary } from "../middlewares/cloudinary.middleware";
 
 const router = express.Router();
 
@@ -41,7 +42,8 @@ router.use(verifyToken);
 router
   .route("/")
   .post(
-    uploadImage.array("images[]"),
+    uploadImageV2.array("images[]"),
+    uploadFilesToCloudinary,
     validateBody(
       zfd.formData(
         z.object({
@@ -62,7 +64,8 @@ router
   .route("/:postId")
   .get(validateParamsV2("postId"), tryCatch(getPost))
   .patch(
-    uploadImage.array("images[]"),
+    uploadImageV2.array("images[]"),
+    uploadFilesToCloudinary,
     validate(
       z.object({
         body: zfd.formData(

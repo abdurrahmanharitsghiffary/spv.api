@@ -8,10 +8,9 @@ import {
   excludeBlockingUser,
   selectUserSimplified,
 } from "../lib/query/user";
-import { findPostById } from "../utils/post/post.utils";
+import { checkPostIsFound } from "../utils/post/post.utils";
 import { findPostIsLiked } from "../utils/post/postLike.utils";
 import { UserSimplified } from "../types/user";
-import { getCompleteFileUrlPath } from "../utils";
 import { getPagingObject, parsePaging } from "../utils/paging";
 import { notify } from "../utils/notification/notification.utils";
 // CONTINUe
@@ -22,7 +21,10 @@ export const getPostLikesByPostId = async (
   const { userId } = req as ExpressRequestExtended;
   const { postId } = req.params;
   const { limit, offset } = parsePaging(req);
-  await findPostById(postId, Number(userId));
+  await checkPostIsFound({
+    postId: Number(postId),
+    currentUserId: Number(userId),
+  });
 
   const likes = await PostLike.findMany({
     where: {
@@ -58,7 +60,7 @@ export const getPostLikesByPostId = async (
         firstName: like.user.firstName,
         lastName: like.user.lastName,
         username: like.user.username,
-        avatarImage: getCompleteFileUrlPath(like.user.profile?.avatarImage),
+        avatarImage: like.user.profile?.avatarImage,
         fullName: like.user.fullName,
         isOnline: like.user.isOnline,
       } as UserSimplified)

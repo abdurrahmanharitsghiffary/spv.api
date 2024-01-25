@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.uploadImage = void 0;
+exports.uploadImageV2 = exports.uploadImage = void 0;
 const multer_1 = __importDefault(require("multer"));
 const error_1 = require("../lib/error");
 const consts_1 = require("../lib/consts");
@@ -22,18 +22,24 @@ const storage = multer_1.default.diskStorage({
         callback(null, `${Date.now().toString()}-${typeImage ? `${typeImage}-` : ""}${file.originalname}`);
     },
 });
+const fileFilter = (req, file, callback) => {
+    if (fileType.includes(file.mimetype)) {
+        callback(null, true);
+    }
+    else if (!fileType.includes(file.mimetype)) {
+        callback(new error_1.RequestError(consts_1.errorsMessage.FILE_MIME_TYPE, 415));
+    }
+    else {
+        callback(null, false);
+    }
+};
 exports.uploadImage = (0, multer_1.default)({
     limits: { fileSize: MAX_FILE_SIZE },
     storage,
-    fileFilter(req, file, callback) {
-        if (fileType.includes(file.mimetype)) {
-            callback(null, true);
-        }
-        else if (!fileType.includes(file.mimetype)) {
-            callback(new error_1.RequestError(consts_1.errorsMessage.FILE_MIME_TYPE, 415));
-        }
-        else {
-            callback(null, false);
-        }
-    },
+    fileFilter,
+});
+exports.uploadImageV2 = (0, multer_1.default)({
+    limits: { fileSize: MAX_FILE_SIZE },
+    storage: multer_1.default.memoryStorage(),
+    fileFilter,
 });

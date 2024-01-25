@@ -16,6 +16,7 @@ const block_controller_1 = require("../controllers/block.controller");
 const validator_middlewares_1 = require("../middlewares/validator.middlewares");
 const zod_1 = require("zod");
 const schema_1 = require("../schema");
+const cloudinary_middleware_1 = require("../middlewares/cloudinary.middleware");
 const router = express_1.default.Router();
 router.use(auth_middlewares_1.verifyToken);
 router
@@ -55,7 +56,7 @@ router
         type: schema_1.zProfileImageType.optional(),
     }),
 })), (0, handler_middlewares_1.tryCatch)(account_controller_1.deleteAccountImage))
-    .patch(multer_middlewares_1.uploadImage.single("image"), (0, validator_middlewares_1.validate)(zod_1.z.object({
+    .patch(multer_middlewares_1.uploadImageV2.single("image"), cloudinary_middleware_1.uploadFilesToCloudinary, (0, validator_middlewares_1.validate)(zod_1.z.object({
     query: zod_1.z.object({
         type: schema_1.zProfileImageType.optional(),
     }),

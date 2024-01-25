@@ -40,7 +40,6 @@ const user_1 = require("../lib/query/user");
 const comment_utils_1 = require("../utils/comment/comment.utils");
 const messages_1 = require("../lib/messages");
 const paging_1 = require("../utils/paging");
-const utils_1 = require("../utils");
 const notification_utils_1 = require("../utils/notification/notification.utils");
 // /continue
 const getCommentLikesByCommentId = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -49,7 +48,7 @@ const getCommentLikesByCommentId = (req, res) => __awaiter(void 0, void 0, void 
     const { limit, offset } = (0, paging_1.parsePaging)(req);
     const uId = Number(userId);
     const cId = Number(commentId);
-    yield (0, comment_utils_1.findCommentById)(cId, uId);
+    yield (0, comment_utils_1.checkCommentIsFound)({ commentId: cId, currentUserId: uId });
     const likes = yield comment_models_1.CommentLike.findMany({
         where: {
             AND: [
@@ -76,7 +75,7 @@ const getCommentLikesByCommentId = (req, res) => __awaiter(void 0, void 0, void 
     const normalizedLikes = yield Promise.all(likes.map((like) => {
         var _a;
         return Promise.resolve({
-            avatarImage: (0, utils_1.getCompleteFileUrlPath)((_a = like.user.profile) === null || _a === void 0 ? void 0 : _a.avatarImage),
+            avatarImage: (_a = like.user.profile) === null || _a === void 0 ? void 0 : _a.avatarImage,
             firstName: like.user.firstName,
             fullName: like.user.fullName,
             id: like.userId,
@@ -97,7 +96,10 @@ const createLike = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
     const { commentId } = req.params;
     const uId = Number(userId);
     const cId = Number(commentId);
-    const comment = yield (0, comment_utils_1.findCommentById)(cId, uId);
+    const comment = yield (0, comment_utils_1.checkCommentIsFound)({
+        commentId: cId,
+        currentUserId: uId,
+    });
     const commentAlreadyExist = yield comment_models_1.CommentLike.findUnique({
         where: {
             userId_commentId: {
@@ -118,7 +120,7 @@ const createLike = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
         type: "liking_comment",
         commentId: comment.id,
         postId: comment.postId,
-        receiverId: comment.user.id,
+        receiverId: comment.userId,
         userId: uId,
     });
     return res

@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateChatById = exports.deleteChatById = exports.createChatWithRoomIdAndAuthorId = exports.findChatByParticipantIds = exports.findMessageById = exports.findMessageByRoomId = void 0;
+exports.checkIsMessageFound = exports.updateChatById = exports.deleteChatById = exports.createChatWithRoomIdAndAuthorId = exports.findChatByParticipantIds = exports.findMessageById = exports.findMessageByRoomId = void 0;
 const error_1 = require("../../lib/error");
 const chat_1 = require("../../lib/query/chat");
 const user_1 = require("../../lib/query/user");
@@ -20,7 +20,6 @@ const chat_models_1 = __importDefault(require("../../models/chat.models"));
 const chat_normalize_1 = require("./chat.normalize");
 const chat_models_2 = require("../../models/chat.models");
 const messages_1 = require("../../lib/messages");
-const __1 = require("..");
 const prismaClient_1 = __importDefault(require("../../config/prismaClient"));
 const selectChatRoomParticipants = {
     chatRoom: {
@@ -38,11 +37,10 @@ const chatWhereAndInput = (currentUserId) => [
         author: Object.assign(Object.assign({}, (0, user_1.excludeBlockedUser)(currentUserId)), (0, user_1.excludeBlockingUser)(currentUserId)),
     },
 ];
-const findMessageByRoomId = ({ currentUserId, roomId, limit = 20, offset = 0, }) => __awaiter(void 0, void 0, void 0, function* () {
+const findMessageByRoomId = ({ roomId, limit = 20, offset = 0, }) => __awaiter(void 0, void 0, void 0, function* () {
     const messages = yield chat_models_1.default.findMany({
         where: {
             chatRoomId: roomId,
-            // AND: chatWhereAndInput(currentUserId),
         },
         select: Object.assign({}, chat_1.selectChat),
         take: limit,
@@ -62,11 +60,10 @@ const findMessageByRoomId = ({ currentUserId, roomId, limit = 20, offset = 0, })
     };
 });
 exports.findMessageByRoomId = findMessageByRoomId;
-const findMessageById = (chatId, currentUserId) => __awaiter(void 0, void 0, void 0, function* () {
+const findMessageById = (chatId) => __awaiter(void 0, void 0, void 0, function* () {
     const chat = yield chat_models_1.default.findUnique({
         where: {
             id: chatId,
-            // AND: chatWhereAndInput(currentUserId),
         },
         select: chat_1.selectChat,
     });
@@ -145,17 +142,18 @@ const createChatWithRoomIdAndAuthorId = (createOptions) => __awaiter(void 0, voi
                     },
                 } }),
         });
-        console.log(createdChat, "createdChat id");
         if (images && images.length > 0) {
-            const sources = yield (0, __1.prismaImageUploader)(tx, images, createdChat.id, "chat");
-            createdChat.chatImage = sources !== null && sources !== void 0 ? sources : [];
+            yield tx.image.createMany({
+                data: images.map((src) => ({ chatId: createdChat.id, src })),
+            });
+            createdChat.chatImage = images.map((src) => ({ src }));
         }
         return createdChat;
     }));
 });
 exports.createChatWithRoomIdAndAuthorId = createChatWithRoomIdAndAuthorId;
-const deleteChatById = (chatId, currentUserId) => __awaiter(void 0, void 0, void 0, function* () {
-    yield (0, exports.findMessageById)(chatId, currentUserId);
+const deleteChatById = (chatId) => __awaiter(void 0, void 0, void 0, function* () {
+    yield (0, exports.checkIsMessageFound)({ messageId: chatId });
     return yield chat_models_1.default.delete({
         where: {
             id: chatId,
@@ -166,8 +164,8 @@ const deleteChatById = (chatId, currentUserId) => __awaiter(void 0, void 0, void
     });
 });
 exports.deleteChatById = deleteChatById;
-const updateChatById = (chatId, currentUserId, message) => __awaiter(void 0, void 0, void 0, function* () {
-    yield (0, exports.findMessageById)(chatId, currentUserId);
+const updateChatById = (chatId, message) => __awaiter(void 0, void 0, void 0, function* () {
+    yield (0, exports.checkIsMessageFound)({ messageId: chatId });
     return yield chat_models_1.default.update({
         where: {
             id: chatId,
@@ -181,3 +179,16 @@ const updateChatById = (chatId, currentUserId, message) => __awaiter(void 0, voi
     });
 });
 exports.updateChatById = updateChatById;
+const checkIsMessageFound = ({ customMessage, messageId, }) => __awaiter(void 0, void 0, void 0, function* () {
+    var _d, _e;
+    const message = yield chat_models_1.default.findUnique({
+        where: {
+            id: messageId,
+        },
+        select: { id: true },
+    });
+    if (!message)
+        throw new error_1.RequestError((_d = customMessage === null || customMessage === void 0 ? void 0 : customMessage.message) !== null && _d !== void 0 ? _d : messages_1.NotFound.MESSAGE, (_e = customMessage === null || customMessage === void 0 ? void 0 : customMessage.statusCode) !== null && _e !== void 0 ? _e : 404);
+    return message;
+});
+exports.checkIsMessageFound = checkIsMessageFound;

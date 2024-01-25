@@ -1,4 +1,5 @@
-import multer from "multer";
+import express from "express";
+import multer, { FileFilterCallback } from "multer";
 import { RequestError } from "../lib/error";
 import { errorsMessage } from "../lib/consts";
 
@@ -25,16 +26,28 @@ const storage = multer.diskStorage({
   },
 });
 
+const fileFilter = (
+  req: express.Request,
+  file: Express.Multer.File,
+  callback: FileFilterCallback
+) => {
+  if (fileType.includes(file.mimetype)) {
+    callback(null, true);
+  } else if (!fileType.includes(file.mimetype)) {
+    callback(new RequestError(errorsMessage.FILE_MIME_TYPE, 415));
+  } else {
+    callback(null, false);
+  }
+};
+
 export const uploadImage = multer({
   limits: { fileSize: MAX_FILE_SIZE },
   storage,
-  fileFilter(req, file, callback) {
-    if (fileType.includes(file.mimetype)) {
-      callback(null, true);
-    } else if (!fileType.includes(file.mimetype)) {
-      callback(new RequestError(errorsMessage.FILE_MIME_TYPE, 415));
-    } else {
-      callback(null, false);
-    }
-  },
+  fileFilter,
+});
+
+export const uploadImageV2 = multer({
+  limits: { fileSize: MAX_FILE_SIZE },
+  storage: multer.memoryStorage(),
+  fileFilter,
 });

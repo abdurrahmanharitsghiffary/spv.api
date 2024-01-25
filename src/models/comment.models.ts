@@ -1,5 +1,4 @@
 import prisma from "../config/prismaClient";
-import { getFileDest } from "../utils";
 const Comment = prisma.comment;
 const CommentLike = prisma.commentLike;
 
@@ -14,7 +13,7 @@ export const createOneComment = async ({
   postId: number;
   parentId?: number | null;
   userId: number;
-  image?: Express.Multer.File | string | undefined;
+  image?: string | undefined;
 }) =>
   await prisma.$transaction(async (tx) => {
     const createdComment = await tx.comment.create({
@@ -33,14 +32,7 @@ export const createOneComment = async ({
       },
     });
 
-    if (image && typeof image !== "string") {
-      await tx.image.create({
-        data: {
-          src: getFileDest(image) as string,
-          commentId: createdComment.id,
-        },
-      });
-    } else if (image) {
+    if (image) {
       await tx.image.create({
         data: {
           src: image,
@@ -48,6 +40,7 @@ export const createOneComment = async ({
         },
       });
     }
+
     return createdComment;
   });
 

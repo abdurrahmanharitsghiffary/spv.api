@@ -1,28 +1,24 @@
 import express from "express";
-import { createChatRoom, findChatRoomById } from "../utils/chat/chatRoom.utils";
+import { createChatRoom, isChatRoomFound } from "../utils/chat/chatRoom.utils";
 import {
   ExpressRequestExtended,
   ExpressRequestProtectedGroup,
 } from "../types/request";
 import { ApiResponse } from "../utils/response";
 import { ChatRoom, ChatRoomParticipant } from "../models/chat.models";
-import {
-  selectChatRoom,
-  selectChatRoomPWL,
-  selectRoomParticipant,
-} from "../lib/query/chat";
+import { selectChatRoomPWL, selectRoomParticipant } from "../lib/query/chat";
 import { selectUserSimplified } from "../lib/query/user";
 import { emitSocketEvent } from "../socket/socket.utils";
 import { Socket_Event } from "../socket/event";
 import { normalizeChatRooms } from "../utils/chat/chatRoom.normalize";
 import { RequestError } from "../lib/error";
 import Image from "../models/image.models";
-import { checkParticipants, deleteUploadedImage, getFileDest } from "../utils";
+import { checkParticipants } from "../utils";
 import { ParticipantsField } from "../types/chat";
 import { NotFound } from "../lib/messages";
 import { normalizeChatParticipant } from "../utils/chat/chat.normalize";
 import { Socket_Id } from "../lib/consts";
-import { Prisma } from "@prisma/client";
+import cloudinary, { getCloudinaryImage } from "../lib/cloudinary";
 
 export const createGroupChat = async (
   req: express.Request,
@@ -30,7 +26,7 @@ export const createGroupChat = async (
 ) => {
   const { userId } = req as ExpressRequestExtended;
   const { participants, description, title } = req.body;
-  const image = req.file;
+  const imageSrc = getCloudinaryImage(req)?.[0];
 
   const createdGroupChat = await createChatRoom({
     isGroupChat: true,
@@ -38,7 +34,7 @@ export const createGroupChat = async (
     currentUserId: Number(userId),
     description,
     title,
-    image,
+    imageSrc,
   });
 
   createdGroupChat.participants.users.forEach((participant) => {
@@ -66,9 +62,13 @@ export const joinGroupChat = async (
   const gId = Number(groupId);
   const uId = Number(userId);
 
-  await findChatRoomById(gId, uId, {
-    message: NotFound.GROUP_CHAT,
-    statusCode: 404,
+  await isChatRoomFound({
+    customMessage: {
+      message: NotFound.GROUP_CHAT,
+      statusCode: 404,
+    },
+    chatRoomId: gId,
+    currentUserId: uId,
   });
 
   const participant = await ChatRoomParticipant.findUnique({
@@ -182,7 +182,7 @@ export const updateGroupChat = async (
 ) => {
   const { userId } = req as ExpressRequestExtended;
   const { groupId } = req.params;
-  const image = req.file;
+  const imageSrc = getCloudinaryImage(req)?.[0];
   const { userRole } = req as ExpressRequestProtectedGroup;
   let { participants = [], description, title } = req.body;
   const gId = Number(groupId);
@@ -226,22 +226,22 @@ export const updateGroupChat = async (
     },
   });
   console.log(updatedChatRoom, "updated");
-  if (image) {
+  if (imageSrc) {
     await Image.upsert({
       create: {
-        src: getFileDest(image) as string,
+        src: imageSrc,
         groupId: updatedChatRoom.id,
       },
       where: {
         groupId: updatedChatRoom.id,
       },
       update: {
-        src: getFileDest(image) as string,
+        src: imageSrc,
       },
     });
 
     if (updatedChatRoom.groupPicture?.src) {
-      await deleteUploadedImage(updatedChatRoom.groupPicture.src);
+      await cloudinary.uploader.destroy(updatedChatRoom.groupPicture?.src);
     }
   }
 
@@ -288,7 +288,7 @@ export const deleteGroupChat = async (
   });
 
   if (deletedRoom.groupPicture?.src) {
-    await deleteUploadedImage(deletedRoom.groupPicture.src);
+    await cloudinary.uploader.destroy(deletedRoom.groupPicture.src);
   }
 
   deletedRoom.participants.forEach((participant) => {

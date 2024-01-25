@@ -43,8 +43,7 @@ const getAllBlockedUsers = (req, res) => __awaiter(void 0, void 0, void 0, funct
     });
     res.status(200).json(yield (0, paging_1.getPagingObject)({
         data: yield Promise.all(((_a = user === null || user === void 0 ? void 0 : user.blocked) !== null && _a !== void 0 ? _a : []).map((user) => {
-            const isFollowed = (0, user_utils_1.getUserIsFollowed)(user, uId);
-            return Promise.resolve((0, user_normalize_1.normalizeUserPublic)(user, isFollowed));
+            return Promise.resolve((0, user_normalize_1.normalizeUserPublic)(user));
         })),
         req,
         total_records: (_b = user === null || user === void 0 ? void 0 : user._count.blocked) !== null && _b !== void 0 ? _b : 0,

@@ -1,6 +1,6 @@
 import express from "express";
 import { verifyToken } from "../middlewares/auth.middlewares";
-import { uploadImage } from "../middlewares/multer.middlewares";
+import { uploadImageV2 } from "../middlewares/multer.middlewares";
 import {
   createChat,
   deleteChatById,
@@ -25,13 +25,15 @@ import {
   checkIsParticipatedInChatRoom,
   checkMessageAccess,
 } from "../middlewares";
+import { uploadFilesToCloudinary } from "../middlewares/cloudinary.middleware";
 
 const router = express.Router();
 
 router.use(verifyToken);
 
 router.route("/").post(
-  uploadImage.array("images[]"),
+  uploadImageV2.array("images[]"),
+  uploadFilesToCloudinary,
   validateBody(
     zfd.formData(
       z.object({

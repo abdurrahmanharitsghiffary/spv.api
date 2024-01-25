@@ -8,15 +8,21 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.parseParticipantsField = exports.protectChat = void 0;
-const chat_utils_1 = require("../utils/chat/chat.utils");
 const error_1 = require("../lib/error");
+const chat_models_1 = __importDefault(require("../models/chat.models"));
 const protectChat = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { userId } = req;
     const { messageId } = req.params;
-    const chat = yield (0, chat_utils_1.findMessageById)(Number(messageId), Number(userId));
-    if (chat.author.id !== Number(userId))
+    const chat = yield chat_models_1.default.findUnique({
+        where: { id: Number(messageId) },
+        select: { authorId: true, id: true },
+    });
+    if ((chat === null || chat === void 0 ? void 0 : chat.authorId) !== Number(userId))
         throw new error_1.ForbiddenError();
     return next();
 });

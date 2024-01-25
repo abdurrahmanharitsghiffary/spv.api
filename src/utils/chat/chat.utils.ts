@@ -6,7 +6,6 @@ import Chat from "../../models/chat.models";
 import { normalizeChat } from "./chat.normalize";
 import { ChatRoom } from "../../models/chat.models";
 import { NotFound } from "../../lib/messages";
-import { prismaImageUploader } from "..";
 import prisma from "../../config/prismaClient";
 
 const selectChatRoomParticipants = {
@@ -32,7 +31,6 @@ const chatWhereAndInput = (currentUserId?: number) =>
   ] satisfies Prisma.ChatWhereInput["AND"];
 
 export const findMessageByRoomId = async ({
-  currentUserId,
   roomId,
   limit = 20,
   offset = 0,
@@ -45,7 +43,6 @@ export const findMessageByRoomId = async ({
   const messages = await Chat.findMany({
     where: {
       chatRoomId: roomId,
-      // AND: chatWhereAndInput(currentUserId),
     },
     select: { ...selectChat },
     take: limit,
@@ -69,14 +66,10 @@ export const findMessageByRoomId = async ({
   };
 };
 
-export const findMessageById = async (
-  chatId: number,
-  currentUserId: number
-) => {
+export const findMessageById = async (chatId: number) => {
   const chat = await Chat.findUnique({
     where: {
       id: chatId,
-      // AND: chatWhereAndInput(currentUserId),
     },
     select: selectChat,
   });
@@ -160,7 +153,7 @@ export const createChatWithRoomIdAndAuthorId = async (createOptions: {
   senderId: number;
   message: string;
   chatRoomId: number;
-  images?: Express.Multer.File[];
+  images?: string[];
 }) => {
   const { chatRoomId, senderId, message, images } = createOptions;
 
@@ -185,23 +178,20 @@ export const createChatWithRoomIdAndAuthorId = async (createOptions: {
         },
       },
     });
-    console.log(createdChat, "createdChat id");
+
     if (images && images.length > 0) {
-      const sources = await prismaImageUploader(
-        tx,
-        images,
-        createdChat.id,
-        "chat"
-      );
-      (createdChat as any).chatImage = sources ?? [];
+      await tx.image.createMany({
+        data: images.map((src) => ({ chatId: createdChat.id, src })),
+      });
+      (createdChat as any).chatImage = images.map((src) => ({ src }));
     }
 
     return createdChat;
   });
 };
 
-export const deleteChatById = async (chatId: number, currentUserId: number) => {
-  await findMessageById(chatId, currentUserId);
+export const deleteChatById = async (chatId: number) => {
+  await checkIsMessageFound({ messageId: chatId });
   return await Chat.delete({
     where: {
       id: chatId,
@@ -218,12 +208,8 @@ export const deleteChatById = async (chatId: number, currentUserId: number) => {
   });
 };
 
-export const updateChatById = async (
-  chatId: number,
-  currentUserId: number,
-  message?: string
-) => {
-  await findMessageById(chatId, currentUserId);
+export const updateChatById = async (chatId: number, message?: string) => {
+  await checkIsMessageFound({ messageId: chatId });
   return await Chat.update({
     where: {
       id: chatId,
@@ -241,4 +227,27 @@ export const updateChatById = async (
       },
     },
   });
+};
+
+export const checkIsMessageFound = async ({
+  customMessage,
+  messageId,
+}: {
+  messageId: number;
+  customMessage?: { message?: string; statusCode?: number };
+}) => {
+  const message = await Chat.findUnique({
+    where: {
+      id: messageId,
+    },
+    select: { id: true },
+  });
+
+  if (!message)
+    throw new RequestError(
+      customMessage?.message ?? NotFound.MESSAGE,
+      customMessage?.statusCode ?? 404
+    );
+
+  return message;
 };

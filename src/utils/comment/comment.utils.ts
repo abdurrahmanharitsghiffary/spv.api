@@ -103,30 +103,6 @@ export const findCommentById = async <
   return normalizedComment as any;
 };
 
-export const findCommentByIdCustomMessage = async ({
-  message,
-  statusCode,
-  commentId,
-  currentUserId,
-}: {
-  commentId: number;
-  message: string;
-  statusCode: number;
-  currentUserId?: number;
-}) => {
-  const comment = await Comment.findUnique({
-    where: {
-      id: commentId || commentId === 0 ? commentId : undefined,
-      AND: commentWhereAndInput(currentUserId),
-    },
-    select: selectCommentExtended(currentUserId),
-  });
-
-  if (!comment) throw new RequestError(message, statusCode);
-  const normalizedComment = await normalizeComment(comment);
-  return normalizedComment;
-};
-
 export const findCommentsByPostId = async (
   postId: number,
   offset: number,
@@ -219,14 +195,36 @@ export const findCommentsByPostId = async (
   return { data: normalizedComments, total: totalComments };
 };
 
-// export const findCommentOrThrowById = async (id: number) => {
-//   const comment = await Comment.findUnique({
-//     where: {
-//       id,
-//     },
-//   });
+export const checkCommentIsFound = async ({
+  commentId,
+  currentUserId,
+  customMessage,
+}: {
+  commentId: number;
+  currentUserId?: number;
+  customMessage?: { statusCode?: number; message?: string };
+}) => {
+  const andInput = currentUserId
+    ? commentWhereAndInput(currentUserId)
+    : undefined;
 
-//   if (!comment) throw new RequestError(NotFound.COMMENT, 404);
+  const comment = await Comment.findUnique({
+    where: {
+      id: commentId,
+      AND: andInput,
+    },
+    select: {
+      userId: true,
+      id: true,
+      postId: true,
+    },
+  });
 
-//   return comment;
-// };
+  if (!comment)
+    throw new RequestError(
+      customMessage?.message ?? NotFound.COMMENT,
+      customMessage?.statusCode ?? 404
+    );
+
+  return comment;
+};

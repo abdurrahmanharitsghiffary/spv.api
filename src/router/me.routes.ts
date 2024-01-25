@@ -22,7 +22,7 @@ import {
   followUser,
   unfollowUser,
 } from "../controllers/follow.controller";
-import { uploadImage } from "../middlewares/multer.middlewares";
+import { uploadImageV2 } from "../middlewares/multer.middlewares";
 import { getAllChatsByUserId } from "../controllers/chat.controller";
 import {
   clearNotifications,
@@ -48,6 +48,7 @@ import {
   zProfileImageType,
   zUsername,
 } from "../schema";
+import { uploadFilesToCloudinary } from "../middlewares/cloudinary.middleware";
 
 const router = express.Router();
 
@@ -115,7 +116,8 @@ router
     tryCatch(deleteAccountImage)
   )
   .patch(
-    uploadImage.single("image"),
+    uploadImageV2.single("image"),
+    uploadFilesToCloudinary,
     validate(
       z.object({
         query: z.object({

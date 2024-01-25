@@ -11,18 +11,8 @@ import { ChatRoom, ChatRoomParticipant } from "../models/chat.models";
 import User from "../models/user.models";
 import { Code } from "../lib/code";
 import { RequestError } from "../lib/error";
-import { $Enums, Prisma, PrismaClient } from "@prisma/client";
+import { $Enums } from "@prisma/client";
 import { NotFound } from "../lib/messages";
-import { DefaultArgs } from "@prisma/client/runtime/library";
-export const deleteUploadedImage = async (src: string) => {
-  if (src.includes("giphy")) return null;
-  const path = src.split("public/")[1];
-  try {
-    await fs.unlink("src/public/" + path);
-  } catch (err: any) {
-    throw new Error(err);
-  }
-};
 
 export const generateRefreshToken = async (payload: string | object | Buffer) =>
   await JWT.sign(payload, REFRESH_TOKEN_SECRET as string, {
@@ -34,23 +24,6 @@ export const generateAccessToken = async (payload: string | object | Buffer) =>
     expiresIn: 3600,
     // expiresIn: 1,
   });
-
-export const getFileDest = (file: Express.Multer.File | undefined) => {
-  if (!file) return null;
-  return file?.destination.replace("src", "") + `/${file?.filename}`;
-};
-
-export const getCompleteFileUrlPath = (
-  profile: { src: string; id?: number } | null | undefined
-) => {
-  if (!profile) return null;
-  try {
-    const url = new URL(profile.src, BASE_URL);
-    return { ...profile, src: url.href };
-  } catch (err) {
-    return null;
-  }
-};
 
 export const getRandomToken = (): Promise<string> => {
   return new Promise((resolve) =>
@@ -195,63 +168,4 @@ export const checkParticipants = async (
       400,
       errors
     );
-};
-
-export const imageUploadErrorHandler = async (
-  imageUploader: Promise<Prisma.BatchPayload>,
-  imageSources: Prisma.ImageCreateManyInput[] | Prisma.ImageCreateManyInput
-) => {
-  try {
-    const uploadedBatch = await imageUploader;
-    console.log(uploadedBatch, "Uploaded Batch");
-  } catch (err) {
-    console.log("Something goes wrong.", err);
-    if (imageSources instanceof Array) {
-      await Promise.all(
-        imageSources.map(async (image) => {
-          await deleteUploadedImage(image.src);
-        })
-      );
-    } else {
-      await deleteUploadedImage(imageSources.src);
-    }
-  }
-};
-
-export const prismaImageUploader = async (
-  tx: Omit<
-    PrismaClient<Prisma.PrismaClientOptions, never, DefaultArgs>,
-    "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends"
-  >,
-  images: Express.Multer.File[] | Express.Multer.File,
-  id: number,
-  imageType: "post" | "profile" | "chat" | "comment" | "group"
-) => {
-  try {
-    const imageSources: Prisma.ImageCreateManyInput[] = [];
-    if (images instanceof Array) {
-      images.forEach((image) => {
-        const fileDest = getFileDest(image);
-        if (fileDest)
-          imageSources.push({
-            src: fileDest,
-            [imageType + "Id"]: id,
-          });
-      });
-    } else {
-      const fileDest = getFileDest(images);
-      if (fileDest)
-        imageSources.push({
-          src: fileDest,
-          [imageType + "Id"]: id,
-        });
-    }
-    await imageUploadErrorHandler(
-      tx.image.createMany({ data: imageSources }),
-      imageSources
-    );
-    return imageSources;
-  } catch (err) {
-    console.error("Something went wrong when uploading images, Error: ", err);
-  }
 };

@@ -1,4 +1,3 @@
-import { getCompleteFileUrlPath } from "..";
 import {
   ChatRoomParticipantPayload,
   SelectChatPayload,
@@ -10,9 +9,7 @@ export const normalizeChat = (chat: SelectChatPayload): Promise<Chat> =>
     const normalizedChat: Chat = {
       id: chat.id,
       message: chat.message,
-      attachments: (chat.chatImage ?? []).map((image) =>
-        getCompleteFileUrlPath(image)
-      ),
+      attachments: chat.chatImage ?? [],
       readedBy: chat.readedBy.map((read) => ({
         avatarImage: read.user.profile?.avatarImage,
         firstName: read.user.firstName,
@@ -31,7 +28,7 @@ export const normalizeChat = (chat: SelectChatPayload): Promise<Chat> =>
         firstName: chat.author.firstName,
         lastName: chat.author.lastName,
         username: chat.author.username,
-        avatarImage: getCompleteFileUrlPath(chat.author.profile?.avatarImage),
+        avatarImage: chat.author.profile?.avatarImage,
       } as any,
       roomId: chat.chatRoomId,
       createdAt: chat.createdAt,
@@ -62,7 +59,7 @@ export const normalizeChatParticipant = (
 ): Promise<ChatRoomParticipant> =>
   new Promise((resolve) =>
     resolve({
-      avatarImage: getCompleteFileUrlPath(payload.user.profile?.avatarImage),
+      avatarImage: payload.user.profile?.avatarImage,
       firstName: payload.user.firstName,
       roomId: payload.chatRoomId,
       lastName: payload.user.lastName,

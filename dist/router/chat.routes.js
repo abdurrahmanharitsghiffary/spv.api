@@ -16,6 +16,7 @@ const multer_middlewares_1 = require("../middlewares/multer.middlewares");
 const zod_form_data_1 = require("zod-form-data");
 const chat_schema_1 = require("../schema/chat.schema");
 const middlewares_1 = require("../middlewares");
+const cloudinary_middleware_1 = require("../middlewares/cloudinary.middleware");
 const router = express_1.default.Router();
 router.use(auth_middlewares_1.verifyToken);
 const checkIsParticipated = (0, middlewares_1.checkIsParticipatedInChatRoom)({ params: "roomId" });
@@ -57,14 +58,14 @@ router.route("/:roomId/participants/:participantId").get((0, validator_middlewar
         participantId: schema_1.zIntOrStringId,
     }),
 })), (0, handler_middlewares_1.tryCatch)(chatRoom_controller_1.getParticipant));
-router.route("/group").post(multer_middlewares_1.uploadImage.single("image"), (0, validator_middlewares_1.validateBody)(zod_form_data_1.zfd.formData(zod_1.z.object({
+router.route("/group").post(multer_middlewares_1.uploadImageV2.single("image"), cloudinary_middleware_1.uploadFilesToCloudinary, (0, validator_middlewares_1.validateBody)(zod_form_data_1.zfd.formData(zod_1.z.object({
     participants: (0, chat_schema_1.zfdParticipants)("participants", 2),
     title: zod_form_data_1.zfd.text(zod_1.z.string().optional()),
     description: zod_form_data_1.zfd.text(zod_1.z.string().optional()),
 }))), (0, handler_middlewares_1.tryCatch)(groupChat_controllers_1.createGroupChat));
 router
     .route("/group/:groupId")
-    .patch(multer_middlewares_1.uploadImage.single("image"), (0, validator_middlewares_1.validate)(zod_1.z.object({
+    .patch(multer_middlewares_1.uploadImageV2.single("image"), cloudinary_middleware_1.uploadFilesToCloudinary, (0, validator_middlewares_1.validate)(zod_1.z.object({
     body: zod_form_data_1.zfd.formData(zod_1.z.object({
         participants: (0, chat_schema_1.zfdParticipants)("participants").optional(),
         description: schema_1.zfdText.optional(),

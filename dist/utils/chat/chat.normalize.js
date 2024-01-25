@@ -1,13 +1,12 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.normalizeChatParticipant = exports.normalizeChat = void 0;
-const __1 = require("..");
 const normalizeChat = (chat) => new Promise((resolve) => {
     var _a, _b;
     const normalizedChat = {
         id: chat.id,
         message: chat.message,
-        attachments: ((_a = chat.chatImage) !== null && _a !== void 0 ? _a : []).map((image) => (0, __1.getCompleteFileUrlPath)(image)),
+        attachments: (_a = chat.chatImage) !== null && _a !== void 0 ? _a : [],
         readedBy: chat.readedBy.map((read) => {
             var _a;
             return ({
@@ -29,7 +28,7 @@ const normalizeChat = (chat) => new Promise((resolve) => {
             firstName: chat.author.firstName,
             lastName: chat.author.lastName,
             username: chat.author.username,
-            avatarImage: (0, __1.getCompleteFileUrlPath)((_b = chat.author.profile) === null || _b === void 0 ? void 0 : _b.avatarImage),
+            avatarImage: (_b = chat.author.profile) === null || _b === void 0 ? void 0 : _b.avatarImage,
         },
         roomId: chat.chatRoomId,
         createdAt: chat.createdAt,
@@ -54,7 +53,7 @@ exports.normalizeChat = normalizeChat;
 const normalizeChatParticipant = (payload) => new Promise((resolve) => {
     var _a;
     return resolve({
-        avatarImage: (0, __1.getCompleteFileUrlPath)((_a = payload.user.profile) === null || _a === void 0 ? void 0 : _a.avatarImage),
+        avatarImage: (_a = payload.user.profile) === null || _a === void 0 ? void 0 : _a.avatarImage,
         firstName: payload.user.firstName,
         roomId: payload.chatRoomId,
         lastName: payload.user.lastName,
