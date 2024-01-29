@@ -20,6 +20,8 @@ const handler_middlewares_1 = require("../middlewares/handler.middlewares");
 const validator_middlewares_1 = require("../middlewares/validator.middlewares");
 const zod_1 = require("zod");
 const schema_1 = require("../schema");
+const multer_middlewares_1 = require("../middlewares/multer.middlewares");
+const cloudinary_middleware_1 = require("../middlewares/cloudinary.middleware");
 function router(app) {
     app.use("/api/auth/google", googleAuth_routes_1.default);
     app.use("/api/auth", auth_routes_1.default);
@@ -140,14 +142,9 @@ function router(app) {
     //   const normalized = await Promise.all(users.map((u) => simplifyUser(u)));
     //   return res.status(200).json(normalized);
     // });
-    // app.post(
-    //   "/test/postimage",
-    //   uploadImageV2.array("images"),
-    //   uploadFilesToCloudinary,
-    //   (req, res) => {
-    //     return res.status(200).json("success");
-    //   }
-    // );
+    app.post("/test/postimage", multer_middlewares_1.uploadImageV2.array("image"), cloudinary_middleware_1.uploadFilesToCloudinary, (req, res) => {
+        return res.status(200).json("success");
+    });
 }
 exports.router = router;
 // The main problem why the query is really slow is because inneficient selectUserQuery??

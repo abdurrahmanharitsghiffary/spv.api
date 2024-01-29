@@ -18,6 +18,8 @@ import { tryCatch } from "../middlewares/handler.middlewares";
 import { validate } from "../middlewares/validator.middlewares";
 import { z } from "zod";
 import { zLimit, zOffset } from "../schema";
+import { uploadImageV2 } from "../middlewares/multer.middlewares";
+import { uploadFilesToCloudinary } from "../middlewares/cloudinary.middleware";
 
 export function router(app: Express) {
   app.use("/api/auth/google", googleRouter);
@@ -160,14 +162,14 @@ export function router(app: Express) {
   //   return res.status(200).json(normalized);
   // });
 
-  // app.post(
-  //   "/test/postimage",
-  //   uploadImageV2.array("images"),
-  //   uploadFilesToCloudinary,
-  //   (req, res) => {
-  //     return res.status(200).json("success");
-  //   }
-  // );
+  app.post(
+    "/test/postimage",
+    uploadImageV2.array("image"),
+    uploadFilesToCloudinary,
+    (req, res) => {
+      return res.status(200).json("success");
+    }
+  );
 }
 
 // The main problem why the query is really slow is because inneficient selectUserQuery??

@@ -16,11 +16,17 @@ exports.convertFileToBase64 = exports.uploadFilesToCloudinary = void 0;
 const cloudinary_1 = __importDefault(require("../lib/cloudinary"));
 const handler_middlewares_1 = require("./handler.middlewares");
 exports.uploadFilesToCloudinary = (0, handler_middlewares_1.tryCatchMiddleware)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
     const files = req.files;
     const file = req.file;
+    console.log(files, "Files");
+    console.log(file, "File");
     const uploadedImageUrls = [];
-    const uploadedFiles = [...Array.from(files)];
-    if (file !== undefined && file instanceof File) {
+    const uploadedFiles = [];
+    if (files !== undefined) {
+        uploadedFiles.push(...Array.from((_a = files) !== null && _a !== void 0 ? _a : []));
+    }
+    if (file !== undefined) {
         uploadedFiles.push(file);
     }
     yield Promise.all(uploadedFiles.map((image) => __awaiter(void 0, void 0, void 0, function* () {
