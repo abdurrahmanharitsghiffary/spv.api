@@ -33,7 +33,7 @@ const getAllBlockedUsers = (req, res) => __awaiter(void 0, void 0, void 0, funct
             id: uId,
         },
         select: Object.assign(Object.assign({}, user_1.selectUser), { blocked: {
-                select: (0, user_utils_1.userSelectPublicInput)(uId),
+                select: user_1.selectUserPublic,
                 take: limit,
                 skip: offset,
                 orderBy: [{ username: "asc" }, { firstName: "asc" }],

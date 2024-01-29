@@ -3,11 +3,7 @@ import User from "../models/user.models";
 import { ExpressRequestExtended } from "../types/request";
 import { ApiResponse } from "../utils/response";
 import { RequestError } from "../lib/error";
-import {
-  findUserById,
-  getUserIsFollowed,
-  userSelectPublicInput,
-} from "../utils/user/user.utils";
+import { findUserById } from "../utils/user/user.utils";
 import { selectUser, selectUserPublic } from "../lib/query/user";
 import { getPagingObject } from "../utils/paging";
 import { normalizeUserPublic } from "../utils/user/user.normalize";
@@ -29,7 +25,7 @@ export const getAllBlockedUsers = async (
     select: {
       ...selectUser,
       blocked: {
-        select: userSelectPublicInput(uId),
+        select: selectUserPublic,
         take: limit,
         skip: offset,
         orderBy: [{ username: "asc" }, { firstName: "asc" }],
@@ -44,7 +40,7 @@ export const getAllBlockedUsers = async (
     await getPagingObject({
       data: await Promise.all(
         (user?.blocked ?? []).map((user) => {
-          return Promise.resolve(normalizeUserPublic(user));
+          return Promise.resolve(normalizeUserPublic(user as any));
         })
       ),
       req,

@@ -3,8 +3,6 @@ import { SearchFilter, UserAccount } from "../../types/user";
 import { normalizeUser, normalizeUserPublic } from "./user.normalize";
 import { RequestError } from "../../lib/error";
 import {
-  SelectUserPayload,
-  SelectUserPublicPayload,
   excludeBlockedUser,
   excludeBlockingUser,
   selectUser,
@@ -14,55 +12,15 @@ import {
 import { Prisma } from "@prisma/client";
 import { NotFound } from "../../lib/messages";
 
-export const getUserIsFollowed = (
-  user: SelectUserPayload | SelectUserPublicPayload,
-  currentUserId?: number
-) =>
-  currentUserId
-    ? (user?.followedBy ?? []).some((user) => user.id === currentUserId)
-    : false;
-
 export const userWhereAndInput = (currentUserId?: number) =>
-  [
-    {
-      ...excludeBlockedUser(currentUserId),
-      ...excludeBlockingUser(currentUserId),
-    },
-  ] satisfies Prisma.UserWhereInput["AND"];
-
-export const userSelectInput = (currentUserId?: number) =>
-  ({
-    ...selectUser,
-    followedBy: {
-      ...selectUser.followedBy,
-      where: {
-        AND: userWhereAndInput(currentUserId),
-      },
-    },
-    following: {
-      ...selectUser.following,
-      where: {
-        AND: userWhereAndInput(currentUserId),
-      },
-    },
-  } satisfies Prisma.UserSelect);
-
-export const userSelectPublicInput = (currentUserId?: number) =>
-  ({
-    ...selectUserPublic,
-    followedBy: {
-      ...selectUserPublic.followedBy,
-      where: {
-        AND: userWhereAndInput(currentUserId),
-      },
-    },
-    following: {
-      ...selectUserPublic.following,
-      where: {
-        AND: userWhereAndInput(currentUserId),
-      },
-    },
-  } satisfies Prisma.UserSelect);
+  currentUserId
+    ? ([
+        {
+          ...excludeBlockedUser(currentUserId),
+          ...excludeBlockingUser(currentUserId),
+        },
+      ] satisfies Prisma.UserWhereInput["AND"])
+    : undefined;
 
 export const findUserPublic = async (id: string, currentUserId?: number) => {
   const user = await User.findUnique({
@@ -70,7 +28,7 @@ export const findUserPublic = async (id: string, currentUserId?: number) => {
       id: Number(id),
       AND: userWhereAndInput(currentUserId),
     },
-    select: userSelectPublicInput(currentUserId),
+    select: selectUserPublic,
   });
 
   if (!user) throw new RequestError(NotFound.USER, 404);
@@ -92,7 +50,7 @@ export const findUserById = async (
       AND: userWhereAndInput(currentUserId),
       id,
     },
-    select: userSelectInput(currentUserId),
+    select: selectUser,
   });
 
   if (!user)
@@ -224,6 +182,8 @@ export const searchUsersByName = async ({
     },
   ] satisfies Prisma.UserWhereInput["AND"];
 
+  const andInput = userWhereAndInput(currentUserId);
+
   const users = await User.findMany({
     where: {
       OR: [
@@ -239,7 +199,7 @@ export const searchUsersByName = async ({
         },
       ],
       AND: [
-        ...userWhereAndInput(currentUserId),
+        ...(andInput ?? []),
         ...filterQuery,
         {
           id: {
@@ -253,7 +213,7 @@ export const searchUsersByName = async ({
     },
     take: limit,
     skip: offset,
-    select: userSelectPublicInput(currentUserId),
+    select: selectUserPublic,
   });
 
   const total = await User.count({
@@ -271,7 +231,7 @@ export const searchUsersByName = async ({
         },
       ],
       AND: [
-        ...userWhereAndInput(currentUserId),
+        ...(andInput ?? []),
         ...filterQuery,
         {
           id: {

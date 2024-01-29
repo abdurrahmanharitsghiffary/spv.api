@@ -1,10 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.simplifyUserWF = exports.simplifyUser = exports.normalizeUser = exports.normalizeUserPublic = void 0;
-const getIds = (data, types) => {
-    var _a, _b;
-    return [...((_b = (_a = data === null || data === void 0 ? void 0 : data[types]) === null || _a === void 0 ? void 0 : _a.map((user) => user === null || user === void 0 ? void 0 : user.id)) !== null && _b !== void 0 ? _b : [])];
-};
 const normalizeUserPublic = (user) => new Promise((resolve) => {
     var _a, _b;
     const normalizedUserPublic = {
@@ -23,15 +19,7 @@ const normalizeUserPublic = (user) => new Promise((resolve) => {
                 coverImage: user.profile.coverImage,
             }
             : null,
-        followedBy: {
-            followerIds: getIds(user, "followedBy"),
-            total: user._count.followedBy,
-        },
-        following: {
-            followedUserIds: getIds(user, "following"),
-            total: user._count.following,
-        },
-        posts: { postIds: getIds(user, "posts"), total: user._count.posts },
+        count: user._count,
         updatedAt: user.updatedAt,
         createdAt: user === null || user === void 0 ? void 0 : user.createdAt,
     };
@@ -60,23 +48,10 @@ const normalizeUser = (user) => new Promise((resolve) => {
                 coverImage: user.profile.coverImage,
             }
             : null,
-        followedBy: {
-            followerIds: getIds(user, "followedBy"),
-            total: user._count.followedBy,
-        },
-        following: {
-            followedUserIds: getIds(user, "following"),
-            total: user._count.following,
-        },
-        posts: { postIds: getIds(user, "posts"), total: user._count.posts },
+        count: user._count,
         createdAt: user === null || user === void 0 ? void 0 : user.createdAt,
         updatedAt: user === null || user === void 0 ? void 0 : user.updatedAt,
     };
-    // if (user.profile?.avatarImage && normalizedUser.profile) {
-    //   normalizedUser.profile.image = {
-    //     src: new URL(user.profile.avatarImage.src, BASE_URL).href,
-    //   };
-    // }
     return resolve(normalizedUser);
 });
 exports.normalizeUser = normalizeUser;

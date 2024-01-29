@@ -11,7 +11,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.normalizePost = void 0;
 const normalize = (post) => new Promise((resolve) => {
-    var _a, _b, _c, _d, _e, _f, _g, _h;
+    var _a, _b, _c, _d, _e, _f, _g;
     const normalizedPost = {
         id: post === null || post === void 0 ? void 0 : post.id,
         title: post === null || post === void 0 ? void 0 : post.title,
@@ -27,10 +27,7 @@ const normalize = (post) => new Promise((resolve) => {
             avatarImage: (_g = (_f = post === null || post === void 0 ? void 0 : post.author) === null || _f === void 0 ? void 0 : _f.profile) === null || _g === void 0 ? void 0 : _g.avatarImage,
         },
         total_likes: post._count.likes,
-        comments: {
-            ids: post.comments.map((comment) => comment.id),
-            total: (_h = post._count.comments) !== null && _h !== void 0 ? _h : 0,
-        },
+        total_comments: post._count.comments,
         updatedAt: post === null || post === void 0 ? void 0 : post.updatedAt,
         createdAt: post === null || post === void 0 ? void 0 : post.createdAt,
     };

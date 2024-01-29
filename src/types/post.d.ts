@@ -11,11 +11,5 @@ export type Post = {
   total_likes: number;
   createdAt: Date;
   updatedAt: Date;
+  total_comments: number;
 };
-
-export type PostExtended = {
-  comments: {
-    ids: number[];
-    total: number;
-  };
-} & Post;

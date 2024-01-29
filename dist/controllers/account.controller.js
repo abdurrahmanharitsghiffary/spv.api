@@ -313,7 +313,7 @@ const sendVerifyToken = (req, res) => __awaiter(void 0, void 0, void 0, function
                 userEmail: email,
             },
         });
-        yield (0, email_utils_1.sendVerifyEmail)(email, `http://localhost:3000/verify/${token}`);
+        yield (0, email_utils_1.sendVerifyEmail)(email, `${process.env.CLIENT_URL}/verify/${token}`);
     }
     res
         .status(200)

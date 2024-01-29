@@ -42,7 +42,7 @@ const sendResetToken = (req, res) => __awaiter(void 0, void 0, void 0, function*
                 userEmail: email,
             },
         });
-        yield (0, email_utils_1.sendResetPasswordEmail)(email, `http://localhost:3000/resetpassword/${resetToken}`);
+        yield (0, email_utils_1.sendResetPasswordEmail)(email, `${process.env.CLIENT_URL}/resetpassword/${resetToken}`);
     }
     res
         .status(200)

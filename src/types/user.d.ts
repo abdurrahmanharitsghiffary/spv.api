@@ -16,17 +16,10 @@ export interface UserAccountPublic {
     avatarImage: Image;
     coverImage: Image;
   } | null;
-  followedBy: {
-    followerIds: number[];
-    total: number;
-  };
-  following: {
-    followedUserIds: number[];
-    total: number;
-  };
-  posts: {
-    postIds: number[];
-    total: number;
+  count: {
+    posts: number;
+    followedBy: number;
+    following: number;
   };
   createdAt: Date;
   updatedAt: Date;

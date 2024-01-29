@@ -23,42 +23,25 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.checkIsUserFound = exports.searchUsersByName = exports.findFollowUserByUserId = exports.findAllUser = exports.findUserById = exports.findUserPublic = exports.userSelectPublicInput = exports.userSelectInput = exports.userWhereAndInput = exports.getUserIsFollowed = void 0;
+exports.checkIsUserFound = exports.searchUsersByName = exports.findFollowUserByUserId = exports.findAllUser = exports.findUserById = exports.findUserPublic = exports.userWhereAndInput = void 0;
 const user_models_1 = __importDefault(require("../../models/user.models"));
 const user_normalize_1 = require("./user.normalize");
 const error_1 = require("../../lib/error");
 const user_1 = require("../../lib/query/user");
 const messages_1 = require("../../lib/messages");
-const getUserIsFollowed = (user, currentUserId) => {
-    var _a;
-    return currentUserId
-        ? ((_a = user === null || user === void 0 ? void 0 : user.followedBy) !== null && _a !== void 0 ? _a : []).some((user) => user.id === currentUserId)
-        : false;
-};
-exports.getUserIsFollowed = getUserIsFollowed;
-const userWhereAndInput = (currentUserId) => [
-    Object.assign(Object.assign({}, (0, user_1.excludeBlockedUser)(currentUserId)), (0, user_1.excludeBlockingUser)(currentUserId)),
-];
+const userWhereAndInput = (currentUserId) => currentUserId
+    ? ([
+        Object.assign(Object.assign({}, (0, user_1.excludeBlockedUser)(currentUserId)), (0, user_1.excludeBlockingUser)(currentUserId)),
+    ])
+    : undefined;
 exports.userWhereAndInput = userWhereAndInput;
-const userSelectInput = (currentUserId) => (Object.assign(Object.assign({}, user_1.selectUser), { followedBy: Object.assign(Object.assign({}, user_1.selectUser.followedBy), { where: {
-            AND: (0, exports.userWhereAndInput)(currentUserId),
-        } }), following: Object.assign(Object.assign({}, user_1.selectUser.following), { where: {
-            AND: (0, exports.userWhereAndInput)(currentUserId),
-        } }) }));
-exports.userSelectInput = userSelectInput;
-const userSelectPublicInput = (currentUserId) => (Object.assign(Object.assign({}, user_1.selectUserPublic), { followedBy: Object.assign(Object.assign({}, user_1.selectUserPublic.followedBy), { where: {
-            AND: (0, exports.userWhereAndInput)(currentUserId),
-        } }), following: Object.assign(Object.assign({}, user_1.selectUserPublic.following), { where: {
-            AND: (0, exports.userWhereAndInput)(currentUserId),
-        } }) }));
-exports.userSelectPublicInput = userSelectPublicInput;
 const findUserPublic = (id, currentUserId) => __awaiter(void 0, void 0, void 0, function* () {
     const user = yield user_models_1.default.findUnique({
         where: {
             id: Number(id),
             AND: (0, exports.userWhereAndInput)(currentUserId),
         },
-        select: (0, exports.userSelectPublicInput)(currentUserId),
+        select: user_1.selectUserPublic,
     });
     if (!user)
         throw new error_1.RequestError(messages_1.NotFound.USER, 404);
@@ -75,7 +58,7 @@ const findUserById = (id, currentUserId, customMessage = {
             AND: (0, exports.userWhereAndInput)(currentUserId),
             id,
         },
-        select: (0, exports.userSelectInput)(currentUserId),
+        select: user_1.selectUser,
     });
     if (!user)
         throw new error_1.RequestError(customMessage.message, customMessage.statusCode);
@@ -165,6 +148,7 @@ const searchUsersByName = ({ limit = 20, offset = 0, query, currentUserId, filte
                     : undefined,
         },
     ];
+    const andInput = (0, exports.userWhereAndInput)(currentUserId);
     const users = yield user_models_1.default.findMany({
         where: {
             OR: [
@@ -180,7 +164,7 @@ const searchUsersByName = ({ limit = 20, offset = 0, query, currentUserId, filte
                 },
             ],
             AND: [
-                ...(0, exports.userWhereAndInput)(currentUserId),
+                ...(andInput !== null && andInput !== void 0 ? andInput : []),
                 ...filterQuery,
                 {
                     id: {
@@ -194,7 +178,7 @@ const searchUsersByName = ({ limit = 20, offset = 0, query, currentUserId, filte
         },
         take: limit,
         skip: offset,
-        select: (0, exports.userSelectPublicInput)(currentUserId),
+        select: user_1.selectUserPublic,
     });
     const total = yield user_models_1.default.count({
         where: {
@@ -211,7 +195,7 @@ const searchUsersByName = ({ limit = 20, offset = 0, query, currentUserId, filte
                 },
             ],
             AND: [
-                ...(0, exports.userWhereAndInput)(currentUserId),
+                ...(andInput !== null && andInput !== void 0 ? andInput : []),
                 ...filterQuery,
                 {
                     id: {

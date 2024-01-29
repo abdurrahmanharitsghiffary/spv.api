@@ -8,7 +8,7 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-  directUrl= env("DIRECT_URL")
+  // directUrl= env("DIRECT_URL")
 }
 
 model User {
@@ -108,6 +108,7 @@ model SavedPost {
   userId Int
   assignedAt DateTime @default(now())
   @@id([postId, userId])
+  @@map("saved_posts")
 }
 enum PostType {
   public
@@ -188,6 +189,7 @@ model CoverImage {
   profileId Int? @unique
 
   profile Profile? @relation(fields: [profileId],  references: [id], onDelete: Cascade)
+  @@map("coer_images")
 }
 
 model RefreshToken {

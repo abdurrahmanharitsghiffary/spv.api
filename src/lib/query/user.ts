@@ -56,18 +56,6 @@ export const selectUserPublic = {
       },
     },
   },
-  followedBy: {
-    select: {
-      id: true,
-      username: true,
-    },
-  },
-  following: {
-    select: {
-      id: true,
-      username: true,
-    },
-  },
   _count: {
     select: {
       followedBy: true,
@@ -76,13 +64,6 @@ export const selectUserPublic = {
     },
   },
   updatedAt: true,
-  posts: {
-    take: 5,
-    orderBy: {
-      createdAt: "desc",
-    },
-    select: selectPost,
-  },
 } satisfies Prisma.UserSelect;
 
 export type SelectUserPublicPayload = Prisma.UserGetPayload<{
@@ -121,28 +102,12 @@ export const selectUser = {
       },
     },
   },
-
-  followedBy: {
-    select: {
-      id: true,
-      username: true,
-    },
-  },
-  following: {
-    select: {
-      id: true,
-      username: true,
-    },
-  },
   _count: {
     select: {
       followedBy: true,
       following: true,
       posts: true,
     },
-  },
-  posts: {
-    select: selectPost,
   },
 } satisfies Prisma.UserSelect;
 

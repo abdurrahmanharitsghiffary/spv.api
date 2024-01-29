@@ -1,7 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.selectUserSimplified = exports.selectUser = exports.selectUserPublic = exports.excludeBlockingUser = exports.excludeBlockedUser = void 0;
-const post_1 = require("./post");
 const excludeBlockedUser = (userId) => {
     const prismaQuery = {
         blocking: {
@@ -55,18 +54,6 @@ exports.selectUserPublic = {
             },
         },
     },
-    followedBy: {
-        select: {
-            id: true,
-            username: true,
-        },
-    },
-    following: {
-        select: {
-            id: true,
-            username: true,
-        },
-    },
     _count: {
         select: {
             followedBy: true,
@@ -75,13 +62,6 @@ exports.selectUserPublic = {
         },
     },
     updatedAt: true,
-    posts: {
-        take: 5,
-        orderBy: {
-            createdAt: "desc",
-        },
-        select: post_1.selectPost,
-    },
 };
 exports.selectUser = {
     id: true,
@@ -115,27 +95,12 @@ exports.selectUser = {
             },
         },
     },
-    followedBy: {
-        select: {
-            id: true,
-            username: true,
-        },
-    },
-    following: {
-        select: {
-            id: true,
-            username: true,
-        },
-    },
     _count: {
         select: {
             followedBy: true,
             following: true,
             posts: true,
         },
-    },
-    posts: {
-        select: post_1.selectPost,
     },
 };
 exports.selectUserSimplified = {

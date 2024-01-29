@@ -12,13 +12,6 @@ import {
 type SelectUserPublicPayloadExtended = SelectUserPublicPayload;
 type SelectUserPayloadExtended = SelectUserPayload;
 
-const getIds = (
-  data: SelectUserPayload | SelectUserPublicPayload,
-  types: "followedBy" | "following" | "posts"
-) => {
-  return [...(data?.[types]?.map((user) => user?.id) ?? [])];
-};
-
 export const normalizeUserPublic = (
   user: SelectUserPublicPayloadExtended
 ): Promise<UserAccountPublic> =>
@@ -39,15 +32,7 @@ export const normalizeUserPublic = (
             coverImage: user.profile.coverImage,
           }
         : null,
-      followedBy: {
-        followerIds: getIds(user, "followedBy"),
-        total: user._count.followedBy,
-      },
-      following: {
-        followedUserIds: getIds(user, "following"),
-        total: user._count.following,
-      },
-      posts: { postIds: getIds(user, "posts"), total: user._count.posts },
+      count: user._count,
       updatedAt: user.updatedAt,
       createdAt: user?.createdAt,
     };
@@ -79,23 +64,10 @@ export const normalizeUser = (
             coverImage: user.profile.coverImage,
           }
         : null,
-      followedBy: {
-        followerIds: getIds(user, "followedBy"),
-        total: user._count.followedBy,
-      },
-      following: {
-        followedUserIds: getIds(user, "following"),
-        total: user._count.following,
-      },
-      posts: { postIds: getIds(user, "posts"), total: user._count.posts },
+      count: user._count,
       createdAt: user?.createdAt,
       updatedAt: user?.updatedAt,
     };
-    // if (user.profile?.avatarImage && normalizedUser.profile) {
-    //   normalizedUser.profile.image = {
-    //     src: new URL(user.profile.avatarImage.src, BASE_URL).href,
-    //   };
-    // }
     return resolve(normalizedUser);
   });
 

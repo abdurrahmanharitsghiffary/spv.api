@@ -343,7 +343,7 @@ export const sendVerifyToken = async (
       },
     });
 
-    await sendVerifyEmail(email, `http://localhost:3000/verify/${token}`);
+    await sendVerifyEmail(email, `${process.env.CLIENT_URL}/verify/${token}`);
   }
 
   res

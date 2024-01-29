@@ -39,7 +39,7 @@ export const sendResetToken = async (
 
     await sendResetPasswordEmail(
       email,
-      `http://localhost:3000/resetpassword/${resetToken}`
+      `${process.env.CLIENT_URL}/resetpassword/${resetToken}`
     );
   }
 
