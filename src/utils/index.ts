@@ -19,6 +19,15 @@ export const generateRefreshToken = async (payload: string | object | Buffer) =>
     expiresIn: "7d",
   });
 
+export const getFullName = (
+  firstName: string,
+  lastName: string,
+  newFirstName?: string,
+  newLastName?: string
+) => {
+  return `${newFirstName ?? firstName} ${newLastName ?? lastName}`;
+};
+
 export const generateAccessToken = async (payload: string | object | Buffer) =>
   await JWT.sign(payload, ACCESS_TOKEN_SECRET as string, {
     expiresIn: 3600,

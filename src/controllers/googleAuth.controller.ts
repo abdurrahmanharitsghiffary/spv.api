@@ -3,7 +3,7 @@ import { ApiResponse } from "../utils/response";
 import User from "../models/user.models";
 import { ExpressRequestExtended } from "../types/request";
 import { RequestError } from "../lib/error";
-import { generateRefreshToken } from "../utils";
+import { generateRefreshToken, getFullName } from "../utils";
 import { BASE_CLIENT_URL } from "../lib/consts";
 
 export const deleteGoogleAccount = async (
@@ -64,14 +64,16 @@ export const googleAuthCallback = async (
         googleId: userJson.sub,
       },
     });
-
+    const given_name = userJson?.given_name;
+    const family_name = userJson?.family_name;
     if (!user) {
       const newUser = await User.create({
         data: {
           verified: true,
           email: userJson?.email,
-          firstName: userJson?.given_name,
-          lastName: userJson?.family_name,
+          firstName: given_name,
+          lastName: family_name,
+          fullName: getFullName(given_name, family_name),
           hashedPassword: "",
           provider: "GOOGLE",
           profile: {
@@ -90,15 +92,6 @@ export const googleAuthCallback = async (
 
       user = newUser;
     }
-    console.log(user);
-    // const access_token = await generateAccessToken({
-    //   id: user.id,
-    //   firstName: user.firstName,
-    //   lastName: user.lastName,
-    //   fullName: user.fullName,
-    //   email: user.email,
-    //   username: user.username,
-    // });
 
     const refresh_token = await generateRefreshToken({
       id: user.id,

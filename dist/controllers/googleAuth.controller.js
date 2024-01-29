@@ -56,13 +56,16 @@ const googleAuthCallback = (req, res) => __awaiter(void 0, void 0, void 0, funct
                 googleId: userJson.sub,
             },
         });
+        const given_name = userJson === null || userJson === void 0 ? void 0 : userJson.given_name;
+        const family_name = userJson === null || userJson === void 0 ? void 0 : userJson.family_name;
         if (!user) {
             const newUser = yield user_models_1.default.create({
                 data: {
                     verified: true,
                     email: userJson === null || userJson === void 0 ? void 0 : userJson.email,
-                    firstName: userJson === null || userJson === void 0 ? void 0 : userJson.given_name,
-                    lastName: userJson === null || userJson === void 0 ? void 0 : userJson.family_name,
+                    firstName: given_name,
+                    lastName: family_name,
+                    fullName: (0, utils_1.getFullName)(given_name, family_name),
                     hashedPassword: "",
                     provider: "GOOGLE",
                     profile: {
@@ -80,15 +83,6 @@ const googleAuthCallback = (req, res) => __awaiter(void 0, void 0, void 0, funct
             });
             user = newUser;
         }
-        console.log(user);
-        // const access_token = await generateAccessToken({
-        //   id: user.id,
-        //   firstName: user.firstName,
-        //   lastName: user.lastName,
-        //   fullName: user.fullName,
-        //   email: user.email,
-        //   username: user.username,
-        // });
         const refresh_token = yield (0, utils_1.generateRefreshToken)({
             id: user.id,
             firstName: user.firstName,

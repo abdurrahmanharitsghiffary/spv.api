@@ -4,7 +4,11 @@ import { RequestError } from "../lib/error";
 import bcrypt from "bcrypt";
 import { tryCatch } from "../middlewares/handler.middlewares";
 import { ApiResponse } from "../utils/response";
-import { generateAccessToken, generateRefreshToken } from "../utils";
+import {
+  generateAccessToken,
+  generateRefreshToken,
+  getFullName,
+} from "../utils";
 import { ExpressRequestExtended } from "../types/request";
 import { BCRYPT_SALT } from "../lib/consts";
 
@@ -88,6 +92,7 @@ export const signUp = async (req: express.Request, res: express.Response) => {
     data: {
       firstName,
       lastName,
+      fullName: getFullName(firstName, lastName),
       email,
       hashedPassword,
       username,

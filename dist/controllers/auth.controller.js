@@ -84,6 +84,7 @@ const signUp = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         data: {
             firstName,
             lastName,
+            fullName: (0, utils_1.getFullName)(firstName, lastName),
             email,
             hashedPassword,
             username,

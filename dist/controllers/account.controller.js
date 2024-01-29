@@ -122,6 +122,13 @@ exports.updateAccountImage = updateAccountImage;
 const updateMyAccount = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { userEmail } = req;
     const { username, description, firstName, lastName, gender, birthDate } = req.body;
+    const currentData = yield user_models_1.default.findUnique({
+        where: {
+            email: userEmail,
+        },
+        select: { firstName: true, lastName: true },
+    });
+    const { firstName: cF, lastName: cL } = currentData !== null && currentData !== void 0 ? currentData : {};
     yield user_models_1.default.update({
         where: {
             email: userEmail,
@@ -130,6 +137,7 @@ const updateMyAccount = (req, res) => __awaiter(void 0, void 0, void 0, function
             username,
             firstName,
             lastName,
+            fullName: (0, utils_1.getFullName)(cF, cL, firstName, lastName),
             profile: {
                 update: {
                     gender,

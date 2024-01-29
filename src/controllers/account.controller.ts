@@ -5,7 +5,7 @@ import { ExpressRequestExtended } from "../types/request";
 import Image from "../models/image.models";
 import { RequestError } from "../lib/error";
 import Token from "../models/token.models";
-import { getRandomToken } from "../utils";
+import { getFullName, getRandomToken } from "../utils";
 import { sendVerifyEmail } from "../utils/email.utils";
 import { ApiResponse } from "../utils/response";
 import * as bcrypt from "bcrypt";
@@ -104,6 +104,13 @@ export const updateMyAccount = async (
   const { username, description, firstName, lastName, gender, birthDate } =
     req.body;
 
+  const currentData = await User.findUnique({
+    where: {
+      email: userEmail,
+    },
+    select: { firstName: true, lastName: true },
+  });
+  const { firstName: cF, lastName: cL } = currentData ?? {};
   await User.update({
     where: {
       email: userEmail,
@@ -112,6 +119,7 @@ export const updateMyAccount = async (
       username,
       firstName,
       lastName,
+      fullName: getFullName(cF as string, cL as string, firstName, lastName),
       profile: {
         update: {
           gender,

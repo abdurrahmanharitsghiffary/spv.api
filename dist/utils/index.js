@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.checkParticipants = exports.isNullOrUndefined = exports.getRandomToken = exports.generateAccessToken = exports.generateRefreshToken = void 0;
+exports.checkParticipants = exports.isNullOrUndefined = exports.getRandomToken = exports.generateAccessToken = exports.getFullName = exports.generateRefreshToken = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const crypto_1 = __importDefault(require("crypto"));
 const consts_1 = require("../lib/consts");
@@ -27,6 +27,10 @@ const generateRefreshToken = (payload) => __awaiter(void 0, void 0, void 0, func
     });
 });
 exports.generateRefreshToken = generateRefreshToken;
+const getFullName = (firstName, lastName, newFirstName, newLastName) => {
+    return `${newFirstName !== null && newFirstName !== void 0 ? newFirstName : firstName} ${newLastName !== null && newLastName !== void 0 ? newLastName : lastName}`;
+};
+exports.getFullName = getFullName;
 const generateAccessToken = (payload) => __awaiter(void 0, void 0, void 0, function* () {
     return yield jsonwebtoken_1.default.sign(payload, consts_1.ACCESS_TOKEN_SECRET, {
         expiresIn: 3600,
