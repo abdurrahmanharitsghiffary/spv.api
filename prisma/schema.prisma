@@ -189,7 +189,7 @@ model CoverImage {
   profileId Int? @unique
 
   profile Profile? @relation(fields: [profileId],  references: [id], onDelete: Cascade)
-  @@map("coer_images")
+  @@map("cover_images")
 }
 
 model RefreshToken {
