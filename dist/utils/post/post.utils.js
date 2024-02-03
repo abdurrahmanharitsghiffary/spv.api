@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.checkPostIsFound = exports.searchPosts = exports.findSavedPost = exports.findFollowedUserPosts = exports.findAllPosts = exports.findPostsByAuthorId = exports.findPostById = void 0;
+exports.checkPostIsFound = exports.searchPosts = exports.findSavedPost = exports.findFollowedUserPosts = exports.findAllPosts = exports.findPostsByAuthorId = exports.findPostById = exports.postWhereAndInput = exports.postWhereInput = void 0;
 const error_1 = require("../../lib/error");
 const post_models_1 = __importDefault(require("../../models/post.models"));
 const post_1 = require("../../lib/query/post");
@@ -52,20 +52,20 @@ const postSelectExtended = (currentUserId) => (Object.assign(Object.assign({}, p
                 take: 1,
             } }),
     } }));
-const postWhereInput = {
+exports.postWhereInput = {
     type: {
         in: ["public", "friends"],
     },
 };
 const postFindUniqueWhereInput = (postId, currentUserId) => ({
     id: Number(postId),
-    AND: postWhereAndInput(currentUserId),
+    AND: (0, exports.postWhereAndInput)(currentUserId),
     OR: [
         {
             authorId: currentUserId,
             type: { in: ["friends", "private", "public"] },
         },
-        Object.assign({}, postWhereInput),
+        Object.assign({}, exports.postWhereInput),
     ],
 });
 const postWhereAndInput = (currentUserId) => [
@@ -73,6 +73,7 @@ const postWhereAndInput = (currentUserId) => [
         author: Object.assign(Object.assign({}, (0, user_1.excludeBlockedUser)(currentUserId)), (0, user_1.excludeBlockingUser)(currentUserId)),
     },
 ];
+exports.postWhereAndInput = postWhereAndInput;
 const findPostById = (postId, currentUserId) => __awaiter(void 0, void 0, void 0, function* () {
     const post = yield post_models_1.default.findUnique({
         where: postFindUniqueWhereInput(postId, Number(currentUserId)),
@@ -88,13 +89,13 @@ const findPostsByAuthorId = ({ authorId, offset, limit, currentUserId, }) => __a
     const posts = yield post_models_1.default.findMany({
         where: {
             authorId,
-            AND: postWhereAndInput(currentUserId),
+            AND: (0, exports.postWhereAndInput)(currentUserId),
             OR: [
                 {
                     authorId: currentUserId,
                     type: { in: ["friends", "private", "public"] },
                 },
-                Object.assign({ authorId }, postWhereInput),
+                Object.assign({ authorId }, exports.postWhereInput),
             ],
         },
         select: postSelectExtended(currentUserId),
@@ -107,13 +108,13 @@ const findPostsByAuthorId = ({ authorId, offset, limit, currentUserId, }) => __a
     const totalPosts = yield post_models_1.default.count({
         where: {
             authorId,
-            AND: postWhereAndInput(currentUserId),
+            AND: (0, exports.postWhereAndInput)(currentUserId),
             OR: [
                 {
                     authorId: currentUserId,
                     type: { in: ["friends", "private", "public"] },
                 },
-                Object.assign({ authorId }, postWhereInput),
+                Object.assign({ authorId }, exports.postWhereInput),
             ],
         },
     });
@@ -126,7 +127,7 @@ exports.findPostsByAuthorId = findPostsByAuthorId;
 const findAllPosts = ({ limit, offset, currentUserId, }) => __awaiter(void 0, void 0, void 0, function* () {
     const posts = yield post_models_1.default.findMany({
         where: {
-            AND: postWhereAndInput(currentUserId),
+            AND: (0, exports.postWhereAndInput)(currentUserId),
         },
         orderBy: { createdAt: "desc" },
         select: postSelectExtended(currentUserId),
@@ -135,7 +136,7 @@ const findAllPosts = ({ limit, offset, currentUserId, }) => __awaiter(void 0, vo
     });
     const totalPosts = yield post_models_1.default.count({
         where: {
-            AND: postWhereAndInput(currentUserId),
+            AND: (0, exports.postWhereAndInput)(currentUserId),
         },
     });
     return {
@@ -146,7 +147,7 @@ const findAllPosts = ({ limit, offset, currentUserId, }) => __awaiter(void 0, vo
 exports.findAllPosts = findAllPosts;
 const findFollowedUserPosts = ({ limit = 20, offset = 0, currentUserId, }) => __awaiter(void 0, void 0, void 0, function* () {
     const posts = yield post_models_1.default.findMany({
-        where: Object.assign(Object.assign({ AND: postWhereAndInput(currentUserId) }, postWhereInput), { author: {
+        where: Object.assign(Object.assign({ AND: (0, exports.postWhereAndInput)(currentUserId) }, exports.postWhereInput), { author: {
                 followedBy: {
                     some: {
                         id: currentUserId,
@@ -160,7 +161,7 @@ const findFollowedUserPosts = ({ limit = 20, offset = 0, currentUserId, }) => __
         select: postSelectExtended(currentUserId),
     });
     const postsTotal = yield post_models_1.default.count({
-        where: Object.assign(Object.assign({ AND: postWhereAndInput(currentUserId) }, postWhereInput), { author: {
+        where: Object.assign(Object.assign({ AND: (0, exports.postWhereAndInput)(currentUserId) }, exports.postWhereInput), { author: {
                 followedBy: {
                     some: {
                         id: currentUserId,
@@ -185,9 +186,9 @@ const findSavedPost = ({ userId, limit = 20, offset = 0, currentUserId, }) => __
                         },
                         type: { in: ["friends", "private", "public"] },
                     },
-                    Object.assign({}, postWhereInput),
+                    Object.assign({}, exports.postWhereInput),
                 ],
-                AND: postWhereAndInput(currentUserId),
+                AND: (0, exports.postWhereAndInput)(currentUserId),
             },
             userId: Number(userId),
         },
@@ -213,9 +214,9 @@ const findSavedPost = ({ userId, limit = 20, offset = 0, currentUserId, }) => __
                         },
                         type: { in: ["friends", "private", "public"] },
                     },
-                    Object.assign({}, postWhereInput),
+                    Object.assign({}, exports.postWhereInput),
                 ],
-                AND: postWhereAndInput(currentUserId),
+                AND: (0, exports.postWhereAndInput)(currentUserId),
             },
             userId: Number(userId),
         },
@@ -228,7 +229,7 @@ const findSavedPost = ({ userId, limit = 20, offset = 0, currentUserId, }) => __
 exports.findSavedPost = findSavedPost;
 const searchPosts = ({ query, limit = 20, offset = 0, currentUserId, }) => __awaiter(void 0, void 0, void 0, function* () {
     const posts = yield post_models_1.default.findMany({
-        where: Object.assign(Object.assign({ AND: postWhereAndInput(currentUserId) }, postWhereInput), { OR: [
+        where: Object.assign(Object.assign({ AND: (0, exports.postWhereAndInput)(currentUserId) }, exports.postWhereInput), { OR: [
                 {
                     title: {
                         contains: query,
@@ -248,7 +249,7 @@ const searchPosts = ({ query, limit = 20, offset = 0, currentUserId, }) => __awa
         skip: offset,
     });
     const resultsTotal = yield post_models_1.default.count({
-        where: Object.assign(Object.assign({ AND: postWhereAndInput(currentUserId) }, postWhereInput), { OR: [
+        where: Object.assign(Object.assign({ AND: (0, exports.postWhereAndInput)(currentUserId) }, exports.postWhereInput), { OR: [
                 {
                     title: {
                         contains: query,
@@ -269,7 +270,7 @@ const searchPosts = ({ query, limit = 20, offset = 0, currentUserId, }) => __awa
 exports.searchPosts = searchPosts;
 const checkPostIsFound = ({ postId, currentUserId, customMessage, }) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b;
-    const andInput = currentUserId ? postWhereAndInput(currentUserId) : undefined;
+    const andInput = currentUserId ? (0, exports.postWhereAndInput)(currentUserId) : undefined;
     const post = yield post_models_1.default.findUnique({
         where: {
             id: postId,

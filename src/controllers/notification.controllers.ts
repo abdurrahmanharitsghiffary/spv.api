@@ -61,7 +61,7 @@ import { normalizeNotification } from "../utils/notification/notification.normal
 //     updatedAt: true,
 //   } satisfies Prisma.NotificationSelect);
 
-const notificationWhereAndInput = (userId?: number | string) =>
+export const notificationWhereAndInput = (userId?: number | string) =>
   [
     {
       user: {
@@ -119,7 +119,7 @@ export const getAllUserNotifications = async (
   const notifications = await Notification.findMany({
     where: {
       receiverId: Number(userId),
-      // AND: notificationWhereAndInput(userId),
+      AND: notificationWhereAndInput(userId),
     },
     select: {
       ...selectNotificationSimplified,
@@ -138,7 +138,7 @@ export const getAllUserNotifications = async (
   });
 
   const normalizedNotifications = await Promise.all(
-    notifications.map((not) => Promise.resolve(normalizeNotification(not)))
+    notifications.map(async (not) => await normalizeNotification(not))
   );
 
   return res.status(200).json(

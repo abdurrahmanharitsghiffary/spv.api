@@ -48,6 +48,7 @@ const user_normalize_1 = require("../utils/user/user.normalize");
 const notification_models_1 = __importDefault(require("../models/notification.models"));
 const notification_1 = require("../lib/query/notification");
 const notification_normalize_1 = require("../utils/notification/notification.normalize");
+const notification_controllers_1 = require("../controllers/notification.controllers");
 const ioInit = (io) => {
     io.use((socket, next) => __awaiter(void 0, void 0, void 0, function* () {
         var _a, _b, _c, _d;
@@ -121,6 +122,7 @@ const ioInit = (io) => {
                 where: {
                     isRead: false,
                     receiverId: user.id,
+                    AND: (0, notification_controllers_1.notificationWhereAndInput)(user.id),
                 },
             });
             console.log(countNotification, "Count notification");
@@ -210,6 +212,18 @@ const ioInit = (io) => {
                 catch (err) {
                     console.error(err);
                 }
+            }));
+            socket.on(event_1.Socket_Event.READ_ALL_NOTIFICATION, () => __awaiter(void 0, void 0, void 0, function* () {
+                yield notification_models_1.default.updateMany({
+                    where: {
+                        receiverId: user.id,
+                        isRead: false,
+                    },
+                    data: {
+                        isRead: true,
+                    },
+                });
+                socket.emit(event_1.Socket_Event.READED_ALL_NOTIFICATION, "success");
             }));
             socket.on(event_1.Socket_Event.READ_NOTIFICATION, (data) => __awaiter(void 0, void 0, void 0, function* () {
                 const notification = yield notification_models_1.default.findUnique({

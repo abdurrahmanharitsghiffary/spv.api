@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.clearNotifications = exports.getAllUserNotifications = void 0;
+exports.clearNotifications = exports.getAllUserNotifications = exports.notificationWhereAndInput = void 0;
 const notification_models_1 = __importDefault(require("../models/notification.models"));
 const response_1 = require("../utils/response");
 const paging_1 = require("../utils/paging");
@@ -82,6 +82,7 @@ const notificationWhereAndInput = (userId) => [
         },
     },
 ];
+exports.notificationWhereAndInput = notificationWhereAndInput;
 const getTimeQuery = (time) => {
     let num = 0;
     const extractTime = (time, options) => {
@@ -109,7 +110,7 @@ const getAllUserNotifications = (req, res) => __awaiter(void 0, void 0, void 0, 
     const notifications = yield notification_models_1.default.findMany({
         where: {
             receiverId: Number(userId),
-            // AND: notificationWhereAndInput(userId),
+            AND: (0, exports.notificationWhereAndInput)(userId),
         },
         select: Object.assign({}, notification_1.selectNotificationSimplified),
         orderBy: {
@@ -121,10 +122,10 @@ const getAllUserNotifications = (req, res) => __awaiter(void 0, void 0, void 0, 
     const total_notifications = yield notification_models_1.default.count({
         where: {
             receiverId: Number(userId),
-            AND: notificationWhereAndInput(userId),
+            AND: (0, exports.notificationWhereAndInput)(userId),
         },
     });
-    const normalizedNotifications = yield Promise.all(notifications.map((not) => Promise.resolve((0, notification_normalize_1.normalizeNotification)(not))));
+    const normalizedNotifications = yield Promise.all(notifications.map((not) => __awaiter(void 0, void 0, void 0, function* () { return yield (0, notification_normalize_1.normalizeNotification)(not); })));
     return res.status(200).json(yield (0, paging_1.getPagingObject)({
         req,
         data: normalizedNotifications,

@@ -57,7 +57,7 @@ const postSelectExtended = (currentUserId?: number) =>
     },
   } satisfies Prisma.PostSelect);
 
-const postWhereInput = {
+export const postWhereInput = {
   type: {
     in: ["public", "friends"],
   },
@@ -79,7 +79,7 @@ const postFindUniqueWhereInput = (
     ],
   } satisfies Prisma.PostWhereInput);
 
-const postWhereAndInput = (currentUserId?: number) =>
+export const postWhereAndInput = (currentUserId?: number) =>
   [
     {
       author: {

@@ -117,12 +117,21 @@ exports.deleteLike = deleteLike;
 const getPostIsLiked = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { userId } = req;
     const { postId } = req.params;
+    const uId = Number(userId);
+    const pId = Number(postId);
     const isLiked = yield post_models_1.PostLike.findFirst({
         where: {
-            postId: Number(postId),
-            userId: Number(userId),
+            postId: pId,
+            userId: uId,
         },
     });
-    return res.status(200).json(new response_1.ApiResponse(isLiked ? true : false, 200));
+    const total_likes = yield post_models_1.PostLike.count({
+        where: {
+            postId: pId,
+        },
+    });
+    return res
+        .status(200)
+        .json(new response_1.ApiResponse({ isLiked: isLiked ? true : false, total_likes }, 200));
 });
 exports.getPostIsLiked = getPostIsLiked;

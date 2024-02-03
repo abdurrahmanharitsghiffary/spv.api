@@ -13,6 +13,7 @@ import { simplifyUserWF } from "../utils/user/user.normalize";
 import Notification from "../models/notification.models";
 import { selectNotificationSimplified } from "../lib/query/notification";
 import { normalizeNotification } from "../utils/notification/notification.normalize";
+import { notificationWhereAndInput } from "../controllers/notification.controllers";
 
 export const ioInit = (
   io: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>
@@ -93,6 +94,7 @@ export const ioInit = (
         where: {
           isRead: false,
           receiverId: user.id,
+          AND: notificationWhereAndInput(user.id),
         },
       });
 
@@ -234,6 +236,20 @@ export const ioInit = (
           }
         }
       );
+
+      socket.on(Socket_Event.READ_ALL_NOTIFICATION, async () => {
+        await Notification.updateMany({
+          where: {
+            receiverId: user.id,
+            isRead: false,
+          },
+          data: {
+            isRead: true,
+          },
+        });
+
+        socket.emit(Socket_Event.READED_ALL_NOTIFICATION, "success");
+      });
 
       socket.on(
         Socket_Event.READ_NOTIFICATION,

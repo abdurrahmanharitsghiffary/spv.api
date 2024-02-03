@@ -8,7 +8,11 @@ import {
   excludeBlockingUser,
   selectUserSimplified,
 } from "../lib/query/user";
-import { checkPostIsFound } from "../utils/post/post.utils";
+import {
+  checkPostIsFound,
+  postWhereAndInput,
+  postWhereInput,
+} from "../utils/post/post.utils";
 import { findPostIsLiked } from "../utils/post/postLike.utils";
 import { UserSimplified } from "../types/user";
 import { getPagingObject, parsePaging } from "../utils/paging";
@@ -142,13 +146,24 @@ export const getPostIsLiked = async (
 ) => {
   const { userId } = req as ExpressRequestExtended;
   const { postId } = req.params;
-
+  const uId = Number(userId);
+  const pId = Number(postId);
   const isLiked = await PostLike.findFirst({
     where: {
-      postId: Number(postId),
-      userId: Number(userId),
+      postId: pId,
+      userId: uId,
     },
   });
 
-  return res.status(200).json(new ApiResponse(isLiked ? true : false, 200));
+  const total_likes = await PostLike.count({
+    where: {
+      postId: pId,
+    },
+  });
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse({ isLiked: isLiked ? true : false, total_likes }, 200)
+    );
 };

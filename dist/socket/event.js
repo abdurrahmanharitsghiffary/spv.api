@@ -8,6 +8,8 @@ exports.Socket_Event = Object.freeze({
     LEAVE: "leave",
     NOTIFY: "notify",
     READ_MESSAGE: "readMessage",
+    READ_ALL_NOTIFICATION: "readAllNotification",
+    READED_ALL_NOTIFICATION: "readedAllNotification",
     READED_MESSAGE: "readedMessage",
     NOTIFICATION: "notification",
     RECEIVE_NOTIFICATION: "receiveNotification",
