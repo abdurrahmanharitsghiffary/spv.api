@@ -69,14 +69,13 @@ const ioInit = (io) => {
                 },
             });
             io.emit(event_1.Socket_Event.ONLINE, (0, consts_1.Socket_Id)(user.id, "USER"));
-            const countMessage = yield (0, utils_1.getMessageCount)(user.id);
             const countNotification = yield (0, utils_1.getNotificationCount)(user.id);
             console.log(countNotification, "Count notification");
-            console.log(countMessage, "Count message");
-            socket.emit(event_1.Socket_Event.COUNT_MESSAGE, countMessage);
-            socket.on(event_1.Socket_Event.GET_MESSAGE_COUNT, () => {
-                socket.emit(event_1.Socket_Event.COUNT_NOTIFICATION, countNotification);
-            });
+            socket.emit(event_1.Socket_Event.COUNT_NOTIFICATION, countNotification);
+            socket.on(event_1.Socket_Event.GET_MESSAGE_COUNT, () => __awaiter(void 0, void 0, void 0, function* () {
+                const countMessage = yield (0, utils_1.getMessageCount)(user.id);
+                socket.emit(event_1.Socket_Event.COUNT_MESSAGE, countMessage);
+            }));
             socket.on(event_1.Socket_Event.OPEN, () => __awaiter(void 0, void 0, void 0, function* () { }));
             socket.on(event_1.Socket_Event.LEAVE, () => __awaiter(void 0, void 0, void 0, function* () {
                 yield user_models_1.default.update({
