@@ -29,6 +29,7 @@ exports.Socket_Event = Object.freeze({
     USER_TYPING: "userTyping",
     USER_TYPING_END: "userTypingEnd",
     COUNT_MESSAGE: "countMessage",
+    GET_MESSAGE_COUNT: "getMessageCount",
     COUNT_NOTIFICATION: "countNotification",
     READ_NOTIFICATION: "readNotification",
     READED_NOTIFICATION: "readedNotification",

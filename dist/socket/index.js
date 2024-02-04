@@ -1,27 +1,4 @@
 "use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -41,14 +18,14 @@ const user_models_1 = __importDefault(require("../models/user.models"));
 const event_1 = require("./event");
 const error_1 = require("../lib/error");
 const consts_1 = require("../lib/consts");
-const chat_models_1 = __importStar(require("../models/chat.models"));
+const chat_models_1 = require("../models/chat.models");
 const chat_1 = require("../lib/query/chat");
 const user_1 = require("../lib/query/user");
 const user_normalize_1 = require("../utils/user/user.normalize");
 const notification_models_1 = __importDefault(require("../models/notification.models"));
 const notification_1 = require("../lib/query/notification");
 const notification_normalize_1 = require("../utils/notification/notification.normalize");
-const notification_controllers_1 = require("../controllers/notification.controllers");
+const utils_1 = require("../utils");
 const ioInit = (io) => {
     io.use((socket, next) => __awaiter(void 0, void 0, void 0, function* () {
         var _a, _b, _c, _d;
@@ -92,45 +69,14 @@ const ioInit = (io) => {
                 },
             });
             io.emit(event_1.Socket_Event.ONLINE, (0, consts_1.Socket_Id)(user.id, "USER"));
-            const countMessage = yield chat_models_1.default.count({
-                where: {
-                    chatRoom: {
-                        participants: {
-                            some: {
-                                userId: user.id,
-                            },
-                            every: {
-                                user: Object.assign(Object.assign({}, (0, user_1.excludeBlockedUser)(user.id)), (0, user_1.excludeBlockingUser)(user.id)),
-                            },
-                        },
-                    },
-                    AND: [
-                        {
-                            authorId: {
-                                not: user.id,
-                            },
-                        },
-                        {
-                            readedBy: {
-                                every: {
-                                    userId: { not: user.id },
-                                },
-                            },
-                        },
-                    ],
-                },
-            });
-            const countNotification = yield notification_models_1.default.count({
-                where: {
-                    isRead: false,
-                    receiverId: user.id,
-                    AND: (0, notification_controllers_1.notificationWhereAndInput)(user.id),
-                },
-            });
+            const countMessage = yield (0, utils_1.getMessageCount)(user.id);
+            const countNotification = yield (0, utils_1.getNotificationCount)(user.id);
             console.log(countNotification, "Count notification");
             console.log(countMessage, "Count message");
             socket.emit(event_1.Socket_Event.COUNT_MESSAGE, countMessage);
-            socket.emit(event_1.Socket_Event.COUNT_NOTIFICATION, countNotification);
+            socket.on(event_1.Socket_Event.GET_MESSAGE_COUNT, () => {
+                socket.emit(event_1.Socket_Event.COUNT_NOTIFICATION, countNotification);
+            });
             socket.on(event_1.Socket_Event.OPEN, () => __awaiter(void 0, void 0, void 0, function* () { }));
             socket.on(event_1.Socket_Event.LEAVE, () => __awaiter(void 0, void 0, void 0, function* () {
                 yield user_models_1.default.update({

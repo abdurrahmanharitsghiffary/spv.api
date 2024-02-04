@@ -7,12 +7,15 @@ import {
   REFRESH_TOKEN_SECRET,
 } from "../lib/consts";
 import { ParticipantField, ParticipantsField } from "../types/chat";
-import { ChatRoom, ChatRoomParticipant } from "../models/chat.models";
+import Chat, { ChatRoom, ChatRoomParticipant } from "../models/chat.models";
 import User from "../models/user.models";
 import { Code } from "../lib/code";
 import { RequestError } from "../lib/error";
 import { $Enums } from "@prisma/client";
 import { NotFound } from "../lib/messages";
+import { excludeBlockedUser, excludeBlockingUser } from "../lib/query/user";
+import Notification from "../models/notification.models";
+import { notificationWhereAndInput } from "../controllers/notification.controllers";
 
 export const generateRefreshToken = async (payload: string | object | Buffer) =>
   await JWT.sign(payload, REFRESH_TOKEN_SECRET as string, {
@@ -177,4 +180,50 @@ export const checkParticipants = async (
       400,
       errors
     );
+};
+
+export const getMessageCount = async (userId: number) => {
+  const c = await Chat.count({
+    where: {
+      chatRoom: {
+        participants: {
+          some: {
+            userId: userId,
+          },
+          every: {
+            user: {
+              ...excludeBlockedUser(userId),
+              ...excludeBlockingUser(userId),
+            },
+          },
+        },
+      },
+      AND: [
+        {
+          authorId: {
+            not: userId,
+          },
+        },
+        {
+          readedBy: {
+            every: {
+              userId: { not: userId },
+            },
+          },
+        },
+      ],
+    },
+  });
+  return c;
+};
+
+export const getNotificationCount = async (userId: number) => {
+  const c = await Notification.count({
+    where: {
+      isRead: false,
+      receiverId: userId,
+      AND: notificationWhereAndInput(userId),
+    },
+  });
+  return c;
 };

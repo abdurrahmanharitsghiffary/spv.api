@@ -5,19 +5,15 @@ import User from "../models/user.models";
 import { Socket_Event } from "./event";
 import { RequestError, UnauthorizedError } from "../lib/error";
 import { ACCESS_TOKEN_SECRET, Socket_Id } from "../lib/consts";
-import Chat, { ChatRoomParticipant, ReadChat } from "../models/chat.models";
+import { ChatRoomParticipant, ReadChat } from "../models/chat.models";
 import { UserSimplified } from "../types/user";
 import { selectRoomParticipant } from "../lib/query/chat";
-import {
-  excludeBlockedUser,
-  excludeBlockingUser,
-  selectUserSimplified,
-} from "../lib/query/user";
+import { selectUserSimplified } from "../lib/query/user";
 import { simplifyUserWF } from "../utils/user/user.normalize";
 import Notification from "../models/notification.models";
 import { selectNotificationSimplified } from "../lib/query/notification";
 import { normalizeNotification } from "../utils/notification/notification.normalize";
-import { notificationWhereAndInput } from "../controllers/notification.controllers";
+import { getMessageCount, getNotificationCount } from "../utils";
 
 export const ioInit = (
   io: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>
@@ -67,51 +63,18 @@ export const ioInit = (
         },
       });
       io.emit(Socket_Event.ONLINE, Socket_Id(user.id, "USER"));
-      const countMessage = await Chat.count({
-        where: {
-          chatRoom: {
-            participants: {
-              some: {
-                userId: user.id,
-              },
-              every: {
-                user: {
-                  ...excludeBlockedUser(user.id),
-                  ...excludeBlockingUser(user.id),
-                },
-              },
-            },
-          },
-          AND: [
-            {
-              authorId: {
-                not: user.id,
-              },
-            },
-            {
-              readedBy: {
-                every: {
-                  userId: { not: user.id },
-                },
-              },
-            },
-          ],
-        },
-      });
+      const countMessage = await getMessageCount(user.id);
 
-      const countNotification = await Notification.count({
-        where: {
-          isRead: false,
-          receiverId: user.id,
-          AND: notificationWhereAndInput(user.id),
-        },
-      });
+      const countNotification = await getNotificationCount(user.id);
 
       console.log(countNotification, "Count notification");
       console.log(countMessage, "Count message");
 
       socket.emit(Socket_Event.COUNT_MESSAGE, countMessage);
-      socket.emit(Socket_Event.COUNT_NOTIFICATION, countNotification);
+
+      socket.on(Socket_Event.GET_MESSAGE_COUNT, () => {
+        socket.emit(Socket_Event.COUNT_NOTIFICATION, countNotification);
+      });
 
       socket.on(Socket_Event.OPEN, async () => {});
 

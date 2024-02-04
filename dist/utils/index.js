@@ -1,4 +1,27 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -12,15 +35,18 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.checkParticipants = exports.isNullOrUndefined = exports.getRandomToken = exports.generateAccessToken = exports.getFullName = exports.generateRefreshToken = void 0;
+exports.getNotificationCount = exports.getMessageCount = exports.checkParticipants = exports.isNullOrUndefined = exports.getRandomToken = exports.generateAccessToken = exports.getFullName = exports.generateRefreshToken = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const crypto_1 = __importDefault(require("crypto"));
 const consts_1 = require("../lib/consts");
-const chat_models_1 = require("../models/chat.models");
+const chat_models_1 = __importStar(require("../models/chat.models"));
 const user_models_1 = __importDefault(require("../models/user.models"));
 const code_1 = require("../lib/code");
 const error_1 = require("../lib/error");
 const messages_1 = require("../lib/messages");
+const user_1 = require("../lib/query/user");
+const notification_models_1 = __importDefault(require("../models/notification.models"));
+const notification_controllers_1 = require("../controllers/notification.controllers");
 const generateRefreshToken = (payload) => __awaiter(void 0, void 0, void 0, function* () {
     return yield jsonwebtoken_1.default.sign(payload, consts_1.REFRESH_TOKEN_SECRET, {
         expiresIn: "7d",
@@ -146,3 +172,46 @@ const checkParticipants = (participants, groupId, currentUserRole, isDeleting = 
             : "Failed add participants into the group.", 400, errors);
 });
 exports.checkParticipants = checkParticipants;
+const getMessageCount = (userId) => __awaiter(void 0, void 0, void 0, function* () {
+    const c = yield chat_models_1.default.count({
+        where: {
+            chatRoom: {
+                participants: {
+                    some: {
+                        userId: userId,
+                    },
+                    every: {
+                        user: Object.assign(Object.assign({}, (0, user_1.excludeBlockedUser)(userId)), (0, user_1.excludeBlockingUser)(userId)),
+                    },
+                },
+            },
+            AND: [
+                {
+                    authorId: {
+                        not: userId,
+                    },
+                },
+                {
+                    readedBy: {
+                        every: {
+                            userId: { not: userId },
+                        },
+                    },
+                },
+            ],
+        },
+    });
+    return c;
+});
+exports.getMessageCount = getMessageCount;
+const getNotificationCount = (userId) => __awaiter(void 0, void 0, void 0, function* () {
+    const c = yield notification_models_1.default.count({
+        where: {
+            isRead: false,
+            receiverId: userId,
+            AND: (0, notification_controllers_1.notificationWhereAndInput)(userId),
+        },
+    });
+    return c;
+});
+exports.getNotificationCount = getNotificationCount;
