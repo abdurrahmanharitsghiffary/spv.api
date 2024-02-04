@@ -82,7 +82,6 @@ const ioInit = (io) => {
         try {
             console.log("Connected");
             const user = socket.data.user;
-            // console.log(user, "Logged socket user");
             socket.join((0, consts_1.Socket_Id)(user.id, "USER"));
             yield user_models_1.default.update({
                 where: {
@@ -99,6 +98,9 @@ const ioInit = (io) => {
                         participants: {
                             some: {
                                 userId: user.id,
+                            },
+                            every: {
+                                user: Object.assign(Object.assign({}, (0, user_1.excludeBlockedUser)(user.id)), (0, user_1.excludeBlockingUser)(user.id)),
                             },
                         },
                     },

@@ -8,7 +8,11 @@ import { ACCESS_TOKEN_SECRET, Socket_Id } from "../lib/consts";
 import Chat, { ChatRoomParticipant, ReadChat } from "../models/chat.models";
 import { UserSimplified } from "../types/user";
 import { selectRoomParticipant } from "../lib/query/chat";
-import { selectUserSimplified } from "../lib/query/user";
+import {
+  excludeBlockedUser,
+  excludeBlockingUser,
+  selectUserSimplified,
+} from "../lib/query/user";
 import { simplifyUserWF } from "../utils/user/user.normalize";
 import Notification from "../models/notification.models";
 import { selectNotificationSimplified } from "../lib/query/notification";
@@ -52,7 +56,6 @@ export const ioInit = (
     try {
       console.log("Connected");
       const user = socket.data.user;
-      // console.log(user, "Logged socket user");
       socket.join(Socket_Id(user.id, "USER"));
 
       await User.update({
@@ -70,6 +73,12 @@ export const ioInit = (
             participants: {
               some: {
                 userId: user.id,
+              },
+              every: {
+                user: {
+                  ...excludeBlockedUser(user.id),
+                  ...excludeBlockingUser(user.id),
+                },
               },
             },
           },
