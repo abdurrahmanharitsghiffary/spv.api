@@ -69,9 +69,8 @@ const ioInit = (io) => {
                 },
             });
             io.emit(event_1.Socket_Event.ONLINE, (0, consts_1.Socket_Id)(user.id, "USER"));
-            const countNotification = yield (0, utils_1.getNotificationCount)(user.id);
-            console.log(countNotification, "Count notification");
             socket.on(event_1.Socket_Event.GET_NOTIFICATION_COUNT, () => __awaiter(void 0, void 0, void 0, function* () {
+                const countNotification = yield (0, utils_1.getNotificationCount)(user.id);
                 socket.emit(event_1.Socket_Event.COUNT_NOTIFICATION, countNotification);
             }));
             socket.on(event_1.Socket_Event.GET_MESSAGE_COUNT, () => __awaiter(void 0, void 0, void 0, function* () {

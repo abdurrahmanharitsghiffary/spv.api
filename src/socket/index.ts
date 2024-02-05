@@ -63,11 +63,9 @@ export const ioInit = (
         },
       });
       io.emit(Socket_Event.ONLINE, Socket_Id(user.id, "USER"));
-      const countNotification = await getNotificationCount(user.id);
-
-      console.log(countNotification, "Count notification");
 
       socket.on(Socket_Event.GET_NOTIFICATION_COUNT, async () => {
+        const countNotification = await getNotificationCount(user.id);
         socket.emit(Socket_Event.COUNT_NOTIFICATION, countNotification);
       });
 
