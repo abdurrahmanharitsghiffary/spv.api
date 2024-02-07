@@ -25,7 +25,6 @@ const user_normalize_1 = require("../utils/user/user.normalize");
 const notification_models_1 = __importDefault(require("../models/notification.models"));
 const notification_1 = require("../lib/query/notification");
 const notification_normalize_1 = require("../utils/notification/notification.normalize");
-const utils_1 = require("../utils");
 const ioInit = (io) => {
     io.use((socket, next) => __awaiter(void 0, void 0, void 0, function* () {
         var _a, _b, _c, _d;
@@ -69,14 +68,6 @@ const ioInit = (io) => {
                 },
             });
             io.emit(event_1.Socket_Event.ONLINE, (0, consts_1.Socket_Id)(user.id, "USER"));
-            socket.on(event_1.Socket_Event.GET_NOTIFICATION_COUNT, () => __awaiter(void 0, void 0, void 0, function* () {
-                const countNotification = yield (0, utils_1.getNotificationCount)(user.id);
-                socket.emit(event_1.Socket_Event.COUNT_NOTIFICATION, countNotification);
-            }));
-            socket.on(event_1.Socket_Event.GET_MESSAGE_COUNT, () => __awaiter(void 0, void 0, void 0, function* () {
-                const countMessage = yield (0, utils_1.getMessageCount)(user.id);
-                socket.emit(event_1.Socket_Event.COUNT_MESSAGE, countMessage);
-            }));
             socket.on(event_1.Socket_Event.OPEN, () => __awaiter(void 0, void 0, void 0, function* () { }));
             socket.on(event_1.Socket_Event.LEAVE, () => __awaiter(void 0, void 0, void 0, function* () {
                 yield user_models_1.default.update({

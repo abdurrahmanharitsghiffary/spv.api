@@ -204,10 +204,10 @@ const getMessageCount = (userId) => __awaiter(void 0, void 0, void 0, function* 
     return c;
 });
 exports.getMessageCount = getMessageCount;
-const getNotificationCount = (userId) => __awaiter(void 0, void 0, void 0, function* () {
+const getNotificationCount = (userId, isReaded = false) => __awaiter(void 0, void 0, void 0, function* () {
     const c = yield notification_models_1.default.count({
         where: {
-            isRead: false,
+            isRead: isReaded,
             receiverId: userId,
             AND: (0, notification_controllers_1.notificationWhereAndInput)(userId),
         },

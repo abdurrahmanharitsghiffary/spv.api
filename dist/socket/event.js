@@ -28,10 +28,6 @@ exports.Socket_Event = Object.freeze({
     UNVISIT_ROOM: "unvisitRoom",
     USER_TYPING: "userTyping",
     USER_TYPING_END: "userTypingEnd",
-    COUNT_MESSAGE: "countMessage",
-    GET_MESSAGE_COUNT: "getMessageCount",
-    GET_NOTIFICATION_COUNT: "getNotificationCount",
-    COUNT_NOTIFICATION: "countNotification",
     READ_NOTIFICATION: "readNotification",
     READED_NOTIFICATION: "readedNotification",
 });

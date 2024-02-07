@@ -20,8 +20,8 @@ const handler_middlewares_1 = require("../middlewares/handler.middlewares");
 const validator_middlewares_1 = require("../middlewares/validator.middlewares");
 const zod_1 = require("zod");
 const schema_1 = require("../schema");
-const multer_middlewares_1 = require("../middlewares/multer.middlewares");
-const cloudinary_middleware_1 = require("../middlewares/cloudinary.middleware");
+const count_controller_1 = require("../controllers/count.controller");
+const count_schema_1 = require("../schema/count.schema");
 function router(app) {
     app.use("/api/auth/google", googleAuth_routes_1.default);
     app.use("/api/auth", auth_routes_1.default);
@@ -32,6 +32,7 @@ function router(app) {
     app.use("/api/account", account_routes_1.default);
     app.use("/api/chats", chat_routes_1.default);
     app.use("/api/messages", messages_routes_1.default);
+    app.get("/api/counts", (0, validator_middlewares_1.validate)(count_schema_1.getCountsValidation), auth_middlewares_1.verifyToken, count_controller_1.getCounts);
     app.get("/api/search", (0, validator_middlewares_1.validate)(zod_1.z.object({
         query: zod_1.z.object({
             limit: schema_1.zLimit,
@@ -42,109 +43,5 @@ function router(app) {
         }),
     })), auth_middlewares_1.verifyToken, (0, handler_middlewares_1.tryCatch)(search_controllers_1.getSearchResults));
     app.post("/api/refresh", auth_middlewares_1.verifyRefreshToken, auth_controller_1.refreshToken);
-    // // 4500 - 5000ms
-    // app.get("/test/endpoint", async (req, res) => {
-    //   const users = await User.findMany({ select: selectUser });
-    //   const normalizedUsers = await Promise.all(
-    //     users.map((u) => normalizeUser(u))
-    //   );
-    //   res.status(200).json(normalizedUsers);
-    // });
-    // // 950 - 1200 ms
-    // app.get("/test/endpoint2", async (req, res) => {
-    //   const users = await User.findMany();
-    //   res.status(200).json(users);
-    // });
-    // // 180++ ms
-    // app.get("/test/endpoint3", async (req, res) => {
-    //   res.status(200).json("lol");
-    // });
-    // // Error because normalizing invalid payload
-    // app.get("/test/endpoint4", async (req, res) => {
-    //   const users = await User.findMany();
-    //   const normalizedUsers = await Promise.all(
-    //     users.map((u) => normalizeUserPublic(u as any))
-    //   );
-    //   res.status(200).json(normalizedUsers);
-    // });
-    // // 970 - 1190 ms
-    // app.get("/test/endpoint5", async (req, res) => {
-    //   const users = await User.findMany();
-    //   const normalizedUsers = await Promise.all(
-    //     users.map((u) => simplifyUser(u as any))
-    //   );
-    //   res.status(200).json(normalizedUsers);
-    // });
-    // // 4500++ ms
-    // app.get("/test/endpoint6", async (req, res) => {
-    //   const users = await User.findMany({ select: selectUser });
-    //   res.status(200).json(users);
-    // });
-    // // 4500 - 4700 ms
-    // app.get("/test/ep", validatePagingOptions, async (req, res) => {
-    //   const { limit = 20, offset = 0 } = parsePaging(req);
-    //   const users = await User.findMany({
-    //     skip: offset,
-    //     take: limit,
-    //     select: selectUser,
-    //     orderBy: {
-    //       createdAt: "desc",
-    //     },
-    //   });
-    //   return res
-    //     .status(200)
-    //     .json(
-    //       await getPagingObject({ data: users, total_records: users.length, req })
-    //     );
-    // });
-    // // 980 - 1150 ms
-    // app.get("/test/ep2", validatePagingOptions, async (req, res) => {
-    //   const { limit = 20, offset = 0 } = parsePaging(req);
-    //   const users = await User.findMany({
-    //     skip: offset,
-    //     take: limit,
-    //     orderBy: {
-    //       createdAt: "desc",
-    //     },
-    //   });
-    //   return res
-    //     .status(200)
-    //     .json(
-    //       await getPagingObject({ data: users, total_records: users.length, req })
-    //     );
-    // });
-    // // 4450 - 4650 ms
-    // app.get("/test/ep3", validatePagingOptions, async (req, res) => {
-    //   const { limit = 20, offset = 0 } = parsePaging(req);
-    //   const users = await User.findMany({
-    //     skip: offset,
-    //     take: limit,
-    //     select: selectUser,
-    //     orderBy: {
-    //       createdAt: "desc",
-    //     },
-    //   });
-    //   const normalizedUsers = await Promise.all(
-    //     users.map((u) => Promise.resolve(normalizeUserPublic(u)))
-    //   );
-    //   return res.status(200).json(
-    //     await getPagingObject({
-    //       data: normalizedUsers,
-    //       total_records: users.length,
-    //       req,
-    //     })
-    //   );
-    // });
-    // app.get("/test/us", async (req, res) => {
-    //   const users = await User.findMany({
-    //     select: selectUserSimplified,
-    //   });
-    //   const normalized = await Promise.all(users.map((u) => simplifyUser(u)));
-    //   return res.status(200).json(normalized);
-    // });
-    app.post("/test/postimage", multer_middlewares_1.uploadImageV2.array("image"), cloudinary_middleware_1.uploadFilesToCloudinary, (req, res) => {
-        return res.status(200).json("success");
-    });
 }
 exports.router = router;
-// The main problem why the query is really slow is because inneficient selectUserQuery??

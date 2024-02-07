@@ -217,10 +217,13 @@ export const getMessageCount = async (userId: number) => {
   return c;
 };
 
-export const getNotificationCount = async (userId: number) => {
+export const getNotificationCount = async (
+  userId: number,
+  isReaded: boolean | undefined = false
+) => {
   const c = await Notification.count({
     where: {
-      isRead: false,
+      isRead: isReaded,
       receiverId: userId,
       AND: notificationWhereAndInput(userId),
     },
