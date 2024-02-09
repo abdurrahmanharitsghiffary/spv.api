@@ -27,6 +27,7 @@ import { getAllChatsByUserId } from "../controllers/chat.controller";
 import {
   clearNotifications,
   getAllUserNotifications,
+  readNotifications,
 } from "../controllers/notification.controllers";
 import { blockUserById, unblockUser } from "../controllers/block.controller";
 import {
@@ -208,6 +209,30 @@ router
     ),
     tryCatch(clearNotifications)
   );
+
+router.route("/notifications/read").post(
+  validate(
+    z.object({
+      body: z.object({
+        ids: z.any().refine(
+          (arg) => {
+            if (arg === "all") return true;
+            if (
+              arg instanceof Array &&
+              arg.every((a) => typeof a === "number" && !isNaN(a))
+            )
+              return true;
+          },
+          {
+            message:
+              "Invalid ids value, ids must be string 'all' or array containing the notification ids",
+          }
+        ),
+      }),
+    })
+  ),
+  tryCatch(readNotifications)
+);
 
 router
   .route("/posts/saved/:postId")

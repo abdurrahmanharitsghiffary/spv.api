@@ -2,64 +2,11 @@ import express from "express";
 import Notification from "../models/notification.models";
 import { ApiResponse } from "../utils/response";
 import { ExpressRequestExtended } from "../types/request";
-import { NotificationType, Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { getPagingObject } from "../utils/paging";
-import {
-  excludeBlockedUser,
-  excludeBlockingUser,
-  selectUserSimplified,
-} from "../lib/query/user";
+import { excludeBlockedUser, excludeBlockingUser } from "../lib/query/user";
 import { selectNotificationSimplified } from "../lib/query/notification";
 import { normalizeNotification } from "../utils/notification/notification.normalize";
-
-// const notificationSelect = (userId?: number | string) =>
-//   ({
-//     id: true,
-//     type: true,
-//     isRead: true,
-//     user: {
-//       select: {
-//         ...selectUserSimplified,
-//       },
-//     },
-//     post: {
-//       select: {
-//         id: true,
-//         title: true,
-//         content: true,
-//         author: {
-//           select: {
-//             ...selectUserSimplified,
-//           },
-//         },
-//       },
-//       where: {
-//         author: {
-//           ...excludeBlockingUser(Number(userId)),
-//           ...excludeBlockedUser(Number(userId)),
-//         },
-//       },
-//     },
-//     comment: {
-//       select: {
-//         id: true,
-//         comment: true,
-//         user: {
-//           select: {
-//             ...selectUserSimplified,
-//           },
-//         },
-//       },
-//       where: {
-//         user: {
-//           ...excludeBlockingUser(Number(userId)),
-//           ...excludeBlockedUser(Number(userId)),
-//         },
-//       },
-//     },
-//     createdAt: true,
-//     updatedAt: true,
-//   } satisfies Prisma.NotificationSelect);
 
 export const notificationWhereAndInput = (userId?: number | string) =>
   [
@@ -115,7 +62,6 @@ export const getAllUserNotifications = async (
 ) => {
   const { offset = 0, limit = 20, order_by = "latest" } = req.query;
   const { userId } = req as ExpressRequestExtended;
-  console.log(order_by, "Order By");
   const notifications = await Notification.findMany({
     where: {
       receiverId: Number(userId),
@@ -137,9 +83,9 @@ export const getAllUserNotifications = async (
     },
   });
 
-  const normalizedNotifications = await Promise.all(
+  const normalizedNotifications = (await Promise.all(
     notifications.map(async (not) => await normalizeNotification(not))
-  );
+  )) as unknown;
 
   return res.status(200).json(
     await getPagingObject({
@@ -171,92 +117,38 @@ export const clearNotifications = async (
   return res.status(204).json(new ApiResponse(null, 204));
 };
 
-// export const createNotification = async (
-//   req: express.Request,
-//   res: express.Response
-// ) => {
-//   const { userId } = req as ExpressRequestExtended;
-//   const { type, receiverId, postId, commentId } = req.body as {
-//     type: NotificationType;
-//     receiverId: string | number;
-//     commentId?: number;
-//     postId?: number;
-//   };
+export const readNotifications = async (
+  req: express.Request,
+  res: express.Response
+) => {
+  const { userId } = req as ExpressRequestExtended;
+  const uId = Number(userId);
+  const { ids } = req.body;
 
-//   let createdNotification: any = null;
+  if (ids instanceof Array) {
+    await Notification.updateMany({
+      data: { isRead: true },
+      where: { receiverId: uId, id: { in: ids }, isRead: false },
+    });
+  } else if (ids === "all") {
+    await Notification.updateMany({
+      where: {
+        receiverId: uId,
+        isRead: false,
+      },
+      data: {
+        isRead: true,
+      },
+    });
+  }
 
-//   const response = (data: any) =>
-//     res.status(201).json(new ApiResponse(data, 201));
-
-//   switch (type) {
-//     case "comment":
-//       {
-//         createdNotification = await Notification.create({
-//           data: {
-//             type,
-//             receiverId: Number(receiverId),
-//             userId: Number(userId),
-//             postId: Number(postId),
-//           },
-//           select: notificationSelect(userId),
-//         });
-//       }
-//       break;
-//     case "follow":
-//       {
-//         createdNotification = await Notification.create({
-//           data: {
-//             type,
-//             receiverId: Number(receiverId),
-//             userId: Number(userId),
-//           },
-//           select: notificationSelect(userId),
-//         });
-//       }
-//       break;
-//     case "liking_comment":
-//       {
-//         createdNotification = await Notification.create({
-//           data: {
-//             type,
-//             receiverId: Number(receiverId),
-//             userId: Number(userId),
-//             commentId: Number(commentId),
-//           },
-//           select: notificationSelect(userId),
-//         });
-//       }
-//       break;
-//     case "liking_post":
-//       {
-//         createdNotification = await Notification.create({
-//           data: {
-//             type,
-//             receiverId: Number(receiverId),
-//             userId: Number(userId),
-//             postId: Number(postId),
-//           },
-//           select: notificationSelect(userId),
-//         });
-//       }
-//       break;
-//     case "replying_comment":
-//       {
-//         createdNotification = await Notification.create({
-//           data: {
-//             type,
-//             receiverId: Number(receiverId),
-//             userId: Number(userId),
-//             commentId: Number(commentId),
-//           },
-//           select: notificationSelect(userId),
-//         });
-//       }
-//       break;
-//     default: {
-//       return null;
-//     }
-//   }
-
-//   return response(createdNotification);
-// };
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        null,
+        200,
+        "Successfully marking all notifications as read."
+      )
+    );
+};

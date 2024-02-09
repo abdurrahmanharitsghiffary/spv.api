@@ -109,6 +109,19 @@ router
             .optional(),
     }),
 })), (0, handler_middlewares_1.tryCatch)(notification_controllers_1.clearNotifications));
+router.route("/notifications/read").post((0, validator_middlewares_1.validate)(zod_1.z.object({
+    body: zod_1.z.object({
+        ids: zod_1.z.any().refine((arg) => {
+            if (arg === "all")
+                return true;
+            if (arg instanceof Array &&
+                arg.every((a) => typeof a === "number" && !isNaN(a)))
+                return true;
+        }, {
+            message: "Invalid ids value, ids must be string 'all' or array containing the notification ids",
+        }),
+    }),
+})), (0, handler_middlewares_1.tryCatch)(notification_controllers_1.readNotifications));
 router
     .route("/posts/saved/:postId")
     .delete((0, validator_middlewares_1.validateParamsV2)("postId"), (0, handler_middlewares_1.tryCatch)(post_controller_1.deleteSavedPost));

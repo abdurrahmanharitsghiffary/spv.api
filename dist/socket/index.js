@@ -22,9 +22,6 @@ const chat_models_1 = require("../models/chat.models");
 const chat_1 = require("../lib/query/chat");
 const user_1 = require("../lib/query/user");
 const user_normalize_1 = require("../utils/user/user.normalize");
-const notification_models_1 = __importDefault(require("../models/notification.models"));
-const notification_1 = require("../lib/query/notification");
-const notification_normalize_1 = require("../utils/notification/notification.normalize");
 const ioInit = (io) => {
     io.use((socket, next) => __awaiter(void 0, void 0, void 0, function* () {
         var _a, _b, _c, _d;
@@ -151,36 +148,6 @@ const ioInit = (io) => {
                 catch (err) {
                     console.error(err);
                 }
-            }));
-            socket.on(event_1.Socket_Event.READ_ALL_NOTIFICATION, () => __awaiter(void 0, void 0, void 0, function* () {
-                yield notification_models_1.default.updateMany({
-                    where: {
-                        receiverId: user.id,
-                        isRead: false,
-                    },
-                    data: {
-                        isRead: true,
-                    },
-                });
-                socket.emit(event_1.Socket_Event.READED_ALL_NOTIFICATION, "success");
-            }));
-            socket.on(event_1.Socket_Event.READ_NOTIFICATION, (data) => __awaiter(void 0, void 0, void 0, function* () {
-                const notification = yield notification_models_1.default.findUnique({
-                    where: {
-                        id: data.notificationId,
-                    },
-                });
-                if ((notification === null || notification === void 0 ? void 0 : notification.receiverId) !== user.id || (notification === null || notification === void 0 ? void 0 : notification.isRead))
-                    return null;
-                const updatedNotification = yield notification_models_1.default.update({
-                    where: {
-                        id: data.notificationId,
-                    },
-                    data: { isRead: true },
-                    select: Object.assign({}, notification_1.selectNotificationSimplified),
-                });
-                const normalizedNotification = yield (0, notification_normalize_1.normalizeNotification)(updatedNotification);
-                socket.emit(event_1.Socket_Event.READED_NOTIFICATION, normalizedNotification);
             }));
             socket.on("disconnect", () => __awaiter(void 0, void 0, void 0, function* () {
                 const offlineUser = yield user_models_1.default.update({

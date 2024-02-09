@@ -42,6 +42,7 @@ model User {
   notifications Notification[] @relation("ReceivedNotifications")
   posts Post[]
   comments Comment[]
+  requestedApplication ApplicationRequest[]
   commentLikes CommentLike[]
   likes PostLike[] 
 
@@ -217,6 +218,9 @@ model ChatRoom {
   id Int @id @default(autoincrement())
   participants ChatRoomParticipant[]
   messages Chat[] 
+  groupType GroupType @default(public)
+  applyType ApplyType @default(public)
+  applicationRequest ApplicationRequest[]
   groupPicture Image?
   description String? @db.Text
   title String? @db.VarChar(125)
@@ -225,6 +229,16 @@ model ChatRoom {
   updatedAt DateTime @updatedAt
 
   @@map("chat_rooms")
+}
+
+enum GroupType {
+  public
+  private
+}
+
+enum ApplyType {
+public
+private
 }
 
 model ChatRoomParticipant {
@@ -302,4 +316,22 @@ liking_comment
 comment
 follow
 replying_comment
+}
+
+model ApplicationRequest {
+  type ApplicationRequestType
+  userId Int
+  user User @relation(fields: [userId],references: [id],onDelete: Cascade)
+  groupId Int
+  group ChatRoom @relation(fields: [groupId], references: [id],onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@id([userId, groupId])
+  @@map("application_request")
+  }
+
+enum ApplicationRequestType {
+  group_chat
+  group_community
 }
