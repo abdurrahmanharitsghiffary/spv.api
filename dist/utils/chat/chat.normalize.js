@@ -55,7 +55,6 @@ const normalizeChatParticipant = (payload) => new Promise((resolve) => {
     return resolve({
         avatarImage: (_a = payload.user.profile) === null || _a === void 0 ? void 0 : _a.avatarImage,
         firstName: payload.user.firstName,
-        roomId: payload.chatRoomId,
         lastName: payload.user.lastName,
         fullName: payload.user.fullName,
         id: payload.user.id,

@@ -10,9 +10,10 @@ interface CommentSimplified {
   user: UserSimplifiedWF;
   createdAt: Date;
   updatedAt: Date;
-  total_likes: number;
+  totalLikes: number;
 }
 
 export interface Comment extends CommentSimplified {
-  replies: { ids: number[]; total: number };
+  replies: number[];
+  totalReplies: number;
 }

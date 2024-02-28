@@ -5,6 +5,21 @@ import { excludeBlockedUser, excludeBlockingUser } from "../lib/query/user";
 import { ChatRoomParticipant } from "../models/chat.models";
 import { normalizeChatParticipant } from "./chat/chat.normalize";
 
+export const findNotUserRoleParticipant = async (
+  roomId: number,
+  userId: number
+) => {
+  const participants = await ChatRoomParticipant.findMany({
+    where: {
+      role: { not: "user" },
+      chatRoomId: roomId,
+      userId: { not: userId },
+    },
+    select: { userId: true },
+  });
+  return participants;
+};
+
 export const findParticipantsByRoomId = async ({
   roomId,
   currentUserId,
@@ -28,9 +43,14 @@ export const findParticipantsByRoomId = async ({
         },
       ],
     },
-    orderBy: {
-      createdAt: "desc",
-    },
+    orderBy: [
+      {
+        role: "asc",
+      },
+      {
+        user: { fullName: "asc" },
+      },
+    ],
     skip: offset,
     take: limit,
     select: selectRoomParticipant,

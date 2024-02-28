@@ -53,16 +53,17 @@ export const protectChatRoom = (
         },
       });
 
-      if (!participant) {
-        throw new RequestError("You are not participated in this group", 403);
-      }
+      // if (!participant) {
+      // throw new RequestError("You are not participated in this group", 403);
+      // }
 
       if (
         !room?.participants.some(
           (user) =>
             (protectDelete ? user.role === "creator" : user.role !== "user") &&
             user.userId === uId
-        )
+        ) ||
+        !participant
       ) {
         throw new ForbiddenError();
       }
@@ -71,3 +72,30 @@ export const protectChatRoom = (
       next();
     }
   );
+
+export const checkGroupVisibility =
+  (params: string = "groupId") =>
+  async (
+    req: express.Request,
+    res: express.Response,
+    next: express.NextFunction
+  ) => {
+    const groupId = Number(req.params?.[params]);
+    const { userId } = req as ExpressRequestExtended;
+    const uId = Number(userId);
+
+    const participant = await ChatRoomParticipant.findUnique({
+      where: { chatRoomId_userId: { chatRoomId: groupId, userId: uId } },
+    });
+    const isParticipated = participant !== null;
+    const group = await ChatRoom.findUnique({
+      where: { id: groupId, isGroupChat: true },
+      select: { groupVisibility: true },
+    });
+
+    if (!group) throw new RequestError(NotFound.GROUP_CHAT, 404);
+    if (group.groupVisibility === "private" && !isParticipated)
+      throw new ForbiddenError();
+
+    return next();
+  };

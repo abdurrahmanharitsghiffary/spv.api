@@ -50,10 +50,28 @@ import {
   zUsername,
 } from "../schema";
 import { uploadFilesToCloudinary } from "../middlewares/cloudinary.middleware";
+import {
+  deleteMembershipRequest,
+  getMembershipRequests,
+} from "../controllers/groupChat.controllers";
 
 const router = express.Router();
 
 router.use(verifyToken);
+
+router
+  .route("/membership-requests")
+  .get(
+    validatePagingOptions,
+    validate(
+      z.object({
+        query: z.object({
+          type: z.enum(["all", "pending", "approved", "rejected"]).optional(),
+        }),
+      })
+    ),
+    tryCatch(getMembershipRequests)
+  );
 
 router
   .route("/account")
@@ -233,6 +251,10 @@ router.route("/notifications/read").post(
   ),
   tryCatch(readNotifications)
 );
+
+router
+  .route("/membership-requests/:requestId")
+  .delete(tryCatch(deleteMembershipRequest));
 
 router
   .route("/posts/saved/:postId")

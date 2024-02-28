@@ -9,13 +9,25 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.findParticipantById = exports.findParticipantsByRoomId = void 0;
+exports.findParticipantById = exports.findParticipantsByRoomId = exports.findNotUserRoleParticipant = void 0;
 const error_1 = require("../lib/error");
 const messages_1 = require("../lib/messages");
 const chat_1 = require("../lib/query/chat");
 const user_1 = require("../lib/query/user");
 const chat_models_1 = require("../models/chat.models");
 const chat_normalize_1 = require("./chat/chat.normalize");
+const findNotUserRoleParticipant = (roomId, userId) => __awaiter(void 0, void 0, void 0, function* () {
+    const participants = yield chat_models_1.ChatRoomParticipant.findMany({
+        where: {
+            role: { not: "user" },
+            chatRoomId: roomId,
+            userId: { not: userId },
+        },
+        select: { userId: true },
+    });
+    return participants;
+});
+exports.findNotUserRoleParticipant = findNotUserRoleParticipant;
 const findParticipantsByRoomId = ({ roomId, currentUserId, limit, offset, }) => __awaiter(void 0, void 0, void 0, function* () {
     const participants = yield chat_models_1.ChatRoomParticipant.findMany({
         where: {
@@ -26,9 +38,14 @@ const findParticipantsByRoomId = ({ roomId, currentUserId, limit, offset, }) => 
                 },
             ],
         },
-        orderBy: {
-            createdAt: "desc",
-        },
+        orderBy: [
+            {
+                role: "asc",
+            },
+            {
+                user: { fullName: "asc" },
+            },
+        ],
         skip: offset,
         take: limit,
         select: chat_1.selectRoomParticipant,

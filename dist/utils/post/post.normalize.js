@@ -26,8 +26,8 @@ const normalize = (post) => new Promise((resolve) => {
             username: post === null || post === void 0 ? void 0 : post.author.username,
             avatarImage: (_g = (_f = post === null || post === void 0 ? void 0 : post.author) === null || _f === void 0 ? void 0 : _f.profile) === null || _g === void 0 ? void 0 : _g.avatarImage,
         },
-        total_likes: post._count.likes,
-        total_comments: post._count.comments,
+        totalLikes: post._count.likes,
+        totalComments: post._count.comments,
         updatedAt: post === null || post === void 0 ? void 0 : post.updatedAt,
         createdAt: post === null || post === void 0 ? void 0 : post.createdAt,
     };

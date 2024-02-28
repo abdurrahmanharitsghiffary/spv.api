@@ -12,8 +12,8 @@ export type ApiPagingObjectResponse<T> = {
     previous: null | string;
     next: null | string;
     current: string;
-    result_count: number;
-    total_records: number;
+    resultCount: number;
+    totalRecords: number;
     limit: number;
     offset: number;
   };

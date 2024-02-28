@@ -14,17 +14,17 @@ export const normalizeChatRooms = (
       messages: await Promise.all(
         room.messages.map((message) => Promise.resolve(normalizeChat(message)))
       ),
-      unreadMessages: { total: room._count.messages },
+      totalUnreadMessages: room._count.messages,
       updatedAt: room.updatedAt,
       description: room.description,
       title: room.title,
-      participants: {
-        users: await Promise.all(
-          room.participants.map((participant) =>
-            Promise.resolve(normalizeChatParticipant(participant))
-          )
-        ),
-        total: room._count.participants,
-      },
+      participants: await Promise.all(
+        room.participants.map((participant) =>
+          Promise.resolve(normalizeChatParticipant(participant))
+        )
+      ),
+      totalParticipants: room._count.participants,
+      applyType: room.applyType,
+      groupVisibility: room.groupVisibility,
     });
   });

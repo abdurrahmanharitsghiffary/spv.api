@@ -7,6 +7,7 @@ import messageRouter from "./messages.routes";
 import commentRouter from "./comment.routes";
 import meRouter from "./me.routes";
 import accountRouter from "./account.routes";
+import groupRouter from "./group.routes";
 import chatRouter from "./chat.routes";
 import { refreshToken } from "../controllers/auth.controller";
 import {
@@ -31,6 +32,7 @@ export function router(app: Express) {
   app.use("/api/account", accountRouter);
   app.use("/api/chats", chatRouter);
   app.use("/api/messages", messageRouter);
+  app.use("/api/groups", groupRouter);
   app.get("/api/counts", validate(getCountsValidation), verifyToken, getCounts);
   app.get(
     "/api/search",

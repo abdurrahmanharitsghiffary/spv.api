@@ -47,12 +47,18 @@ export const isNullOrUndefined = (data: any) => {
   return data === null || data === undefined;
 };
 
-export const checkParticipants = async (
-  participants: ParticipantsField | number[],
-  groupId: number,
-  currentUserRole: $Enums.ParticipantRole,
-  isDeleting: boolean = false
-) => {
+export const checkParticipants = async ({
+  currentUserRole,
+  groupId,
+  participants,
+  isDeleting = false,
+}: {
+  participants: ParticipantsField | number[];
+  groupId: number;
+  currentUserRole: $Enums.ParticipantRole;
+  isDeleting?: boolean;
+}) => {
+  const isAdding = (participants as any)?.[0]?.id === undefined && !isDeleting;
   const chatRoom = ChatRoom.findUnique({
     where: {
       id: groupId,
@@ -64,7 +70,7 @@ export const checkParticipants = async (
   const errors: any[] = [];
   await Promise.all(
     participants.map(async (item, i) => {
-      const id = isDeleting ? item : (item as any).id;
+      const id = isDeleting || isAdding ? item : (item as any).id;
 
       const participantRole: $Enums.Role | null =
         (item as ParticipantField)?.role ?? null;
@@ -72,9 +78,6 @@ export const checkParticipants = async (
       const user = await User.findUnique({
         where: {
           id,
-        },
-        select: {
-          id: true,
         },
       });
 
@@ -89,9 +92,9 @@ export const checkParticipants = async (
         });
 
         // Check if user is participated in the group before removing them
-        if (isDeleting && !participant && user) {
+        if (!participant && !isAdding) {
           errors.push({
-            message: `Can't found participant with ID ${id} in the group.`,
+            message: `${user.fullName} is not a member of this group.`,
             groupId,
             code: Code.NOT_FOUND,
             id,
@@ -115,9 +118,6 @@ export const checkParticipants = async (
         const IS_UPDATING_USER_WITH_ROLE_ADMIN =
           participant?.role === "admin" && currentUserRole === "admin";
 
-        const IS_USER_ALREADY_EXIST =
-          participant && participant?.role === participantRole;
-
         // Check if user already exist in the group before add them
         // if user is already exist with role user and the item.role is "admin" that user will be promoted as admin in the group
 
@@ -125,7 +125,7 @@ export const checkParticipants = async (
           errors.push({
             message: `Admin cannot ${
               isDeleting ? "delete" : "demote"
-            } group creator`,
+            } the group creator`,
             code: Code.FORBIDDEN,
             groupId,
             id,
@@ -133,9 +133,9 @@ export const checkParticipants = async (
           return;
         }
 
-        if (IS_USER_ALREADY_EXIST && !isDeleting) {
+        if (participant && isAdding) {
           errors.push({
-            message: `Participant with ID ${id} already exists in the group.`,
+            message: `${user.fullName} is already a member of this group.`,
             groupId,
             code: Code.DUPLICATE,
             id,
@@ -152,8 +152,8 @@ export const checkParticipants = async (
         ) {
           errors.push({
             message: isDeleting
-              ? "Can't delete user with role admin with current role (admin)"
-              : "Can't demote admin to user with current role (admin)",
+              ? "Admin can't delete another member with role admin."
+              : "Admin can't dismiss another admin to user.",
             code: Code.FORBIDDEN,
             id,
             groupId,
@@ -176,7 +176,9 @@ export const checkParticipants = async (
     throw new RequestError(
       isDeleting
         ? "Failed to remove participants."
-        : "Failed add participants into the group.",
+        : isAdding
+        ? "Failed add participants into the group."
+        : "Failed to update participants in the group.",
       400,
       errors
     );

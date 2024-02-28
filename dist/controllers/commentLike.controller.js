@@ -178,13 +178,13 @@ const getCommentIsLiked = (req, res) => __awaiter(void 0, void 0, void 0, functi
             },
         },
     });
-    const total_likes = yield comment_models_1.CommentLike.count({
+    const totalLikes = yield comment_models_1.CommentLike.count({
         where: {
             commentId: Number(commentId),
         },
     });
     return res
         .status(200)
-        .json(new response_1.ApiResponse({ isLiked: isLiked ? true : false, total_likes }, 200));
+        .json(new response_1.ApiResponse({ isLiked: isLiked ? true : false, totalLikes }, 200));
 });
 exports.getCommentIsLiked = getCommentIsLiked;

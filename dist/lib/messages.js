@@ -11,4 +11,5 @@ exports.NotFound = {
     PARTICIPANT: "Participant not found",
     PROFILE_IMAGE: "Profile image not found",
     GROUP_CHAT: "Group chat not found",
+    APRQ: "Can't found the application request.",
 };

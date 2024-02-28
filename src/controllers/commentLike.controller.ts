@@ -185,7 +185,7 @@ export const getCommentIsLiked = async (
     },
   });
 
-  const total_likes = await CommentLike.count({
+  const totalLikes = await CommentLike.count({
     where: {
       commentId: Number(commentId),
     },
@@ -194,6 +194,6 @@ export const getCommentIsLiked = async (
   return res
     .status(200)
     .json(
-      new ApiResponse({ isLiked: isLiked ? true : false, total_likes }, 200)
+      new ApiResponse({ isLiked: isLiked ? true : false, totalLikes }, 200)
     );
 };

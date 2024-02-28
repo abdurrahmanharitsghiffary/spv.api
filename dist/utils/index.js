@@ -72,7 +72,9 @@ const isNullOrUndefined = (data) => {
     return data === null || data === undefined;
 };
 exports.isNullOrUndefined = isNullOrUndefined;
-const checkParticipants = (participants, groupId, currentUserRole, isDeleting = false) => __awaiter(void 0, void 0, void 0, function* () {
+const checkParticipants = ({ currentUserRole, groupId, participants, isDeleting = false, }) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    const isAdding = ((_a = participants === null || participants === void 0 ? void 0 : participants[0]) === null || _a === void 0 ? void 0 : _a.id) === undefined && !isDeleting;
     const chatRoom = chat_models_1.ChatRoom.findUnique({
         where: {
             id: groupId,
@@ -82,15 +84,12 @@ const checkParticipants = (participants, groupId, currentUserRole, isDeleting = 
         throw new error_1.RequestError(messages_1.NotFound.GROUP_CHAT, 404);
     const errors = [];
     yield Promise.all(participants.map((item, i) => __awaiter(void 0, void 0, void 0, function* () {
-        var _a;
-        const id = isDeleting ? item : item.id;
-        const participantRole = (_a = item === null || item === void 0 ? void 0 : item.role) !== null && _a !== void 0 ? _a : null;
+        var _b;
+        const id = isDeleting || isAdding ? item : item.id;
+        const participantRole = (_b = item === null || item === void 0 ? void 0 : item.role) !== null && _b !== void 0 ? _b : null;
         const user = yield user_models_1.default.findUnique({
             where: {
                 id,
-            },
-            select: {
-                id: true,
             },
         });
         if (user) {
@@ -103,9 +102,9 @@ const checkParticipants = (participants, groupId, currentUserRole, isDeleting = 
                 },
             });
             // Check if user is participated in the group before removing them
-            if (isDeleting && !participant && user) {
+            if (!participant && !isAdding) {
                 errors.push({
-                    message: `Can't found participant with ID ${id} in the group.`,
+                    message: `${user.fullName} is not a member of this group.`,
                     groupId,
                     code: code_1.Code.NOT_FOUND,
                     id,
@@ -120,21 +119,20 @@ const checkParticipants = (participants, groupId, currentUserRole, isDeleting = 
                 currentUserRole === "admin";
             const IS_ADMIN_UPDATE_CREATOR = (participant === null || participant === void 0 ? void 0 : participant.role) === "creator" && currentUserRole === "admin";
             const IS_UPDATING_USER_WITH_ROLE_ADMIN = (participant === null || participant === void 0 ? void 0 : participant.role) === "admin" && currentUserRole === "admin";
-            const IS_USER_ALREADY_EXIST = participant && (participant === null || participant === void 0 ? void 0 : participant.role) === participantRole;
             // Check if user already exist in the group before add them
             // if user is already exist with role user and the item.role is "admin" that user will be promoted as admin in the group
             if (participant && IS_ADMIN_UPDATE_CREATOR) {
                 errors.push({
-                    message: `Admin cannot ${isDeleting ? "delete" : "demote"} group creator`,
+                    message: `Admin cannot ${isDeleting ? "delete" : "demote"} the group creator`,
                     code: code_1.Code.FORBIDDEN,
                     groupId,
                     id,
                 });
                 return;
             }
-            if (IS_USER_ALREADY_EXIST && !isDeleting) {
+            if (participant && isAdding) {
                 errors.push({
-                    message: `Participant with ID ${id} already exists in the group.`,
+                    message: `${user.fullName} is already a member of this group.`,
                     groupId,
                     code: code_1.Code.DUPLICATE,
                     id,
@@ -148,8 +146,8 @@ const checkParticipants = (participants, groupId, currentUserRole, isDeleting = 
                 : IS_ADMIN_DEMOTING_ADMIN && !IS_ADMIN_PROMOTE_USER) {
                 errors.push({
                     message: isDeleting
-                        ? "Can't delete user with role admin with current role (admin)"
-                        : "Can't demote admin to user with current role (admin)",
+                        ? "Admin can't delete another member with role admin."
+                        : "Admin can't dismiss another admin to user.",
                     code: code_1.Code.FORBIDDEN,
                     id,
                     groupId,
@@ -169,7 +167,9 @@ const checkParticipants = (participants, groupId, currentUserRole, isDeleting = 
     if (errors.length > 0)
         throw new error_1.RequestError(isDeleting
             ? "Failed to remove participants."
-            : "Failed add participants into the group.", 400, errors);
+            : isAdding
+                ? "Failed add participants into the group."
+                : "Failed to update participants in the group.", 400, errors);
 });
 exports.checkParticipants = checkParticipants;
 const getMessageCount = (userId) => __awaiter(void 0, void 0, void 0, function* () {

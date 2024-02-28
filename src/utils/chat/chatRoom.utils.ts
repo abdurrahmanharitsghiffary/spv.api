@@ -177,6 +177,8 @@ type CreateChatRoomOptions = {
   description?: string;
   title?: string;
   imageSrc?: string;
+  visibility?: "public" | "private";
+  applyType?: "public" | "private";
 };
 
 export const createChatRoom = async ({
@@ -186,11 +188,13 @@ export const createChatRoom = async ({
   description,
   title,
   imageSrc,
+  visibility,
+  applyType,
 }: CreateChatRoomOptions) => {
   participants = participants
     .map((item) => ({ ...item, id: Number(item.id) }))
     .filter((item) => !isNaN(item.id));
-
+  console.log(participants, "Participants");
   const isUserIncludedInFields = participants.some(
     (item) => item.id === currentUserId
   );
@@ -257,6 +261,8 @@ export const createChatRoom = async ({
         isGroupChat,
         description,
         title,
+        groupVisibility: isGroupChat ? visibility ?? "public" : "private",
+        applyType: isGroupChat ? applyType ?? "public" : "private",
         participants: {
           createMany: {
             skipDuplicates: true,
@@ -312,7 +318,7 @@ export const isChatRoomFound = async ({
       id: chatRoomId,
       OR: orInput,
     },
-    select: { id: true },
+    select: { id: true, applyType: true },
   });
 
   if (!chatRoom)

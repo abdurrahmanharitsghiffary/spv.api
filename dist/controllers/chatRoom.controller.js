@@ -31,7 +31,7 @@ const createChatRoom = (req, res) => __awaiter(void 0, void 0, void 0, function*
         participants: [{ id: Number(participantId), role: "admin" }],
         currentUserId: Number(userId),
     });
-    createdRoom.participants.users.forEach((user) => {
+    createdRoom.participants.forEach((user) => {
         (0, socket_utils_1.emitSocketEvent)(req, (0, consts_1.Socket_Id)(user.id, "USER"), event_1.Socket_Event.JOIN_ROOM, createdRoom);
     });
     return res

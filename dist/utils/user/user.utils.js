@@ -155,11 +155,13 @@ const searchUsersByName = ({ limit = 20, offset = 0, query, currentUserId, filte
                 {
                     fullName: {
                         contains: query,
+                        mode: "insensitive",
                     },
                 },
                 {
                     username: {
                         contains: query,
+                        mode: "insensitive",
                     },
                 },
             ],
@@ -186,11 +188,13 @@ const searchUsersByName = ({ limit = 20, offset = 0, query, currentUserId, filte
                 {
                     fullName: {
                         contains: query,
+                        mode: "insensitive",
                     },
                 },
                 {
                     username: {
                         contains: query,
+                        mode: "insensitive",
                     },
                 },
             ],

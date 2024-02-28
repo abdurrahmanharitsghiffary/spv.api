@@ -125,13 +125,13 @@ const getPostIsLiked = (req, res) => __awaiter(void 0, void 0, void 0, function*
             userId: uId,
         },
     });
-    const total_likes = yield post_models_1.PostLike.count({
+    const totalLikes = yield post_models_1.PostLike.count({
         where: {
             postId: pId,
         },
     });
     return res
         .status(200)
-        .json(new response_1.ApiResponse({ isLiked: isLiked ? true : false, total_likes }, 200));
+        .json(new response_1.ApiResponse({ isLiked: isLiked ? true : false, totalLikes }, 200));
 });
 exports.getPostIsLiked = getPostIsLiked;

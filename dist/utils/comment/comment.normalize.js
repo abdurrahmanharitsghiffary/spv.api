@@ -26,13 +26,11 @@ const normalize = (comment) => new Promise((resolve) => {
             username: comment.user.username,
             avatarImage: (_a = comment.user.profile) === null || _a === void 0 ? void 0 : _a.avatarImage,
         },
-        total_likes: comment._count.likes,
         createdAt: comment.createdAt,
         updatedAt: comment.updatedAt,
-        replies: {
-            ids: comment.childrenComment.map((comment) => comment.id),
-            total: comment._count.childrenComment,
-        },
+        totalLikes: comment._count.likes,
+        replies: comment.childrenComment.map((comment) => comment.id),
+        totalReplies: comment._count.childrenComment,
     };
     return resolve(normalizedComment);
 });

@@ -17,14 +17,11 @@ const normalize = (comment: SelectCommentPayload): Promise<Comment> =>
         username: comment.user.username,
         avatarImage: comment.user.profile?.avatarImage,
       },
-      total_likes: comment._count.likes,
       createdAt: comment.createdAt,
       updatedAt: comment.updatedAt,
-
-      replies: {
-        ids: comment.childrenComment.map((comment) => comment.id),
-        total: comment._count.childrenComment,
-      },
+      totalLikes: comment._count.likes,
+      replies: comment.childrenComment.map((comment) => comment.id),
+      totalReplies: comment._count.childrenComment,
     };
 
     return resolve(normalizedComment);

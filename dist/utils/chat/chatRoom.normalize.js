@@ -18,14 +18,14 @@ const normalizeChatRooms = (room) => new Promise((resolve) => __awaiter(void 0, 
         picture: room.groupPicture,
         isGroupChat: room.isGroupChat,
         messages: yield Promise.all(room.messages.map((message) => Promise.resolve((0, chat_normalize_1.normalizeChat)(message)))),
-        unreadMessages: { total: room._count.messages },
+        totalUnreadMessages: room._count.messages,
         updatedAt: room.updatedAt,
         description: room.description,
         title: room.title,
-        participants: {
-            users: yield Promise.all(room.participants.map((participant) => Promise.resolve((0, chat_normalize_1.normalizeChatParticipant)(participant)))),
-            total: room._count.participants,
-        },
+        participants: yield Promise.all(room.participants.map((participant) => Promise.resolve((0, chat_normalize_1.normalizeChatParticipant)(participant)))),
+        totalParticipants: room._count.participants,
+        applyType: room.applyType,
+        groupVisibility: room.groupVisibility,
     });
 }));
 exports.normalizeChatRooms = normalizeChatRooms;

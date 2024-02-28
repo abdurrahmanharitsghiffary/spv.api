@@ -218,7 +218,7 @@ model ChatRoom {
   id Int @id @default(autoincrement())
   participants ChatRoomParticipant[]
   messages Chat[] 
-  groupType GroupType @default(public)
+  groupVisibility GroupType @default(public)
   applyType ApplyType @default(public)
   applicationRequest ApplicationRequest[]
   groupPicture Image?
@@ -228,6 +228,7 @@ model ChatRoom {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  notification Notification[]
   @@map("chat_rooms")
 }
 
@@ -255,9 +256,10 @@ updatedAt DateTime @updatedAt
 }
 
 enum ParticipantRole {
+  creator
+  co_creator
   admin
   user
-  creator
 }
 
 model Chat {
@@ -298,11 +300,13 @@ model Notification {
   receiverId Int
   isRead Boolean @default(false)
   postId Int?
+  groupId Int?
   commentId Int?
   type NotificationType
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  group ChatRoom? @relation(fields: [groupId], references: [id], onDelete: Cascade)
   post Post? @relation(fields: [postId],  references: [id], onDelete: Cascade)
   comment Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
   receiver User @relation("ReceivedNotifications",fields: [receiverId], references: [id], onDelete: Cascade)
@@ -312,6 +316,8 @@ model Notification {
 
 enum NotificationType {
 liking_post
+rejected_group_application
+accepted_group_application
 liking_comment
 comment
 follow
@@ -319,17 +325,25 @@ replying_comment
 }
 
 model ApplicationRequest {
+  id Int @id @default(autoincrement())
   type ApplicationRequestType
+  comment String? @db.Text
   userId Int
   user User @relation(fields: [userId],references: [id],onDelete: Cascade)
   groupId Int
   group ChatRoom @relation(fields: [groupId], references: [id],onDelete: Cascade)
+  status ApplicationRequestStatus @default(PENDING)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@id([userId, groupId])
-  @@map("application_request")
+  @@map("application_requests")
   }
+
+enum ApplicationRequestStatus { 
+  PENDING
+  APPROVED
+  REJECTED
+}
 
 enum ApplicationRequestType {
   group_chat

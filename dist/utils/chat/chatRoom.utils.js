@@ -131,10 +131,11 @@ const findAllUserChatRoom = ({ userId, limit, offset, type = "all", q, }) => __a
     return { data: chatRoom, total: totalRooms };
 });
 exports.findAllUserChatRoom = findAllUserChatRoom;
-const createChatRoom = ({ participants = [], currentUserId, isGroupChat = false, description, title, imageSrc, }) => __awaiter(void 0, void 0, void 0, function* () {
+const createChatRoom = ({ participants = [], currentUserId, isGroupChat = false, description, title, imageSrc, visibility, applyType, }) => __awaiter(void 0, void 0, void 0, function* () {
     participants = participants
         .map((item) => (Object.assign(Object.assign({}, item), { id: Number(item.id) })))
         .filter((item) => !isNaN(item.id));
+    console.log(participants, "Participants");
     const isUserIncludedInFields = participants.some((item) => item.id === currentUserId);
     if (isUserIncludedInFields) {
         throw new error_1.RequestError("participants field should not contain the group chat creator (it will be automatically added as creator).", 400);
@@ -186,6 +187,8 @@ const createChatRoom = ({ participants = [], currentUserId, isGroupChat = false,
                 isGroupChat,
                 description,
                 title,
+                groupVisibility: isGroupChat ? visibility !== null && visibility !== void 0 ? visibility : "public" : "private",
+                applyType: isGroupChat ? applyType !== null && applyType !== void 0 ? applyType : "public" : "private",
                 participants: {
                     createMany: {
                         skipDuplicates: true,
@@ -232,7 +235,7 @@ const isChatRoomFound = ({ chatRoomId, currentUserId, customMessage, }) => __awa
             id: chatRoomId,
             OR: orInput,
         },
-        select: { id: true },
+        select: { id: true, applyType: true },
     });
     if (!chatRoom)
         throw new error_1.RequestError((_c = customMessage === null || customMessage === void 0 ? void 0 : customMessage.message) !== null && _c !== void 0 ? _c : messages_1.NotFound.CHAT_ROOM, (_d = customMessage === null || customMessage === void 0 ? void 0 : customMessage.statusCode) !== null && _d !== void 0 ? _d : 404);

@@ -194,16 +194,19 @@ export const ioInit = (
       );
 
       socket.on("disconnect", async () => {
-        const offlineUser = await User.update({
-          where: {
-            id: Number(user.id),
-          },
-          data: {
-            isOnline: false,
-          },
-        });
-
-        io.emit(Socket_Event.OFFLINE, Socket_Id(offlineUser.id, "USER"));
+        try {
+          const offlineUser = await User.update({
+            where: {
+              id: Number(user.id),
+            },
+            data: {
+              isOnline: false,
+            },
+          });
+          io.emit(Socket_Event.OFFLINE, Socket_Id(offlineUser.id, "USER"));
+        } catch (err) {
+          console.error(err);
+        }
       });
     } catch (err: any) {
       socket.emit(

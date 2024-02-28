@@ -2,7 +2,7 @@ import express from "express";
 import { ApiError } from "../utils/response";
 import { NotFound } from "../lib/messages";
 import { ExpressRequestExtended } from "../types/request";
-import Chat, { ChatRoom, ChatRoomParticipant } from "../models/chat.models";
+import Chat, { ChatRoom } from "../models/chat.models";
 import { ForbiddenError, RequestError } from "../lib/error";
 import { tryCatchMiddleware } from "./handler.middlewares";
 import { chatRoomWhereOrInput } from "../utils/chat/chatRoom.utils";
@@ -15,10 +15,12 @@ export const checkIsParticipatedInChatRoom = ({
   body = "",
   params = "",
   shouldAlsoBlockSendingMessageToGroupChat = false,
+  shouldAlsoBlockUserRole = false,
 }: {
   body?: string;
   params?: string;
   shouldAlsoBlockSendingMessageToGroupChat?: boolean;
+  shouldAlsoBlockUserRole?: boolean;
 }) =>
   tryCatchMiddleware(
     async (
@@ -37,10 +39,12 @@ export const checkIsParticipatedInChatRoom = ({
           OR: chatRoomWhereOrInput(UID),
         },
         select: {
+          groupVisibility: true,
           isGroupChat: true,
           participants: {
             select: {
               userId: true,
+              role: true,
             },
             where: {
               userId: UID,
@@ -50,10 +54,33 @@ export const checkIsParticipatedInChatRoom = ({
       });
 
       if (!chatRoom) throw new RequestError(NotFound.CHAT_ROOM, 404);
-      console.log("Participant");
-      if (chatRoom?.isGroupChat && !shouldAlsoBlockSendingMessageToGroupChat)
+
+      const isPrivateVisibility = chatRoom.groupVisibility === "private";
+      const isParticipated = chatRoom?.participants?.[0]?.userId ? true : false;
+      const isGroupChat = chatRoom?.isGroupChat ? true : false;
+
+      const isNotParticipatedInGroupChatAndVisibilityIsPrivate =
+        !isParticipated && isPrivateVisibility && isGroupChat;
+      const isNotParticipatedInPersonalChat = !isParticipated && !isGroupChat;
+
+      const isForbiddenForUser = isParticipated
+        ? chatRoom.participants?.[0]?.role === "user" && shouldAlsoBlockUserRole
+        : shouldAlsoBlockUserRole;
+      console.log(shouldAlsoBlockUserRole, "ShouldAlsoBlockUserRole");
+      console.log(chatRoom, "Chat ROOOOMSSS");
+      console.log(isForbiddenForUser, "isForbiddenForUser");
+      const isForbidden =
+        isNotParticipatedInGroupChatAndVisibilityIsPrivate ||
+        isNotParticipatedInPersonalChat ||
+        isForbiddenForUser;
+
+      if (
+        isGroupChat &&
+        !shouldAlsoBlockSendingMessageToGroupChat &&
+        !isForbidden
+      )
         return next();
-      if (!chatRoom?.participants?.[0]?.userId) throw new ForbiddenError();
+      if (isForbidden) throw new ForbiddenError();
 
       return next();
     }
@@ -74,6 +101,8 @@ export const checkMessageAccess = tryCatchMiddleware(
       select: {
         chatRoom: {
           select: {
+            isGroupChat: true,
+            groupVisibility: true,
             participants: {
               where: {
                 userId: UID,
@@ -87,8 +116,22 @@ export const checkMessageAccess = tryCatchMiddleware(
       },
     });
 
-    if (!message?.chatRoom.participants?.[0]?.userId) {
-      console.log(message, "Forbiddened");
+    const isParticipated = message?.chatRoom.participants?.[0]?.userId
+      ? true
+      : false;
+    const isGroupChat = message?.chatRoom?.isGroupChat ? true : false;
+    const isPrivateVisibility =
+      message?.chatRoom?.groupVisibility === "private";
+
+    const isNotParticipatedInGroupChatAndVisibilityIsPrivate =
+      !isParticipated && isPrivateVisibility && isGroupChat;
+    const isNotParticipatedInPersonalChat = !isParticipated && !isGroupChat;
+
+    const isForbidden =
+      isNotParticipatedInGroupChatAndVisibilityIsPrivate ||
+      isNotParticipatedInPersonalChat;
+
+    if (isForbidden) {
       throw new ForbiddenError();
     }
 

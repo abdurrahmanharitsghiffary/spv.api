@@ -17,8 +17,16 @@ const validator_middlewares_1 = require("../middlewares/validator.middlewares");
 const zod_1 = require("zod");
 const schema_1 = require("../schema");
 const cloudinary_middleware_1 = require("../middlewares/cloudinary.middleware");
+const groupChat_controllers_1 = require("../controllers/groupChat.controllers");
 const router = express_1.default.Router();
 router.use(auth_middlewares_1.verifyToken);
+router
+    .route("/membership-requests")
+    .get(validator_middlewares_1.validatePagingOptions, (0, validator_middlewares_1.validate)(zod_1.z.object({
+    query: zod_1.z.object({
+        type: zod_1.z.enum(["all", "pending", "approved", "rejected"]).optional(),
+    }),
+})), (0, handler_middlewares_1.tryCatch)(groupChat_controllers_1.getMembershipRequests));
 router
     .route("/account")
     .get((0, handler_middlewares_1.tryCatch)(account_controller_1.getMyAccountInfo))
@@ -122,6 +130,9 @@ router.route("/notifications/read").post((0, validator_middlewares_1.validate)(z
         }),
     }),
 })), (0, handler_middlewares_1.tryCatch)(notification_controllers_1.readNotifications));
+router
+    .route("/membership-requests/:requestId")
+    .delete((0, handler_middlewares_1.tryCatch)(groupChat_controllers_1.deleteMembershipRequest));
 router
     .route("/posts/saved/:postId")
     .delete((0, validator_middlewares_1.validateParamsV2)("postId"), (0, handler_middlewares_1.tryCatch)(post_controller_1.deleteSavedPost));

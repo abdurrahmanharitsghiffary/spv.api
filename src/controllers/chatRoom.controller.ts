@@ -30,7 +30,7 @@ export const createChatRoom = async (
     currentUserId: Number(userId),
   });
 
-  createdRoom.participants.users.forEach((user) => {
+  createdRoom.participants.forEach((user) => {
     emitSocketEvent(
       req,
       Socket_Id(user.id, "USER"),

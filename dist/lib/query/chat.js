@@ -69,6 +69,8 @@ const selectChatRoom = (currentUserId) => ({
         },
     },
     id: true,
+    applyType: true,
+    groupVisibility: true,
     createdAt: true,
     description: true,
     isGroupChat: true,
@@ -152,6 +154,8 @@ const selectChatRoomWithWhereInput = (userId) => ({
             ],
         },
     },
+    groupVisibility: true,
+    applyType: true,
     _count: {
         select: {
             participants: true,

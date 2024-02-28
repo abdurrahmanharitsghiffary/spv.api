@@ -14,31 +14,26 @@ export type Chat = {
   updatedAt: Date;
 };
 
-type UnreadMessageSimplified = {
-  total: number;
-};
-
-type UnreadMessage = {
-  total: number;
-} & UnreadMessageSimplified;
-
 type ChatRoomParticipant = UserSimplified & {
   role: $Enums.ParticipantRole;
-  roomId: number;
   joinedAt: Date;
 };
 
 type ChatRoom = {
   id: number;
   picture: Image;
-  participants: { users: ChatRoomParticipant[]; total: number };
+  participants: ChatRoomParticipant[];
+  totalParticipants: number;
   messages: Chat[];
-  unreadMessages: UnreadMessageSimplified;
+  totalUnreadMessages: number;
   description?: string | null;
   title?: string | null;
   isGroupChat: boolean;
   createdAt: Date;
+  applyType: "public" | "private";
+  groupVisibility: "public" | "private";
   updatedAt: Date;
 };
+
 type ParticipantField = { id: number; role: $Enums.Role };
 type ParticipantsField = ParticipantField[];

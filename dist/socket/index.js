@@ -150,15 +150,20 @@ const ioInit = (io) => {
                 }
             }));
             socket.on("disconnect", () => __awaiter(void 0, void 0, void 0, function* () {
-                const offlineUser = yield user_models_1.default.update({
-                    where: {
-                        id: Number(user.id),
-                    },
-                    data: {
-                        isOnline: false,
-                    },
-                });
-                io.emit(event_1.Socket_Event.OFFLINE, (0, consts_1.Socket_Id)(offlineUser.id, "USER"));
+                try {
+                    const offlineUser = yield user_models_1.default.update({
+                        where: {
+                            id: Number(user.id),
+                        },
+                        data: {
+                            isOnline: false,
+                        },
+                    });
+                    io.emit(event_1.Socket_Event.OFFLINE, (0, consts_1.Socket_Id)(offlineUser.id, "USER"));
+                }
+                catch (err) {
+                    console.error(err);
+                }
             }));
         }
         catch (err) {

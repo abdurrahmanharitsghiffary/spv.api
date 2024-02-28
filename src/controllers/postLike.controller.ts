@@ -155,7 +155,7 @@ export const getPostIsLiked = async (
     },
   });
 
-  const total_likes = await PostLike.count({
+  const totalLikes = await PostLike.count({
     where: {
       postId: pId,
     },
@@ -164,6 +164,6 @@ export const getPostIsLiked = async (
   return res
     .status(200)
     .json(
-      new ApiResponse({ isLiked: isLiked ? true : false, total_likes }, 200)
+      new ApiResponse({ isLiked: isLiked ? true : false, totalLikes }, 200)
     );
 };

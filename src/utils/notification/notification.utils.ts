@@ -13,6 +13,9 @@ type LikingComment = { type: "liking_comment" } & CommentBase;
 type CommentingPost = { type: "comment" } & CommentBase;
 type ReplyingComment = { type: "replying_comment" } & CommentBase;
 type FollowingUser = { type: "follow" };
+type ApRq = {
+  type: "rejected_group_application" | "accepted_group_application";
+} & { groupId: number };
 
 type CreateNotificationOptions = (
   | LikingPost
@@ -20,6 +23,7 @@ type CreateNotificationOptions = (
   | CommentingPost
   | ReplyingComment
   | FollowingUser
+  | ApRq
 ) &
   OptionBase;
 

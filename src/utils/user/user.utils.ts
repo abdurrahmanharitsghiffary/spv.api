@@ -190,11 +190,13 @@ export const searchUsersByName = async ({
         {
           fullName: {
             contains: query,
+            mode: "insensitive",
           },
         },
         {
           username: {
             contains: query,
+            mode: "insensitive",
           },
         },
       ],
@@ -222,11 +224,13 @@ export const searchUsersByName = async ({
         {
           fullName: {
             contains: query,
+            mode: "insensitive",
           },
         },
         {
           username: {
             contains: query,
+            mode: "insensitive",
           },
         },
       ],

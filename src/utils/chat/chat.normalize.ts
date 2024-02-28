@@ -61,7 +61,6 @@ export const normalizeChatParticipant = (
     resolve({
       avatarImage: payload.user.profile?.avatarImage,
       firstName: payload.user.firstName,
-      roomId: payload.chatRoomId,
       lastName: payload.user.lastName,
       fullName: payload.user.fullName,
       id: payload.user.id,

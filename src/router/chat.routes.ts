@@ -5,12 +5,20 @@ import { tryCatch } from "../middlewares/handler.middlewares";
 import {
   validate,
   validateBody,
+  validatePagingOptions,
   validateParamsV2,
 } from "../middlewares/validator.middlewares";
 
 import { z } from "zod";
 
-import { zIntId, zIntOrStringId, zLimit, zOffset, zfdText } from "../schema";
+import {
+  zIntId,
+  zIntOrStringId,
+  zLimit,
+  zOffset,
+  zUniqueInts,
+  zfdText,
+} from "../schema";
 import {
   createChatRoom,
   getChatRoomById,
@@ -18,21 +26,7 @@ import {
   getChatRoomParticipantsByRoomId,
   getParticipant,
 } from "../controllers/chatRoom.controller";
-import { protectChatRoom } from "../middlewares/chatRoom.middlewares";
-import {
-  createGroupChat,
-  deleteGroupChat,
-  deleteGroupParticipants,
-  joinGroupChat,
-  leaveGroupChat,
-  updateGroupChat,
-  updateGroupChatParticipants,
-} from "../controllers/groupChat.controllers";
-import { uploadImageV2 } from "../middlewares/multer.middlewares";
-import { zfd } from "zod-form-data";
-import { zParticipants, zfdParticipants } from "../schema/chat.schema";
 import { checkIsParticipatedInChatRoom } from "../middlewares";
-import { uploadFilesToCloudinary } from "../middlewares/cloudinary.middleware";
 
 const router = express.Router();
 
@@ -76,34 +70,6 @@ router
     validatePagingOptionsExt,
     checkIsParticipated,
     tryCatch(getChatRoomParticipantsByRoomId)
-  )
-  .patch(
-    validate(
-      z.object({
-        body: z.object({
-          participants: zParticipants("participants", 1),
-        }),
-        params: z.object({
-          roomId: zIntOrStringId,
-        }),
-      })
-    ),
-    protectChatRoom("roomId", true),
-    tryCatch(updateGroupChatParticipants)
-  )
-  .delete(
-    validate(
-      z.object({
-        body: z.object({
-          ids: z.array(z.number()),
-        }),
-        params: z.object({
-          roomId: zIntOrStringId,
-        }),
-      })
-    ),
-    protectChatRoom("roomId", true),
-    tryCatch(deleteGroupParticipants)
   );
 
 router.route("/:roomId/participants/:participantId").get(
@@ -115,57 +81,8 @@ router.route("/:roomId/participants/:participantId").get(
       }),
     })
   ),
+  checkIsParticipated,
   tryCatch(getParticipant)
 );
-
-router.route("/group").post(
-  uploadImageV2.single("image"),
-  uploadFilesToCloudinary,
-  validateBody(
-    zfd.formData(
-      z.object({
-        participants: zfdParticipants("participants", 2),
-        title: zfd.text(z.string().optional()),
-        description: zfd.text(z.string().optional()),
-      })
-    )
-  ),
-  tryCatch(createGroupChat)
-);
-
-router
-  .route("/group/:groupId")
-  .patch(
-    uploadImageV2.single("image"),
-    uploadFilesToCloudinary,
-    validate(
-      z.object({
-        body: zfd.formData(
-          z.object({
-            participants: zfdParticipants("participants").optional(),
-            description: zfdText.optional(),
-            title: zfd.text(z.string().max(125).optional()),
-          })
-        ),
-        params: z.object({
-          groupId: zIntOrStringId,
-        }),
-      })
-    ),
-    protectChatRoom("groupId", true),
-    tryCatch(updateGroupChat)
-  )
-  .delete(
-    validateParamsV2("groupId"),
-    protectChatRoom("groupId", true, true),
-    tryCatch(deleteGroupChat)
-  );
-
-router
-  .route("/group/:groupId/join")
-  .post(validateParamsV2("groupId"), tryCatch(joinGroupChat));
-router
-  .route("/group/:groupId/leave")
-  .delete(validateParamsV2("groupId"), tryCatch(leaveGroupChat));
 
 export default router;

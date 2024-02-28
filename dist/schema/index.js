@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.emailRequestValidation = exports.zBirthDate = exports.zGender = exports.zNotificationType = exports.zEmail = exports.zPassword = exports.zLastName = exports.zFirstName = exports.zfdTitle = exports.zTitle = exports.zfdText = exports.zfdInt = exports.zIntOrStringId = exports.zIntId = exports.zOffset = exports.zLimit = exports.zProfileImageType = exports.zUsername = exports.zText = void 0;
+exports.zUniqueInts = exports.emailRequestValidation = exports.zBirthDate = exports.zGender = exports.zNotificationType = exports.zEmail = exports.zPassword = exports.zLastName = exports.zFirstName = exports.zfdTitle = exports.zTitle = exports.zfdText = exports.zfdInt = exports.zIntOrStringId = exports.zIntId = exports.zOffset = exports.zLimit = exports.zProfileImageType = exports.zUsername = exports.zText = void 0;
 const zod_1 = require("zod");
 const zod_form_data_1 = require("zod-form-data");
 const MAX_ID_VALUE = 2147483647;
@@ -119,3 +119,16 @@ exports.emailRequestValidation = zod_1.z.object({
         email: exports.zEmail,
     }),
 });
+const zUniqueInts = (key, min = 0) => zod_1.z
+    .any()
+    .refine((arg) => {
+    const isUnique = new Set(arg).size === arg.length;
+    const isArray = arg instanceof Array;
+    return isArray && isUnique;
+}, { message: `${key !== null && key !== void 0 ? key : "Field"} must be an array of unique numbers.` })
+    .refine((arg) => {
+    if (min < 1)
+        return true;
+    return arg.length > min;
+}, { message: `${key !== null && key !== void 0 ? key : "Field"} must be at least ${min} id or more.` });
+exports.zUniqueInts = zUniqueInts;

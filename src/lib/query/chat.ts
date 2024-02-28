@@ -124,6 +124,8 @@ export const selectChatRoom = (currentUserId: number) =>
       },
     },
     id: true,
+    applyType: true,
+    groupVisibility: true,
     createdAt: true,
     description: true,
     isGroupChat: true,
@@ -171,6 +173,8 @@ export const selectChatRoomPWL = (currentUserId: number) =>
 
 export type SelectChatRoomPayload = {
   id: number;
+  applyType: $Enums.ApplyType;
+  groupVisibility: $Enums.GroupType;
   description: string | null;
   title: string | null;
   isGroupChat: boolean;
@@ -312,6 +316,8 @@ export const selectChatRoomWithWhereInput = (userId: number) =>
         ],
       },
     },
+    groupVisibility: true,
+    applyType: true,
     _count: {
       select: {
         participants: true,

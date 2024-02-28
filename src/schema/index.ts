@@ -156,3 +156,22 @@ export const emailRequestValidation = z.object({
     email: zEmail,
   }),
 });
+
+export const zUniqueInts = (key?: string, min: number = 0) =>
+  z
+    .any()
+    .refine(
+      (arg: any) => {
+        const isUnique = new Set(arg).size === arg.length;
+        const isArray = arg instanceof Array;
+        return isArray && isUnique;
+      },
+      { message: `${key ?? "Field"} must be an array of unique numbers.` }
+    )
+    .refine(
+      (arg: []) => {
+        if (min < 1) return true;
+        return arg.length > min;
+      },
+      { message: `${key ?? "Field"} must be at least ${min} id or more.` }
+    );

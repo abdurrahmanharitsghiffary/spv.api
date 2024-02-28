@@ -21,8 +21,8 @@ const normalize = (
         username: post?.author.username,
         avatarImage: post?.author?.profile?.avatarImage,
       },
-      total_likes: post._count.likes,
-      total_comments: post._count.comments,
+      totalLikes: post._count.likes,
+      totalComments: post._count.comments,
       updatedAt: post?.updatedAt,
       createdAt: post?.createdAt,
     };
