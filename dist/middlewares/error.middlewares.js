@@ -21,8 +21,6 @@ const error = (err, req, res, next) => __awaiter(void 0, void 0, void 0, functio
     if (err.code === "LIMIT_FILE_SIZE") {
         return res.status(413).json(new response_1.ApiError(413, consts_1.errorsMessage.FILE_TOO_BIG));
     }
-    console.log(message, "ErrMessage");
-    console.log("Error: ", err);
     switch (name) {
         case "JsonWebTokenError":
             {

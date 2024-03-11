@@ -5,6 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.router = void 0;
 const user_routes_1 = __importDefault(require("./user.routes"));
+const bugs_routes_1 = __importDefault(require("./bugs.routes"));
 const auth_routes_1 = __importDefault(require("./auth.routes"));
 const post_routes_1 = __importDefault(require("./post.routes"));
 const googleAuth_routes_1 = __importDefault(require("./googleAuth.routes"));
@@ -26,6 +27,7 @@ const count_schema_1 = require("../schema/count.schema");
 function router(app) {
     app.use("/api/auth/google", googleAuth_routes_1.default);
     app.use("/api/auth", auth_routes_1.default);
+    app.use("/api/bugs", bugs_routes_1.default);
     app.use("/api/users", user_routes_1.default);
     app.use("/api/posts", post_routes_1.default);
     app.use("/api/comments", comment_routes_1.default);
@@ -39,7 +41,7 @@ function router(app) {
         query: zod_1.z.object({
             limit: schema_1.zLimit,
             offset: schema_1.zOffset,
-            type: zod_1.z.enum(["post", "user", "all"]).optional(),
+            type: zod_1.z.enum(["post", "user", "all", "group"]).optional(),
             q: zod_1.z.string().optional(),
             filter: zod_1.z.enum(["followed", "not_followed"]).optional(),
         }),

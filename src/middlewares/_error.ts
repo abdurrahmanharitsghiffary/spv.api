@@ -9,8 +9,6 @@ export const error = async (
   res: express.Response,
   next: express.NextFunction
 ) => {
-  console.error(err.name, " Error Name");
-  console.log(err, " Error");
   switch (err.name) {
     case "RequestError": {
       return res

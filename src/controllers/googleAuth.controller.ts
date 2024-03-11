@@ -111,7 +111,6 @@ export const googleAuthCallback = async (
 
     res.redirect(BASE_CLIENT_URL!);
   } catch (err: any) {
-    console.log(err?.message, " Error login");
     const message = err?.message?.includes(
       "Unique constraint failed on the constraint: `users_email_key`"
     )

@@ -13,6 +13,7 @@ exports.selectNotificationSimplified = {
     receiverId: true,
     type: true,
     userId: true,
+    groupId: true,
     updatedAt: true,
     receiver: {
         select: Object.assign({}, user_1.selectUserSimplified),
@@ -27,6 +28,7 @@ exports.selectNotification = {
     comment: {
         select: Object.assign({}, comment_1.selectSingleComment),
     },
+    groupId: true,
     createdAt: true,
     isRead: true,
     post: {

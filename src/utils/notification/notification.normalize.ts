@@ -29,6 +29,14 @@ export const normalizeNotification = async (
       normalizedNotification.postId = payload.postId as number;
     }
 
+    if (
+      ["accepted_group_application", "rejected_group_application"].includes(
+        normalizedNotification.type
+      )
+    ) {
+      (normalizedNotification as any).groupId = payload.groupId;
+    }
+
     const sender = await simplifyUserWF(payload.user);
     const receiver = await simplifyUserWF(payload.receiver);
 

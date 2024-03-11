@@ -39,7 +39,7 @@ export const notify = async (
       ...selectNotificationSimplified,
     },
   });
-
+  console.log(createdNotification, "Created Notification");
   const normalizedNotification = await normalizeNotification(
     createdNotification
   );

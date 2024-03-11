@@ -19,8 +19,6 @@ exports.uploadFilesToCloudinary = (0, handler_middlewares_1.tryCatchMiddleware)(
     var _a;
     const files = req.files;
     const file = req.file;
-    console.log(files, "Files");
-    console.log(file, "File");
     const uploadedImageUrls = [];
     const uploadedFiles = [];
     if (files !== undefined) {

@@ -13,8 +13,6 @@ exports.error = void 0;
 const response_1 = require("../utils/response");
 const error = (err, req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b, _c, _d;
-    console.error(err.name, " Error Name");
-    console.log(err, " Error");
     switch (err.name) {
         case "RequestError": {
             return res

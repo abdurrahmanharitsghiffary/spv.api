@@ -9,8 +9,6 @@ export const uploadFilesToCloudinary = tryCatchMiddleware(
   ) => {
     const files = req.files;
     const file = req.file;
-    console.log(files, "Files");
-    console.log(file, "File");
     const uploadedImageUrls: string[] = [];
     const uploadedFiles: Express.Multer.File[] = [];
     if (files !== undefined) {

@@ -16,7 +16,7 @@ exports.zfdRecipientId = zod_form_data_1.zfd.numeric(exports.zRecipientId);
 //
 const zParticipant = (key) => zod_1.z.object({
     id: (0, _1.zIntId)(key),
-    role: zod_1.z.enum(["user", "admin"]),
+    role: zod_1.z.enum(["user", "admin", "co_creator"]),
 });
 exports.zParticipant = zParticipant;
 const zfdParticipant = (key) => zod_form_data_1.zfd.json(zod_1.z.object({

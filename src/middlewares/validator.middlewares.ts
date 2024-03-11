@@ -28,7 +28,6 @@ export const validateBody =
     res: express.Response,
     next: express.NextFunction
   ) => {
-    console.log(req.body, "BODDIEHH");
     try {
       await (z.object({ body: schema }) as z.infer<typeof schema>).parseAsync({
         body: req.body,

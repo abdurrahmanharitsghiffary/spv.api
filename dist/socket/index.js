@@ -53,7 +53,6 @@ const ioInit = (io) => {
     io.on("connection", (socket) => __awaiter(void 0, void 0, void 0, function* () {
         var _e;
         try {
-            console.log("Connected");
             const user = socket.data.user;
             socket.join((0, consts_1.Socket_Id)(user.id, "USER"));
             yield user_models_1.default.update({
@@ -79,11 +78,9 @@ const ioInit = (io) => {
             }));
             socket.on(event_1.Socket_Event.VISIT_ROOM, (roomId) => {
                 socket.join((0, consts_1.Socket_Id)(roomId, "ROOM"));
-                console.log(socket.rooms, "Rooms");
             });
             socket.on(event_1.Socket_Event.UNVISIT_ROOM, (roomId) => {
                 socket.leave((0, consts_1.Socket_Id)(roomId, "ROOM"));
-                console.log(socket.rooms, "Rooms");
             });
             socket.on(event_1.Socket_Event.TYPING_MESSAGE, (data) => {
                 io.in((0, consts_1.Socket_Id)(data.chatId, "ROOM")).emit(event_1.Socket_Event.USER_TYPING, data);

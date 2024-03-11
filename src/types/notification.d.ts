@@ -18,6 +18,9 @@ type ReplyingComment = { type: "replying_comment" } & BaseCommentNotification;
 type CommentingPost = { type: "comment" } & BaseCommentNotification;
 type LikingComment = { type: "liking_comment" } & BaseCommentNotification;
 type FollowingUser = { type: "follow" };
+type BaseApRq = { groupId: number };
+type RGA = { type: "rejected_group_application" } & BaseApRq;
+type AGA = { type: "accepted_group_application" } & BaseApRq;
 
 export type Notification = (
   | LikingComment
@@ -25,5 +28,7 @@ export type Notification = (
   | CommentingPost
   | LikingPost
   | FollowingUser
+  | RGA
+  | AGA
 ) &
   BaseNotification;

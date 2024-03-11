@@ -8,6 +8,7 @@ import { ForbiddenError, RequestError } from "../lib/error";
 import { chatRoomWhereOrInput } from "../utils/chat/chatRoom.utils";
 import { ChatRoom, ChatRoomParticipant } from "../models/chat.models";
 import { NotFound } from "../lib/messages";
+import { $Enums } from "@prisma/client";
 
 export const protectChatRoom = (
   params: string,
@@ -57,11 +58,17 @@ export const protectChatRoom = (
       // throw new RequestError("You are not participated in this group", 403);
       // }
 
+      const isRole = (
+        b: $Enums.ParticipantRole,
+        role: $Enums.ParticipantRole
+      ) => b === role;
+
       if (
         !room?.participants.some(
           (user) =>
-            (protectDelete ? user.role === "creator" : user.role !== "user") &&
-            user.userId === uId
+            (protectDelete
+              ? isRole(user.role, "creator") || isRole(user.role, "co_creator")
+              : user.role !== "user") && user.userId === uId
         ) ||
         !participant
       ) {

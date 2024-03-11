@@ -113,13 +113,10 @@ export const getCounts = async (
     countTypes = defaultTypes;
   }
 
-  console.log(countTypes, "Types");
-
   const counts: Counts = {};
 
   await Promise.all(
     countTypes.map(async (type) => {
-      console.log(convertType(type));
       counts[convertType(type)] = await getCountByType(type, uId);
     })
   );

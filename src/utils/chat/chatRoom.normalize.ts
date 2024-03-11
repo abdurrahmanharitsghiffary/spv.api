@@ -1,5 +1,8 @@
-import { SelectChatRoomPayload } from "../../lib/query/chat";
-import { ChatRoom } from "../../types/chat";
+import {
+  SelectChatRoomPayload,
+  SelectChatRoomSimplifiedPayload,
+} from "../../lib/query/chat";
+import { ChatRoom, ChatRoomSimplified } from "../../types/chat";
 import { normalizeChat, normalizeChatParticipant } from "./chat.normalize";
 
 export const normalizeChatRooms = (
@@ -28,3 +31,20 @@ export const normalizeChatRooms = (
       groupVisibility: room.groupVisibility,
     });
   });
+
+export const normalizeChatRoomSimplified = async (
+  payload: SelectChatRoomSimplifiedPayload
+): Promise<ChatRoomSimplified> => {
+  return Promise.resolve({
+    applyType: payload.applyType,
+    createdAt: payload.createdAt,
+    id: payload.id,
+    groupVisibility: payload.groupVisibility,
+    isGroupChat: payload.isGroupChat,
+    picture: payload.groupPicture,
+    totalParticipants: payload._count.participants,
+    updatedAt: payload.updatedAt,
+    description: payload.description,
+    title: payload.title,
+  });
+};

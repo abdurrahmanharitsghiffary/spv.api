@@ -100,7 +100,6 @@ const googleAuthCallback = (req, res) => __awaiter(void 0, void 0, void 0, funct
         res.redirect(consts_1.BASE_CLIENT_URL);
     }
     catch (err) {
-        console.log(err === null || err === void 0 ? void 0 : err.message, " Error login");
         const message = ((_d = err === null || err === void 0 ? void 0 : err.message) === null || _d === void 0 ? void 0 : _d.includes("Unique constraint failed on the constraint: `users_email_key`"))
             ? "Email already registered."
             : "";

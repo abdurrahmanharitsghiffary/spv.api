@@ -338,3 +338,20 @@ export const selectRoomParticipant = {
 export type ChatRoomParticipantPayload = Prisma.ChatRoomParticipantGetPayload<{
   select: typeof selectRoomParticipant;
 }>;
+
+export const selectChatRoomSimplified = {
+  id: true,
+  isGroupChat: true,
+  title: true,
+  applyType: true,
+  createdAt: true,
+  updatedAt: true,
+  description: true,
+  groupPicture: { select: { id: true, src: true } },
+  groupVisibility: true,
+  _count: { select: { participants: true } },
+} satisfies Prisma.ChatRoomSelect;
+
+export type SelectChatRoomSimplifiedPayload = Prisma.ChatRoomGetPayload<{
+  select: typeof selectChatRoomSimplified;
+}>;

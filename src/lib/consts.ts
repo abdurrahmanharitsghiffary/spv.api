@@ -12,8 +12,8 @@ export const errorsMessage = Object.freeze({
     "The file size exceeds the maximum allowed limit. Please upload a file that is equals to 300kb or fewer.",
   FILE_MIME_TYPE:
     "Invalid file mime types, accepted types: .jpg, .jpeg, .png, .webp",
-  APRQ_ALREADY_R: "This application request has already been rejected.",
-  APRQ_ALREADY_A: "This application request has already been approved.",
+  APRQ_ALREADY_R: "This membership request has already been rejected.",
+  APRQ_ALREADY_A: "This membership request has already been approved.",
   ALREADY_JOIN_G: "You are already a member of this group.",
 });
 

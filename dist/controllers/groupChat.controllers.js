@@ -35,7 +35,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteMembershipRequest = exports.getMembershipRequests = exports.rejectGroupChatApplicationRequest = exports.approveGroupChatApplicationRequest = exports.getGroupChatApplicationRequest = exports.requestGroupChatApplication = exports.addGroupParticipants = exports.deleteGroupParticipants = exports.updateGroupChatParticipants = exports.deleteGroupChat = exports.updateGroupChat = exports.leaveGroupChat = exports.joinGroupChat = exports.createGroupChat = void 0;
+exports.getGroupMembershipRequestById = exports.deleteMembershipRequest = exports.getMembershipRequests = exports.rejectGroupChatApplicationRequest = exports.approveGroupChatApplicationRequest = exports.getGroupChatApplicationRequest = exports.requestGroupChatApplication = exports.addGroupParticipants = exports.deleteGroupParticipants = exports.updateGroupChatParticipants = exports.deleteGroupChat = exports.updateGroupChat = exports.leaveGroupChat = exports.joinGroupChat = exports.createGroupChat = void 0;
 const chatRoom_utils_1 = require("../utils/chat/chatRoom.utils");
 const response_1 = require("../utils/response");
 const chat_models_1 = require("../models/chat.models");
@@ -74,8 +74,6 @@ const createGroupChat = (req, res) => __awaiter(void 0, void 0, void 0, function
         imageSrc,
     });
     createdGroupChat.participants.forEach((participant) => {
-        if (participant.id === uId)
-            return null;
         (0, socket_utils_1.emitSocketEvent)(req, (0, consts_1.Socket_Id)(participant.id, "USER"), event_1.Socket_Event.JOIN_ROOM, createdGroupChat);
     });
     return res
@@ -127,8 +125,6 @@ const joinGroupChat = (req, res) => __awaiter(void 0, void 0, void 0, function* 
     });
     const normalizedRoom = yield (0, chatRoom_normalize_1.normalizeChatRooms)(joinedRoom.chatRoom);
     joinedRoom.chatRoom.participants.forEach((participant) => __awaiter(void 0, void 0, void 0, function* () {
-        if (participant.user.id === uId)
-            return null;
         (0, socket_utils_1.emitSocketEvent)(req, (0, consts_1.Socket_Id)(participant.user.id, "USER"), event_1.Socket_Event.JOIN_ROOM, normalizedRoom);
     }));
     return res
@@ -174,8 +170,6 @@ const leaveGroupChat = (req, res) => __awaiter(void 0, void 0, void 0, function*
     });
     const normalizedRoom = yield (0, chatRoom_normalize_1.normalizeChatRooms)(joinedRoom.chatRoom);
     joinedRoom.chatRoom.participants.forEach((participant) => {
-        if (participant.user.id === uId)
-            return null;
         (0, socket_utils_1.emitSocketEvent)(req, (0, consts_1.Socket_Id)(participant.user.id, "USER"), event_1.Socket_Event.LEAVE_ROOM, { roomId: normalizedRoom.id, userId: uId });
     });
     return res
@@ -224,8 +218,6 @@ const updateGroupChat = (req, res) => __awaiter(void 0, void 0, void 0, function
     }
     const normalizedRoom = yield (0, chatRoom_normalize_1.normalizeChatRooms)(updatedChatRoom);
     updatedChatRoom.participants.forEach((participant) => {
-        if (participant.user.id === uId)
-            return null;
         (0, socket_utils_1.emitSocketEvent)(req, (0, consts_1.Socket_Id)(participant.user.id, "USER"), event_1.Socket_Event.UPDATE_ROOM, {
             data: normalizedRoom,
         });
@@ -261,8 +253,6 @@ const deleteGroupChat = (req, res) => __awaiter(void 0, void 0, void 0, function
         yield cloudinary_1.default.uploader.destroy(deletedRoom.groupPicture.src);
     }
     deletedRoom.participants.forEach((participant) => {
-        if (participant.userId === uId)
-            return null;
         (0, socket_utils_1.emitSocketEvent)(req, (0, consts_1.Socket_Id)(participant.userId, "USER"), event_1.Socket_Event.DELETE_ROOM, deletedRoom.id);
     });
     return res
@@ -323,8 +313,6 @@ const updateGroupChatParticipants = (req, res) => __awaiter(void 0, void 0, void
     });
     const normalizedParticipants = yield Promise.all(updatedParticipants.map((participant) => Promise.resolve((0, chat_normalize_1.normalizeChatParticipant)(participant))));
     updatedGroupChat.participants.forEach((participant) => {
-        if (participant.userId === uId)
-            return null;
         (0, socket_utils_1.emitSocketEvent)(req, (0, consts_1.Socket_Id)(participant.userId, "USER"), event_1.Socket_Event.UPDATE_PARTICIPANTS, {
             roomId: gId,
             data: normalizedParticipants,
@@ -365,8 +353,6 @@ const deleteGroupParticipants = (req, res) => __awaiter(void 0, void 0, void 0, 
         },
     });
     chatRoomAfterDeletingParticipants.participants.forEach((participant) => {
-        if (participant.userId === uId)
-            return null;
         (0, socket_utils_1.emitSocketEvent)(req, (0, consts_1.Socket_Id)(participant.userId, "USER"), event_1.Socket_Event.DELETE_PARTICIPANTS, {
             roomId: gId,
             data: ids,
@@ -413,8 +399,6 @@ const addGroupParticipants = (req, res) => __awaiter(void 0, void 0, void 0, fun
     });
     const normalizedNewParticipants = yield Promise.all(newParticipants.map((p) => __awaiter(void 0, void 0, void 0, function* () { return yield (0, chat_normalize_1.normalizeChatParticipant)(p); })));
     chatParticipants.forEach((p) => {
-        if (p.userId === uId)
-            return null;
         (0, socket_utils_1.emitSocketEvent)(req, (0, consts_1.Socket_Id)(p.userId, "USER"), event_1.Socket_Event.ADD_PARTICIPANTS, { roomId: gId, data: normalizedNewParticipants });
     });
     return res
@@ -430,7 +414,7 @@ const requestGroupChatApplication = (req, res) => __awaiter(void 0, void 0, void
     const uId = Number(userId);
     const cht = yield (0, chatRoom_utils_1.isChatRoomFound)({ chatRoomId: gId, currentUserId: uId });
     if ((cht === null || cht === void 0 ? void 0 : cht.applyType) !== "private")
-        throw new error_1.RequestError("This group allows you to join without sending application request.", 400);
+        throw new error_1.RequestError("This group allows you to join without sending membership request.", 400);
     const participant = yield chat_models_1.ChatRoomParticipant.findUnique({
         where: { chatRoomId_userId: { chatRoomId: gId, userId: uId } },
         select: { userId: true },
@@ -441,7 +425,7 @@ const requestGroupChatApplication = (req, res) => __awaiter(void 0, void 0, void
         where: { groupId: gId, userId: uId, status: "PENDING" },
     });
     if (pendingRequest) {
-        throw new error_1.RequestError("You already have a pending application request. Please wait until the request is either approved or rejected.", 409);
+        throw new error_1.RequestError("You already have a pending membership request. Please wait until the request is either approved or rejected.", 409);
     }
     const notUserRoleParticipants = yield (0, participants_utils_1.findNotUserRoleParticipant)(gId, uId);
     const applyRequest = yield apply_models_1.default.create({
@@ -454,7 +438,7 @@ const requestGroupChatApplication = (req, res) => __awaiter(void 0, void 0, void
     });
     return res
         .status(201)
-        .json(new response_1.ApiResponse(normalizedAprq, 201, "Application request has been sent."));
+        .json(new response_1.ApiResponse(normalizedAprq, 201, "Membership request has been sent."));
 });
 exports.requestGroupChatApplication = requestGroupChatApplication;
 const getGroupChatApplicationRequest = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -530,7 +514,7 @@ const approveGroupChatApplicationRequest = (req, res) => __awaiter(void 0, void 
     chatParticipants.forEach((p) => {
         (0, socket_utils_1.emitSocketEvent)(req, (0, consts_1.Socket_Id)(p.userId, "USER"), event_1.Socket_Event.ADD_PARTICIPANTS, { roomId: gId, data: [normalizedNewParticipant] });
     });
-    (0, notification_utils_1.notify)(req, {
+    yield (0, notification_utils_1.notify)(req, {
         groupId: gId,
         type: "accepted_group_application",
         receiverId: apRq.userId,
@@ -573,7 +557,7 @@ const rejectGroupChatApplicationRequest = (req, res) => __awaiter(void 0, void 0
             roomId: gId,
         });
     });
-    (0, notification_utils_1.notify)(req, {
+    yield (0, notification_utils_1.notify)(req, {
         groupId: gId,
         type: "rejected_group_application",
         receiverId: apRq.userId,
@@ -643,3 +627,23 @@ const deleteMembershipRequest = (req, res) => __awaiter(void 0, void 0, void 0, 
     return res.status(204).json(new response_1.ApiResponse(null, 204));
 });
 exports.deleteMembershipRequest = deleteMembershipRequest;
+const getGroupMembershipRequestById = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { requestId } = req.params;
+    const { userId } = req;
+    const rId = Number(requestId);
+    const uId = Number(userId);
+    const membershipRequest = yield apply_models_1.default.findUnique({
+        where: {
+            id: rId,
+            userId: uId,
+        },
+        select: app_request_1.selectGroupMembershipRequest,
+    });
+    if (!membershipRequest)
+        throw new error_1.RequestError(messages_1.NotFound.MR, 404);
+    if (membershipRequest.user.id !== uId)
+        throw new error_1.ForbiddenError();
+    const normalizedRequest = yield (0, app_request_normalize_1.normalizeMembershipRequest)(membershipRequest);
+    return res.status(200).json(new response_1.ApiResponse(normalizedRequest, 200));
+});
+exports.getGroupMembershipRequestById = getGroupMembershipRequestById;

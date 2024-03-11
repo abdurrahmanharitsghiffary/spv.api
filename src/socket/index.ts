@@ -46,7 +46,6 @@ export const ioInit = (
   });
   io.on("connection", async (socket) => {
     try {
-      console.log("Connected");
       const user = socket.data.user;
       socket.join(Socket_Id(user.id, "USER"));
 
@@ -76,12 +75,10 @@ export const ioInit = (
 
       socket.on(Socket_Event.VISIT_ROOM, (roomId: number) => {
         socket.join(Socket_Id(roomId, "ROOM"));
-        console.log(socket.rooms, "Rooms");
       });
 
       socket.on(Socket_Event.UNVISIT_ROOM, (roomId: number) => {
         socket.leave(Socket_Id(roomId, "ROOM"));
-        console.log(socket.rooms, "Rooms");
       });
 
       socket.on(

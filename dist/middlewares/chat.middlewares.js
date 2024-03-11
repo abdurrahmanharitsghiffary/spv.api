@@ -29,10 +29,8 @@ const protectChat = (req, res, next) => __awaiter(void 0, void 0, void 0, functi
 exports.protectChat = protectChat;
 const parseParticipantsField = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b;
-    console.log(req.body, "bodyy");
     if (req.body.participants)
         req.body.participants = ((_b = (_a = req.body) === null || _a === void 0 ? void 0 : _a.participants) !== null && _b !== void 0 ? _b : []).map((participant) => {
-            console.log(participant[0]);
             return JSON.parse(participant)[0];
         });
     return next();

@@ -93,10 +93,8 @@ const getCounts = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         countTypes === undefined) {
         countTypes = exports.defaultTypes;
     }
-    console.log(countTypes, "Types");
     const counts = {};
     yield Promise.all(countTypes.map((type) => __awaiter(void 0, void 0, void 0, function* () {
-        console.log(convertType(type));
         counts[convertType(type)] = yield getCountByType(type, uId);
     })));
     res.status(200).json(new response_1.ApiResponse(counts, 200));

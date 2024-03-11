@@ -75,8 +75,6 @@ export const verifyRefreshToken = tryCatchMiddleware(
     next: express.NextFunction
   ) => {
     const token = req.cookies["x.spv.session"];
-    console.log(token, " token from server");
-    // console.log(req.headers, " req headers");
     if (!token) throw new RequestError("You are unauthenticated!", 401);
 
     // const tokenIsExist = await RefreshToken.findUnique({

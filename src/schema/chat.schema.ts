@@ -16,7 +16,7 @@ export const zfdRecipientId = zfd.numeric(zRecipientId);
 export const zParticipant = (key: string) =>
   z.object({
     id: zIntId(key),
-    role: z.enum(["user", "admin"]),
+    role: z.enum(["user", "admin", "co_creator"]),
   });
 
 export const zfdParticipant = (key: string) =>

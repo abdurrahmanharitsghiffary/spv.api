@@ -171,9 +171,6 @@ export const refreshToken = tryCatch(
 
 export const signOut = async (req: express.Request, res: express.Response) => {
   const token = req.cookies["x.spv.session"];
-  console.log(token, " refresh-token");
-  console.log(req.cookies);
-  console.log(req.signedCookies);
 
   if (!token) throw new RequestError("You are unauthenticated!", 401);
 

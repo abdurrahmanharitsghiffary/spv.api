@@ -78,9 +78,6 @@ const checkIsParticipatedInChatRoom = ({ body = "", params = "", shouldAlsoBlock
     const isForbiddenForUser = isParticipated
         ? ((_g = (_f = chatRoom.participants) === null || _f === void 0 ? void 0 : _f[0]) === null || _g === void 0 ? void 0 : _g.role) === "user" && shouldAlsoBlockUserRole
         : shouldAlsoBlockUserRole;
-    console.log(shouldAlsoBlockUserRole, "ShouldAlsoBlockUserRole");
-    console.log(chatRoom, "Chat ROOOOMSSS");
-    console.log(isForbiddenForUser, "isForbiddenForUser");
     const isForbidden = isNotParticipatedInGroupChatAndVisibilityIsPrivate ||
         isNotParticipatedInPersonalChat ||
         isForbiddenForUser;

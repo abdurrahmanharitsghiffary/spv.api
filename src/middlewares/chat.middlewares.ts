@@ -25,11 +25,9 @@ export const parseParticipantsField = async (
   res: express.Response,
   next: express.NextFunction
 ) => {
-  console.log(req.body, "bodyy");
   if (req.body.participants)
     req.body.participants = (req.body?.participants ?? []).map(
       (participant: any) => {
-        console.log(participant[0]);
         return JSON.parse(participant)[0];
       }
     );

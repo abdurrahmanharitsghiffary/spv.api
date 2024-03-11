@@ -13,45 +13,65 @@ exports.getSearchResults = void 0;
 const user_utils_1 = require("../utils/user/user.utils");
 const paging_1 = require("../utils/paging");
 const post_utils_1 = require("../utils/post/post.utils");
+const chatRoom_utils_1 = require("../utils/chat/chatRoom.utils");
+// const searchType: string[] = ["user", "post", "all"];
 const getSearchResults = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, _b, _c, _d, _e, _f;
+    var _a, _b;
     const { userId } = req;
     let { type = "all", q = "", limit = 20, offset = 0, filter } = req.query;
     offset = Number(offset);
     limit = Number(limit);
     let searchResults = {};
-    const userResults = yield (0, user_utils_1.searchUsersByName)({
-        query: q,
-        limit,
-        offset,
-        currentUserId: Number(userId),
-        filter: filter,
-    });
-    const postResults = yield (0, post_utils_1.searchPosts)({
-        limit,
-        offset,
-        query: q,
-        currentUserId: Number(userId),
-    });
+    const isTypeAllOr = (key) => type === "all" || type === key;
+    let userResults;
+    let postResults;
+    let groupResults;
+    if (isTypeAllOr("user")) {
+        userResults = yield (0, user_utils_1.searchUsersByName)({
+            query: q,
+            limit,
+            offset,
+            currentUserId: Number(userId),
+            filter: filter,
+        });
+    }
+    if (isTypeAllOr("group")) {
+        groupResults = yield (0, chatRoom_utils_1.searchGroups)({
+            limit,
+            offset,
+            query: q,
+        });
+    }
+    if (isTypeAllOr("post")) {
+        postResults = yield (0, post_utils_1.searchPosts)({
+            limit,
+            offset,
+            query: q,
+            currentUserId: Number(userId),
+        });
+    }
     if (type === "user") {
         searchResults = userResults;
     }
     else if (type === "post") {
         searchResults = postResults;
     }
+    else if (type === "group") {
+        searchResults = groupResults;
+    }
     else if (type === "all") {
         searchResults.users = userResults;
         searchResults.posts = postResults;
+        searchResults.groups = groupResults;
         return res.status(200).json(yield (0, paging_1.getPagingObject)({
             data: searchResults,
             req,
-            total_records: ((_b = (_a = searchResults === null || searchResults === void 0 ? void 0 : searchResults.posts) === null || _a === void 0 ? void 0 : _a.total) !== null && _b !== void 0 ? _b : 0) +
-                ((_d = (_c = searchResults === null || searchResults === void 0 ? void 0 : searchResults.users) === null || _c === void 0 ? void 0 : _c.total) !== null && _d !== void 0 ? _d : 0),
+            total_records: Object.values(searchResults).reduce((e, n) => e + n.total, 0),
         }));
     }
     return res.status(200).json(yield (0, paging_1.getPagingObject)({
-        data: (_e = searchResults === null || searchResults === void 0 ? void 0 : searchResults.data) !== null && _e !== void 0 ? _e : [],
-        total_records: (_f = searchResults === null || searchResults === void 0 ? void 0 : searchResults.total) !== null && _f !== void 0 ? _f : 0,
+        data: (_a = searchResults === null || searchResults === void 0 ? void 0 : searchResults.data) !== null && _a !== void 0 ? _a : [],
+        total_records: (_b = searchResults === null || searchResults === void 0 ? void 0 : searchResults.total) !== null && _b !== void 0 ? _b : 0,
         req,
     }));
 });

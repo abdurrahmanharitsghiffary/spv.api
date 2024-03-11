@@ -15,7 +15,7 @@ import { selectUserSimplified } from "../lib/query/user";
 import { emitSocketEvent } from "../socket/socket.utils";
 import { Socket_Event } from "../socket/event";
 import { normalizeChatRooms } from "../utils/chat/chatRoom.normalize";
-import { RequestError } from "../lib/error";
+import { ForbiddenError, RequestError } from "../lib/error";
 import Image from "../models/image.models";
 import { checkParticipants } from "../utils";
 import { ParticipantsField } from "../types/chat";
@@ -51,7 +51,6 @@ export const createGroupChat = async (
   });
 
   createdGroupChat.participants.forEach((participant) => {
-    if (participant.id === uId) return null;
     emitSocketEvent(
       req,
       Socket_Id(participant.id, "USER"),
@@ -123,8 +122,6 @@ export const joinGroupChat = async (
 
   const normalizedRoom = await normalizeChatRooms(joinedRoom.chatRoom);
   joinedRoom.chatRoom.participants.forEach(async (participant) => {
-    if (participant.user.id === uId) return null;
-
     emitSocketEvent(
       req,
       Socket_Id(participant.user.id, "USER"),
@@ -184,8 +181,6 @@ export const leaveGroupChat = async (
 
   const normalizedRoom = await normalizeChatRooms(joinedRoom.chatRoom);
   joinedRoom.chatRoom.participants.forEach((participant) => {
-    if (participant.user.id === uId) return null;
-
     emitSocketEvent(
       req,
       Socket_Id(participant.user.id, "USER"),
@@ -252,7 +247,6 @@ export const updateGroupChat = async (
   const normalizedRoom = await normalizeChatRooms(updatedChatRoom);
 
   updatedChatRoom.participants.forEach((participant) => {
-    if (participant.user.id === uId) return null;
     emitSocketEvent(
       req,
       Socket_Id(participant.user.id, "USER"),
@@ -299,7 +293,6 @@ export const deleteGroupChat = async (
   }
 
   deletedRoom.participants.forEach((participant) => {
-    if (participant.userId === uId) return null;
     emitSocketEvent(
       req,
       Socket_Id(participant.userId, "USER"),
@@ -380,7 +373,6 @@ export const updateGroupChatParticipants = async (
   );
 
   updatedGroupChat.participants.forEach((participant) => {
-    if (participant.userId === uId) return null;
     emitSocketEvent(
       req,
       Socket_Id(participant.userId, "USER"),
@@ -440,7 +432,6 @@ export const deleteGroupParticipants = async (
   });
 
   chatRoomAfterDeletingParticipants.participants.forEach((participant) => {
-    if (participant.userId === uId) return null;
     emitSocketEvent(
       req,
       Socket_Id(participant.userId, "USER"),
@@ -510,7 +501,6 @@ export const addGroupParticipants = async (
   );
 
   chatParticipants.forEach((p) => {
-    if (p.userId === uId) return null;
     emitSocketEvent(
       req,
       Socket_Id(p.userId, "USER"),
@@ -540,7 +530,7 @@ export const requestGroupChatApplication = async (
 
   if (cht?.applyType !== "private")
     throw new RequestError(
-      "This group allows you to join without sending application request.",
+      "This group allows you to join without sending membership request.",
       400
     );
 
@@ -558,7 +548,7 @@ export const requestGroupChatApplication = async (
 
   if (pendingRequest) {
     throw new RequestError(
-      "You already have a pending application request. Please wait until the request is either approved or rejected.",
+      "You already have a pending membership request. Please wait until the request is either approved or rejected.",
       409
     );
   }
@@ -586,7 +576,7 @@ export const requestGroupChatApplication = async (
   return res
     .status(201)
     .json(
-      new ApiResponse(normalizedAprq, 201, "Application request has been sent.")
+      new ApiResponse(normalizedAprq, 201, "Membership request has been sent.")
     );
 };
 
@@ -699,7 +689,7 @@ export const approveGroupChatApplicationRequest = async (
     );
   });
 
-  notify(req, {
+  await notify(req, {
     groupId: gId,
     type: "accepted_group_application",
     receiverId: apRq.userId,
@@ -753,7 +743,7 @@ export const rejectGroupChatApplicationRequest = async (
     });
   });
 
-  notify(req, {
+  await notify(req, {
     groupId: gId,
     type: "rejected_group_application",
     receiverId: apRq.userId,
@@ -844,4 +834,28 @@ export const deleteMembershipRequest = async (
   });
 
   return res.status(204).json(new ApiResponse(null, 204));
+};
+
+export const getGroupMembershipRequestById = async (
+  req: express.Request,
+  res: express.Response
+) => {
+  const { requestId } = req.params;
+  const { userId } = req as ExpressRequestExtended;
+  const rId = Number(requestId);
+  const uId = Number(userId);
+  const membershipRequest = await ApplicationRequest.findUnique({
+    where: {
+      id: rId,
+      userId: uId,
+    },
+    select: selectGroupMembershipRequest,
+  });
+
+  if (!membershipRequest) throw new RequestError(NotFound.MR, 404);
+  if (membershipRequest.user.id !== uId) throw new ForbiddenError();
+
+  const normalizedRequest = await normalizeMembershipRequest(membershipRequest);
+
+  return res.status(200).json(new ApiResponse(normalizedRequest, 200));
 };

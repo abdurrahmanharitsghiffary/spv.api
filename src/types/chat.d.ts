@@ -19,21 +19,24 @@ type ChatRoomParticipant = UserSimplified & {
   joinedAt: Date;
 };
 
-type ChatRoom = {
+type ChatRoomSimplified = {
   id: number;
   picture: Image;
-  participants: ChatRoomParticipant[];
   totalParticipants: number;
-  messages: Chat[];
-  totalUnreadMessages: number;
   description?: string | null;
   title?: string | null;
   isGroupChat: boolean;
   createdAt: Date;
-  applyType: "public" | "private";
-  groupVisibility: "public" | "private";
+  applyType: $Enums.ApplyType;
+  groupVisibility: $Enums.GroupType;
   updatedAt: Date;
 };
+
+type ChatRoom = {
+  participants: ChatRoomParticipant[];
+  messages: Chat[];
+  totalUnreadMessages: number;
+} & ChatRoomSimplified;
 
 type ParticipantField = { id: number; role: $Enums.Role };
 type ParticipantsField = ParticipantField[];

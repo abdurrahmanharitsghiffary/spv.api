@@ -142,9 +142,6 @@ exports.refreshToken = (0, handler_middlewares_1.tryCatch)((req, res) => __await
 }));
 const signOut = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const token = req.cookies["x.spv.session"];
-    console.log(token, " refresh-token");
-    console.log(req.cookies);
-    console.log(req.signedCookies);
     if (!token)
         throw new error_1.RequestError("You are unauthenticated!", 401);
     res.clearCookie("x.spv.session", {

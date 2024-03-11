@@ -27,13 +27,7 @@ export const postCommentValidationQuery = z.object({
       (arg) => {
         const options = ["latest", "lowest", "highest", "oldest"];
         const str = arg.split(",");
-        console.log(
-          options.every((e) => {
-            return str.filter((s) => s === e).length < 2;
-          })
-        );
         return options.every((e) => {
-          console.log(options.filter((s) => s === e));
           return str.filter((s) => s === e).length < 2;
         });
       },

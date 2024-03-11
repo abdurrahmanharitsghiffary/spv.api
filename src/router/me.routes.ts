@@ -52,6 +52,7 @@ import {
 import { uploadFilesToCloudinary } from "../middlewares/cloudinary.middleware";
 import {
   deleteMembershipRequest,
+  getGroupMembershipRequestById,
   getMembershipRequests,
 } from "../controllers/groupChat.controllers";
 
@@ -59,19 +60,17 @@ const router = express.Router();
 
 router.use(verifyToken);
 
-router
-  .route("/membership-requests")
-  .get(
-    validatePagingOptions,
-    validate(
-      z.object({
-        query: z.object({
-          type: z.enum(["all", "pending", "approved", "rejected"]).optional(),
-        }),
-      })
-    ),
-    tryCatch(getMembershipRequests)
-  );
+router.route("/membership-requests").get(
+  validatePagingOptions,
+  validate(
+    z.object({
+      query: z.object({
+        type: z.enum(["all", "pending", "approved", "rejected"]).optional(),
+      }),
+    })
+  ),
+  tryCatch(getMembershipRequests)
+);
 
 router
   .route("/account")
@@ -254,6 +253,7 @@ router.route("/notifications/read").post(
 
 router
   .route("/membership-requests/:requestId")
+  .get(validateParamsV2("requestId"), tryCatch(getGroupMembershipRequestById))
   .delete(tryCatch(deleteMembershipRequest));
 
 router

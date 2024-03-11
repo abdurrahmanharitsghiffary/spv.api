@@ -21,7 +21,6 @@ const findNotUserRoleParticipant = (roomId, userId) => __awaiter(void 0, void 0,
         where: {
             role: { not: "user" },
             chatRoomId: roomId,
-            userId: { not: userId },
         },
         select: { userId: true },
     });

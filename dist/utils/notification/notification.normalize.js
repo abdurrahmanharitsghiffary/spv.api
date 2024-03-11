@@ -29,6 +29,9 @@ const normalizeNotification = (payload) => __awaiter(void 0, void 0, void 0, fun
         if (normalizedNotification.type === "liking_post") {
             normalizedNotification.postId = payload.postId;
         }
+        if (["accepted_group_application", "rejected_group_application"].includes(normalizedNotification.type)) {
+            normalizedNotification.groupId = payload.groupId;
+        }
         const sender = yield (0, user_normalize_1.simplifyUserWF)(payload.user);
         const receiver = yield (0, user_normalize_1.simplifyUserWF)(payload.receiver);
         return resolve(Object.assign(Object.assign({}, normalizedNotification), { sender,

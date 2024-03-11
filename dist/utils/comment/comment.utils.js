@@ -73,7 +73,6 @@ const findCommentById = (commentId, currentUserId, shouldNormalize = true) => __
         },
         select: selectCommentExtended(currentUserId),
     });
-    console.log(comment);
     if (!comment)
         throw new error_1.RequestError(messages_1.NotFound.COMMENT, 404);
     if (!shouldNormalize)

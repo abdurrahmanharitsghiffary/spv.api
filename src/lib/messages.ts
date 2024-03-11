@@ -9,4 +9,5 @@ export const NotFound = {
   PROFILE_IMAGE: "Profile image not found",
   GROUP_CHAT: "Group chat not found",
   APRQ: "Can't found the application request.",
+  MR: "Membership request not found.",
 } as const;

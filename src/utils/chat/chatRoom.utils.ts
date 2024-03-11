@@ -3,11 +3,15 @@ import { excludeBlockedUser, excludeBlockingUser } from "../../lib/query/user";
 import { ChatRoom } from "../../models/chat.models";
 import {
   selectChatRoomPWL,
+  selectChatRoomSimplified,
   selectChatRoomWithWhereInput,
 } from "../../lib/query/chat";
 import { RequestError } from "../../lib/error";
 import { ChatRoom as ChatRoomT } from "../../types/chat";
-import { normalizeChatRooms } from "./chatRoom.normalize";
+import {
+  normalizeChatRoomSimplified,
+  normalizeChatRooms,
+} from "./chatRoom.normalize";
 import prisma from "../../config/prismaClient";
 import { userWhereAndInput } from "../user/user.utils";
 import { Code } from "../../lib/code";
@@ -194,7 +198,6 @@ export const createChatRoom = async ({
   participants = participants
     .map((item) => ({ ...item, id: Number(item.id) }))
     .filter((item) => !isNaN(item.id));
-  console.log(participants, "Participants");
   const isUserIncludedInFields = participants.some(
     (item) => item.id === currentUserId
   );
@@ -328,4 +331,45 @@ export const isChatRoomFound = async ({
     );
 
   return chatRoom;
+};
+
+export const searchGroups = async ({
+  limit = 20,
+  offset = 0,
+  query,
+}: {
+  query?: string;
+  limit?: number;
+  offset?: number;
+}) => {
+  const filter = {
+    groupVisibility: "public",
+    isGroupChat: true,
+    OR: [
+      {
+        title: { contains: query, mode: "insensitive" },
+      },
+      {
+        description: { contains: query, mode: "insensitive" },
+      },
+    ],
+  } satisfies Prisma.ChatRoomWhereInput;
+
+  const groups = await ChatRoom.findMany({
+    where: filter,
+    orderBy: [{ applyType: "asc" }, { title: "asc" }, { createdAt: "desc" }],
+    take: limit,
+    skip: offset,
+    select: selectChatRoomSimplified,
+  });
+
+  const normalizedResults = await Promise.all(
+    groups.map((g) => normalizeChatRoomSimplified(g))
+  );
+
+  const total = await ChatRoom.count({
+    where: filter,
+  });
+
+  return { data: normalizedResults, total };
 };

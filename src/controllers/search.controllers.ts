@@ -6,18 +6,16 @@ import { searchUsersByName } from "../utils/user/user.utils";
 import { getPagingObject } from "../utils/paging";
 import { searchPosts } from "../utils/post/post.utils";
 import { ExpressRequestExtended } from "../types/request";
+import { ChatRoomSimplified } from "../types/chat";
+import { searchGroups } from "../utils/chat/chatRoom.utils";
 
 export type PaginationData<T> = { data: T; total: number };
 export type SearchAllData = {
   posts: PaginationData<Post[]>;
   users: PaginationData<UserAccountPublic[]>;
+  groups: PaginationData<ChatRoomSimplified[]>;
 };
 // const searchType: string[] = ["user", "post", "all"];
-
-export interface SearchcResult {
-  posts?: Post[];
-  users?: UserAccountPublic[];
-}
 
 export const getSearchResults = async (
   req: express.Request,
@@ -31,38 +29,62 @@ export const getSearchResults = async (
   let searchResults:
     | PaginationData<Post[]>
     | PaginationData<UserAccountPublic[]>
+    | PaginationData<ChatRoomSimplified[]>
     | SearchAllData
     | {} = {};
-  const userResults = await searchUsersByName({
-    query: q as string,
-    limit,
-    offset,
-    currentUserId: Number(userId),
-    filter: filter as SearchFilter,
-  });
 
-  const postResults = await searchPosts({
-    limit,
-    offset,
-    query: q as string,
-    currentUserId: Number(userId),
-  });
+  const isTypeAllOr = (key: string) => type === "all" || type === key;
+
+  let userResults: any;
+  let postResults: any;
+  let groupResults: any;
+
+  if (isTypeAllOr("user")) {
+    userResults = await searchUsersByName({
+      query: q as string,
+      limit,
+      offset,
+      currentUserId: Number(userId),
+      filter: filter as SearchFilter,
+    });
+  }
+
+  if (isTypeAllOr("group")) {
+    groupResults = await searchGroups({
+      limit,
+      offset,
+      query: q as string,
+    });
+  }
+
+  if (isTypeAllOr("post")) {
+    postResults = await searchPosts({
+      limit,
+      offset,
+      query: q as string,
+      currentUserId: Number(userId),
+    });
+  }
 
   if (type === "user") {
     searchResults = userResults;
   } else if (type === "post") {
     searchResults = postResults;
+  } else if (type === "group") {
+    searchResults = groupResults;
   } else if (type === "all") {
     (searchResults as SearchAllData).users = userResults;
     (searchResults as SearchAllData).posts = postResults;
+    (searchResults as SearchAllData).groups = groupResults;
 
     return res.status(200).json(
       await getPagingObject({
         data: searchResults as SearchAllData,
         req,
-        total_records:
-          ((searchResults as SearchAllData)?.posts?.total ?? 0) +
-          ((searchResults as SearchAllData)?.users?.total ?? 0),
+        total_records: Object.values(searchResults as SearchAllData).reduce(
+          (e, n) => e + n.total,
+          0
+        ),
       })
     );
   }

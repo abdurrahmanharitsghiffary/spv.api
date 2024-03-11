@@ -13,7 +13,6 @@ export const findNotUserRoleParticipant = async (
     where: {
       role: { not: "user" },
       chatRoomId: roomId,
-      userId: { not: userId },
     },
     select: { userId: true },
   });

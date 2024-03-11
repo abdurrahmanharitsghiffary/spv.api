@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.isChatRoomFound = exports.createChatRoom = exports.findAllUserChatRoom = exports.findChatRoomById = exports.chatRoomWhereOrInput = void 0;
+exports.searchGroups = exports.isChatRoomFound = exports.createChatRoom = exports.findAllUserChatRoom = exports.findChatRoomById = exports.chatRoomWhereOrInput = void 0;
 const user_1 = require("../../lib/query/user");
 const chat_models_1 = require("../../models/chat.models");
 const chat_1 = require("../../lib/query/chat");
@@ -135,7 +135,6 @@ const createChatRoom = ({ participants = [], currentUserId, isGroupChat = false,
     participants = participants
         .map((item) => (Object.assign(Object.assign({}, item), { id: Number(item.id) })))
         .filter((item) => !isNaN(item.id));
-    console.log(participants, "Participants");
     const isUserIncludedInFields = participants.some((item) => item.id === currentUserId);
     if (isUserIncludedInFields) {
         throw new error_1.RequestError("participants field should not contain the group chat creator (it will be automatically added as creator).", 400);
@@ -242,3 +241,30 @@ const isChatRoomFound = ({ chatRoomId, currentUserId, customMessage, }) => __awa
     return chatRoom;
 });
 exports.isChatRoomFound = isChatRoomFound;
+const searchGroups = ({ limit = 20, offset = 0, query, }) => __awaiter(void 0, void 0, void 0, function* () {
+    const filter = {
+        groupVisibility: "public",
+        isGroupChat: true,
+        OR: [
+            {
+                title: { contains: query, mode: "insensitive" },
+            },
+            {
+                description: { contains: query, mode: "insensitive" },
+            },
+        ],
+    };
+    const groups = yield chat_models_1.ChatRoom.findMany({
+        where: filter,
+        orderBy: [{ applyType: "asc" }, { title: "asc" }, { createdAt: "desc" }],
+        take: limit,
+        skip: offset,
+        select: chat_1.selectChatRoomSimplified,
+    });
+    const normalizedResults = yield Promise.all(groups.map((g) => (0, chatRoom_normalize_1.normalizeChatRoomSimplified)(g)));
+    const total = yield chat_models_1.ChatRoom.count({
+        where: filter,
+    });
+    return { data: normalizedResults, total };
+});
+exports.searchGroups = searchGroups;

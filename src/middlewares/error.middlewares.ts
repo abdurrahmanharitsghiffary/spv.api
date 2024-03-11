@@ -15,8 +15,6 @@ export const error = async (
   if (err.code === "LIMIT_FILE_SIZE") {
     return res.status(413).json(new ApiError(413, errorsMessage.FILE_TOO_BIG));
   }
-  console.log(message, "ErrMessage");
-  console.log("Error: ", err);
   switch (name) {
     case "JsonWebTokenError":
       {

@@ -48,8 +48,10 @@ const protectChatRoom = (params, isGroupChat, protectDelete) => (0, handler_midd
     // if (!participant) {
     // throw new RequestError("You are not participated in this group", 403);
     // }
-    if (!(room === null || room === void 0 ? void 0 : room.participants.some((user) => (protectDelete ? user.role === "creator" : user.role !== "user") &&
-        user.userId === uId)) ||
+    const isRole = (b, role) => b === role;
+    if (!(room === null || room === void 0 ? void 0 : room.participants.some((user) => (protectDelete
+        ? isRole(user.role, "creator") || isRole(user.role, "co_creator")
+        : user.role !== "user") && user.userId === uId)) ||
         !participant) {
         throw new error_1.ForbiddenError();
     }

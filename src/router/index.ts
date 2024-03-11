@@ -1,5 +1,6 @@
 import { Express } from "express";
 import userRouter from "./user.routes";
+import bugRouter from "./bugs.routes";
 import authRouter from "./auth.routes";
 import postRouter from "./post.routes";
 import googleRouter from "./googleAuth.routes";
@@ -25,6 +26,7 @@ import { getCountsValidation } from "../schema/count.schema";
 export function router(app: Express) {
   app.use("/api/auth/google", googleRouter);
   app.use("/api/auth", authRouter);
+  app.use("/api/bugs", bugRouter);
   app.use("/api/users", userRouter);
   app.use("/api/posts", postRouter);
   app.use("/api/comments", commentRouter);
@@ -41,7 +43,7 @@ export function router(app: Express) {
         query: z.object({
           limit: zLimit,
           offset: zOffset,
-          type: z.enum(["post", "user", "all"]).optional(),
+          type: z.enum(["post", "user", "all", "group"]).optional(),
           q: z.string().optional(),
           filter: z.enum(["followed", "not_followed"]).optional(),
         }),

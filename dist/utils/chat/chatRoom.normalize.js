@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.normalizeChatRooms = void 0;
+exports.normalizeChatRoomSimplified = exports.normalizeChatRooms = void 0;
 const chat_normalize_1 = require("./chat.normalize");
 const normalizeChatRooms = (room) => new Promise((resolve) => __awaiter(void 0, void 0, void 0, function* () {
     return resolve({
@@ -29,3 +29,18 @@ const normalizeChatRooms = (room) => new Promise((resolve) => __awaiter(void 0, 
     });
 }));
 exports.normalizeChatRooms = normalizeChatRooms;
+const normalizeChatRoomSimplified = (payload) => __awaiter(void 0, void 0, void 0, function* () {
+    return Promise.resolve({
+        applyType: payload.applyType,
+        createdAt: payload.createdAt,
+        id: payload.id,
+        groupVisibility: payload.groupVisibility,
+        isGroupChat: payload.isGroupChat,
+        picture: payload.groupPicture,
+        totalParticipants: payload._count.participants,
+        updatedAt: payload.updatedAt,
+        description: payload.description,
+        title: payload.title,
+    });
+});
+exports.normalizeChatRoomSimplified = normalizeChatRoomSimplified;

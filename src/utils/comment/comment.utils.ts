@@ -96,7 +96,6 @@ export const findCommentById = async <
     },
     select: selectCommentExtended(currentUserId),
   });
-  console.log(comment);
   if (!comment) throw new RequestError(NotFound.COMMENT, 404);
   if (!shouldNormalize) return comment as any;
   const normalizedComment = await normalizeComment(comment);

@@ -27,7 +27,6 @@ const validate = (schema) => (req, res, next) => __awaiter(void 0, void 0, void 
 });
 exports.validate = validate;
 const validateBody = (schema) => (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    console.log(req.body, "BODDIEHH");
     try {
         yield zod_1.z.object({ body: schema }).parseAsync({
             body: req.body,

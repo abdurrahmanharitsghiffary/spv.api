@@ -26,6 +26,7 @@ const notify = (req, data) => __awaiter(void 0, void 0, void 0, function* () {
         data: Object.assign({}, data),
         select: Object.assign({}, notification_1.selectNotificationSimplified),
     });
+    console.log(createdNotification, "Created Notification");
     const normalizedNotification = yield (0, notification_normalize_1.normalizeNotification)(createdNotification);
     (0, socket_utils_1.emitSocketEvent)(req, (0, consts_1.Socket_Id)(normalizedNotification.receiverId, "USER"), event_1.Socket_Event.NOTIFY, normalizedNotification);
     return normalizedNotification;

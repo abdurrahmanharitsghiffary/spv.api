@@ -12,6 +12,7 @@ export const selectNotificationSimplified = {
   receiverId: true,
   type: true,
   userId: true,
+  groupId: true,
   updatedAt: true,
   receiver: {
     select: {
@@ -38,6 +39,7 @@ export const selectNotification = {
       ...selectSingleComment,
     },
   },
+  groupId: true,
   createdAt: true,
   isRead: true,
   post: {

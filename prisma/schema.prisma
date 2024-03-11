@@ -41,6 +41,7 @@ model User {
   sendedNotifications Notification[] @relation("SendedNotifications")
   notifications Notification[] @relation("ReceivedNotifications")
   posts Post[]
+  reportedBugs Bug[]
   comments Comment[]
   requestedApplication ApplicationRequest[]
   commentLikes CommentLike[]
@@ -173,6 +174,8 @@ model Image {
   groupId Int? @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  bugId Int? @unique
+  bug Bug?  @relation(fields: [bugId], references: [id], onDelete: Cascade)
   group ChatRoom? @relation(fields: [groupId], references: [id], onDelete: Cascade)
   chat Chat? @relation("ChatImage", fields: [chatId],references: [id], onDelete: Cascade)
   profile Profile? @relation("ProfileImage",fields: [profileId],  references: [id], onDelete: Cascade)
@@ -348,4 +351,17 @@ enum ApplicationRequestStatus {
 enum ApplicationRequestType {
   group_chat
   group_community
+}
+
+model Bug {
+  id Int @default(autoincrement()) @id
+  description String @db.Text
+  images Image[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  isResolved Boolean @default(false)
+  userId Int
+  user User @relation(fields: [userId], references: [id],onDelete: Cascade)
+
+  @@map("bugs")
 }

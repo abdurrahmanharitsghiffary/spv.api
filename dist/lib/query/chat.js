@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.selectRoomParticipant = exports.selectChatRoomWithWhereInput = exports.selectChatRoomPWL = exports.selectChatRoom = exports.selectChat = void 0;
+exports.selectChatRoomSimplified = exports.selectRoomParticipant = exports.selectChatRoomWithWhereInput = exports.selectChatRoomPWL = exports.selectChatRoom = exports.selectChat = void 0;
 const user_1 = require("./user");
 const unreadMessagesFilter = (currentUserId) => ({
     select: {
@@ -169,4 +169,16 @@ exports.selectRoomParticipant = {
     createdAt: true,
     chatRoomId: true,
     user: { select: user_1.selectUserSimplified },
+};
+exports.selectChatRoomSimplified = {
+    id: true,
+    isGroupChat: true,
+    title: true,
+    applyType: true,
+    createdAt: true,
+    updatedAt: true,
+    description: true,
+    groupPicture: { select: { id: true, src: true } },
+    groupVisibility: true,
+    _count: { select: { participants: true } },
 };
