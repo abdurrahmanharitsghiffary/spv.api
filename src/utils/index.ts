@@ -17,6 +17,9 @@ import { excludeBlockedUser, excludeBlockingUser } from "../lib/query/user";
 import Notification from "../models/notification.models";
 import { notificationWhereAndInput } from "../controllers/notification.controllers";
 
+export const upperFirstToLower = (str: string) =>
+  str?.[0]?.toUpperCase() + str?.slice(1);
+
 export const generateRefreshToken = async (payload: string | object | Buffer) =>
   await JWT.sign(payload, REFRESH_TOKEN_SECRET as string, {
     expiresIn: "7d",
@@ -48,16 +51,28 @@ export const isNullOrUndefined = (data: any) => {
 };
 
 export const checkParticipants = async ({
-  currentUserRole,
+  currentUserId,
   groupId,
   participants,
   isDeleting = false,
 }: {
   participants: ParticipantsField | number[];
   groupId: number;
-  currentUserRole: $Enums.ParticipantRole;
+  currentUserId: number;
   isDeleting?: boolean;
 }) => {
+  const roles = {
+    creator: 0,
+    co_creator: 1,
+    admin: 2,
+    user: 3,
+  } as const;
+  const currentUser = await ChatRoomParticipant.findUnique({
+    where: {
+      chatRoomId_userId: { chatRoomId: groupId, userId: currentUserId },
+    },
+  });
+  const currentUserRole = currentUser?.role!;
   const isAdding = (participants as any)?.[0]?.id === undefined && !isDeleting;
   const chatRoom = ChatRoom.findUnique({
     where: {
@@ -71,8 +86,8 @@ export const checkParticipants = async ({
   await Promise.all(
     participants.map(async (item, i) => {
       const id = isDeleting || isAdding ? item : (item as any).id;
-
-      const participantRole: $Enums.Role | null =
+      const isUpdatingSelf = id === currentUserId;
+      const designatedNewRole: $Enums.Role | null =
         (item as ParticipantField)?.role ?? null;
 
       const user = await User.findUnique({
@@ -91,8 +106,23 @@ export const checkParticipants = async ({
           },
         });
 
-        // Check if user is participated in the group before removing them
-        if (!participant && !isAdding) {
+        const participantRole = participant?.role!;
+        const isNotMemberOfTheGroup = !participant && !isAdding;
+
+        const isAddingMemberThatAlreadyMemberOfTheGroup =
+          participant && isAdding;
+
+        const isNotAllowedUpdateToHigherRoleWithCurrentRole =
+          roles[currentUserRole] > roles[designatedNewRole];
+        const isNotAllowedToUpdateUserWithHigherRole =
+          roles[currentUserRole] >= roles[participantRole];
+
+        const isPromoting = isNotAllowedUpdateToHigherRoleWithCurrentRole;
+
+        const isForbiddenForDeletingUpperRoleMemberFromGroup =
+          isNotAllowedToUpdateUserWithHigherRole && isDeleting;
+
+        if (isNotMemberOfTheGroup) {
           errors.push({
             message: `${user.fullName} is not a member of this group.`,
             groupId,
@@ -102,38 +132,7 @@ export const checkParticipants = async ({
           return;
         }
 
-        const IS_ADMIN_PROMOTE_USER =
-          participant?.role === "user" &&
-          participantRole === "admin" &&
-          currentUserRole === "admin";
-
-        const IS_ADMIN_DEMOTING_ADMIN =
-          participant?.role === "admin" &&
-          participantRole === "user" &&
-          currentUserRole === "admin";
-
-        const IS_ADMIN_UPDATE_CREATOR =
-          participant?.role === "creator" && currentUserRole === "admin";
-
-        const IS_UPDATING_USER_WITH_ROLE_ADMIN =
-          participant?.role === "admin" && currentUserRole === "admin";
-
-        // Check if user already exist in the group before add them
-        // if user is already exist with role user and the item.role is "admin" that user will be promoted as admin in the group
-
-        if (participant && IS_ADMIN_UPDATE_CREATOR) {
-          errors.push({
-            message: `Admin cannot ${
-              isDeleting ? "delete" : "demote"
-            } the group creator`,
-            code: Code.FORBIDDEN,
-            groupId,
-            id,
-          });
-          return;
-        }
-
-        if (participant && isAdding) {
+        if (isAddingMemberThatAlreadyMemberOfTheGroup) {
           errors.push({
             message: `${user.fullName} is already a member of this group.`,
             groupId,
@@ -143,22 +142,50 @@ export const checkParticipants = async ({
           return;
         }
 
-        // Check if current user "admin" role is deleting or demoting another "admin"
-        // if yes it will add error because admin can't demote or delete another admin
-        if (
-          participant && IS_UPDATING_USER_WITH_ROLE_ADMIN && isDeleting
-            ? true
-            : IS_ADMIN_DEMOTING_ADMIN && !IS_ADMIN_PROMOTE_USER
-        ) {
+        if (isForbiddenForDeletingUpperRoleMemberFromGroup) {
           errors.push({
-            message: isDeleting
-              ? "Admin can't delete another member with role admin."
-              : "Admin can't dismiss another admin to user.",
+            message: `${upperFirstToLower(
+              currentUserRole
+            )} does not have permission to delete another user with role ${participantRole} from the group`,
+            groupId,
+            code: Code.FORBIDDEN,
+            id,
+          });
+        }
+
+        if (isUpdatingSelf && isNotAllowedUpdateToHigherRoleWithCurrentRole) {
+          errors.push({
+            code: Code.FORBIDDEN,
+            id,
+            groupId,
+            message:
+              "You are not permitted to promote yourself to a higher role.",
+          });
+          return;
+        }
+
+        if (isNotAllowedUpdateToHigherRoleWithCurrentRole) {
+          errors.push({
+            code: Code.FORBIDDEN,
+            message: `${upperFirstToLower(
+              currentUserRole
+            )} does not have permission to promote another user to ${designatedNewRole}.`,
+            id,
+            groupId,
+          });
+        }
+
+        if (isNotAllowedToUpdateUserWithHigherRole && !isUpdatingSelf) {
+          errors.push({
+            message: `${upperFirstToLower(
+              currentUserRole
+            )} does not have permission to ${
+              isPromoting ? "promote" : "demote"
+            } a user with the role ${participantRole}.`,
             code: Code.FORBIDDEN,
             id,
             groupId,
           });
-          return;
         }
       } else {
         errors.push({
@@ -170,14 +197,12 @@ export const checkParticipants = async ({
     })
   );
 
-  // Should we edit the code to make an admin can demote another admin? for now, nahh
-
   if (errors.length > 0)
     throw new RequestError(
       isDeleting
-        ? "Failed to remove participants."
+        ? "Failed to remove participants from the group."
         : isAdding
-        ? "Failed add participants into the group."
+        ? "Failed to add participants to the group."
         : "Failed to update participants in the group.",
       400,
       errors

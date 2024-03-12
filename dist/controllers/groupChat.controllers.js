@@ -269,7 +269,7 @@ const updateGroupChatParticipants = (req, res) => __awaiter(void 0, void 0, void
     yield (0, utils_1.checkParticipants)({
         participants,
         groupId: gId,
-        currentUserRole: userRole,
+        currentUserId: uId,
     });
     const updatedGroupChat = yield chat_models_1.ChatRoom.update({
         where: {
@@ -332,7 +332,7 @@ const deleteGroupParticipants = (req, res) => __awaiter(void 0, void 0, void 0, 
     yield (0, utils_1.checkParticipants)({
         participants: ids,
         groupId: gId,
-        currentUserRole: userRole,
+        currentUserId: uId,
         isDeleting: true,
     });
     const chatRoomAfterDeletingParticipants = yield chat_models_1.ChatRoom.update({
@@ -373,7 +373,7 @@ const addGroupParticipants = (req, res) => __awaiter(void 0, void 0, void 0, fun
     yield (0, utils_1.checkParticipants)({
         participants: ids,
         groupId: gId,
-        currentUserRole: userRole,
+        currentUserId: uId,
     });
     const updatedGroup = yield chat_models_1.ChatRoom.update({
         where: { isGroupChat: true, id: gId },

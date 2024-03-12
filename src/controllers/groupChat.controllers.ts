@@ -320,7 +320,7 @@ export const updateGroupChatParticipants = async (
   await checkParticipants({
     participants,
     groupId: gId,
-    currentUserRole: userRole,
+    currentUserId: uId,
   });
   const updatedGroupChat = await ChatRoom.update({
     where: {
@@ -409,7 +409,7 @@ export const deleteGroupParticipants = async (
   await checkParticipants({
     participants: ids,
     groupId: gId,
-    currentUserRole: userRole,
+    currentUserId: uId,
     isDeleting: true,
   });
 
@@ -469,7 +469,7 @@ export const addGroupParticipants = async (
   await checkParticipants({
     participants: ids,
     groupId: gId,
-    currentUserRole: userRole,
+    currentUserId: uId,
   });
 
   const updatedGroup = await ChatRoom.update({
