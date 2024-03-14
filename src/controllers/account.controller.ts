@@ -33,7 +33,7 @@ export const updateAccountImage = async (
   const { type = "profile" } = req.query;
 
   let src: string | undefined;
-  const image = getCloudinaryImage(req)?.[0];
+  const image = getCloudinaryImage(req)?.[0] as string;
   const user = await checkIsUserFound({
     userId: Number(userId),
     currentUserId: Number(userId),

@@ -1,5 +1,6 @@
 import express from "express";
 import {
+  createUser,
   deleteUser,
   getAllUsers,
   getUser,
@@ -15,12 +16,16 @@ import {
 import { getPostByUserId } from "../controllers/user.controller";
 import {
   validate,
+  validateBody,
   validatePagingOptions,
   validateParamsV2,
 } from "../middlewares/validator.middlewares";
 import { z } from "zod";
 import { zIntOrStringId, zLimit, zOffset, zText, zUsername } from "../schema";
 import { getAllBlockedUsers } from "../controllers/block.controller";
+import { createUserSchema, updateUserSchema } from "../schema/user.schema";
+import { uploadImageV2 } from "../middlewares/multer.middlewares";
+import { uploadFilesToCloudinary } from "../middlewares/cloudinary.middleware";
 
 const router = express.Router();
 router.use(verifyToken);
@@ -37,7 +42,19 @@ const validateFExtended = validate(
   })
 );
 
-router.route("/").get(validatePagingOptions, isAdmin, tryCatch(getAllUsers));
+router
+  .route("/")
+  .get(isAdmin, validatePagingOptions, tryCatch(getAllUsers))
+  .post(
+    isAdmin,
+    uploadImageV2.fields([
+      { name: "profile", maxCount: 1 },
+      { name: "cover", maxCount: 1 },
+    ]),
+    uploadFilesToCloudinary,
+    validateBody(createUserSchema),
+    tryCatch(createUser)
+  );
 
 router
   .route("/blocked")
@@ -48,12 +65,14 @@ router
   .get(validateParamsV2("userId"), tryCatch(getUser))
   .patch(
     isAdmin,
+    uploadImageV2.fields([
+      { name: "profile", maxCount: 1 },
+      { name: "cover", maxCount: 1 },
+    ]),
+    uploadFilesToCloudinary,
     validate(
       z.object({
-        body: z.object({
-          username: zUsername.optional(),
-          description: zText.optional(),
-        }),
+        body: updateUserSchema,
         params: z.object({
           userId: zIntOrStringId,
         }),

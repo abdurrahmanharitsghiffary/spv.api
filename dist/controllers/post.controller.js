@@ -261,7 +261,10 @@ const updatePost = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
         });
         if (images && images.length > 0) {
             yield tx.image.createMany({
-                data: images.map((src) => ({ postId: Number(postId), src })),
+                data: images.map((src) => ({
+                    postId: Number(postId),
+                    src,
+                })),
             });
         }
         return;

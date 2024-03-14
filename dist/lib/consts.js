@@ -14,6 +14,7 @@ exports.errorsMessage = Object.freeze({
     FILE_MIME_TYPE: "Invalid file mime types, accepted types: .jpg, .jpeg, .png, .webp",
     APRQ_ALREADY_R: "This membership request has already been rejected.",
     APRQ_ALREADY_A: "This membership request has already been approved.",
+    FAILED_CONFIRMATION_MESSAGE: "The password and confirm password do not match.",
     ALREADY_JOIN_G: "You are already a member of this group.",
 });
 const SOCKET_ID = Object.freeze({

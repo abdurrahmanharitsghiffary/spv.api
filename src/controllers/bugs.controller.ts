@@ -119,7 +119,10 @@ export const reportBug = async (
 
   if (bug && uploadedImageUrls && (uploadedImageUrls ?? []).length > 0) {
     await Image.createMany({
-      data: uploadedImageUrls.map((src) => ({ bugId: bug.id, src })),
+      data: (uploadedImageUrls as string[]).map((src) => ({
+        bugId: bug.id,
+        src,
+      })),
     });
   }
 

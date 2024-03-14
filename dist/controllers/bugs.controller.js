@@ -85,7 +85,10 @@ const reportBug = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     });
     if (bug && uploadedImageUrls && (uploadedImageUrls !== null && uploadedImageUrls !== void 0 ? uploadedImageUrls : []).length > 0) {
         yield image_models_1.default.createMany({
-            data: uploadedImageUrls.map((src) => ({ bugId: bug.id, src })),
+            data: uploadedImageUrls.map((src) => ({
+                bugId: bug.id,
+                src,
+            })),
         });
     }
     const normalizedBugRes = yield normalizeBug(bug);

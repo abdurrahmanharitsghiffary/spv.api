@@ -16,6 +16,7 @@ import { NotFound } from "../lib/messages";
 import { excludeBlockedUser, excludeBlockingUser } from "../lib/query/user";
 import Notification from "../models/notification.models";
 import { notificationWhereAndInput } from "../controllers/notification.controllers";
+import cloudinary from "../lib/cloudinary";
 
 export const upperFirstToLower = (str: string) =>
   str?.[0]?.toUpperCase() + str?.slice(1);
@@ -256,4 +257,39 @@ export const getNotificationCount = async (
     },
   });
   return c;
+};
+
+export const cloudinaryUpload = async (file: Express.Multer.File) => {
+  const base64 = await convertFileToBase64(file);
+  const uploadedFile = await cloudinary.uploader.upload(base64, {
+    resource_type: "auto",
+    public_id: `${
+      file.originalname.split("." + file.mimetype.split("/")[1])[0]
+    }-${Date.now()}`,
+  });
+
+  return uploadedFile;
+};
+
+export const convertFileToBase64 = (
+  file: Express.Multer.File
+): Promise<string> =>
+  new Promise((resolve) => {
+    {
+      const base64 = Buffer.from(file.buffer).toString("base64");
+      const dataUri = "data:" + file.mimetype + ";base64," + base64;
+      resolve(dataUri);
+    }
+  });
+
+export const getCloudinaryFileSrc = (
+  files: (string | { src: string; fieldName: string })[] | undefined,
+  key?: string
+) => {
+  if (files === undefined) return undefined;
+  if (files.every((f) => typeof f === "string")) {
+    return undefined;
+  }
+  const sr = files.find((f) => (f as any)?.fieldName === key);
+  return (sr as any)?.src as string;
 };

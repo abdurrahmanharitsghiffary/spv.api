@@ -108,7 +108,7 @@ export const createChat = async (
     senderId: uId,
     message,
     chatRoomId: cRId,
-    images,
+    images: images as string[],
   });
 
   const normalizedChat = await normalizeChat(createdChat);

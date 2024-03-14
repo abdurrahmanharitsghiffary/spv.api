@@ -18,8 +18,10 @@ export type ExpressRequestProtectedGroup = express.Request & {
   userRole: $Enums.ParticipantRole;
 };
 
+export type UploadedImageUrls = string[] | { fieldName: string; src: string }[];
+
 export type UploadedCloudinaryFile = {
-  uploadedImageUrls?: string[];
+  uploadedImageUrls?: UploadedImageUrls;
 };
 
 export type ExpressRequestCloudinary = express.Request & UploadedCloudinaryFile;

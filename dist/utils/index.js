@@ -35,7 +35,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getNotificationCount = exports.getMessageCount = exports.checkParticipants = exports.isNullOrUndefined = exports.getRandomToken = exports.generateAccessToken = exports.getFullName = exports.generateRefreshToken = exports.upperFirstToLower = void 0;
+exports.getCloudinaryFileSrc = exports.convertFileToBase64 = exports.cloudinaryUpload = exports.getNotificationCount = exports.getMessageCount = exports.checkParticipants = exports.isNullOrUndefined = exports.getRandomToken = exports.generateAccessToken = exports.getFullName = exports.generateRefreshToken = exports.upperFirstToLower = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const crypto_1 = __importDefault(require("crypto"));
 const consts_1 = require("../lib/consts");
@@ -47,6 +47,7 @@ const messages_1 = require("../lib/messages");
 const user_1 = require("../lib/query/user");
 const notification_models_1 = __importDefault(require("../models/notification.models"));
 const notification_controllers_1 = require("../controllers/notification.controllers");
+const cloudinary_1 = __importDefault(require("../lib/cloudinary"));
 const upperFirstToLower = (str) => { var _a; return ((_a = str === null || str === void 0 ? void 0 : str[0]) === null || _a === void 0 ? void 0 : _a.toUpperCase()) + (str === null || str === void 0 ? void 0 : str.slice(1)); };
 exports.upperFirstToLower = upperFirstToLower;
 const generateRefreshToken = (payload) => __awaiter(void 0, void 0, void 0, function* () {
@@ -234,3 +235,30 @@ const getNotificationCount = (userId, isReaded = false) => __awaiter(void 0, voi
     return c;
 });
 exports.getNotificationCount = getNotificationCount;
+const cloudinaryUpload = (file) => __awaiter(void 0, void 0, void 0, function* () {
+    const base64 = yield (0, exports.convertFileToBase64)(file);
+    const uploadedFile = yield cloudinary_1.default.uploader.upload(base64, {
+        resource_type: "auto",
+        public_id: `${file.originalname.split("." + file.mimetype.split("/")[1])[0]}-${Date.now()}`,
+    });
+    return uploadedFile;
+});
+exports.cloudinaryUpload = cloudinaryUpload;
+const convertFileToBase64 = (file) => new Promise((resolve) => {
+    {
+        const base64 = Buffer.from(file.buffer).toString("base64");
+        const dataUri = "data:" + file.mimetype + ";base64," + base64;
+        resolve(dataUri);
+    }
+});
+exports.convertFileToBase64 = convertFileToBase64;
+const getCloudinaryFileSrc = (files, key) => {
+    if (files === undefined)
+        return undefined;
+    if (files.every((f) => typeof f === "string")) {
+        return undefined;
+    }
+    const sr = files.find((f) => (f === null || f === void 0 ? void 0 : f.fieldName) === key);
+    return sr === null || sr === void 0 ? void 0 : sr.src;
+};
+exports.getCloudinaryFileSrc = getCloudinaryFileSrc;

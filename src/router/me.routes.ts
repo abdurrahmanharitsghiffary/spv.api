@@ -55,16 +55,18 @@ import {
   getGroupMembershipRequestById,
   getMembershipRequests,
 } from "../controllers/groupChat.controllers";
+import { validateConfirmPassword } from "../schema/user.schema";
 
 const router = express.Router();
 
 router.use(verifyToken);
 
 router.route("/membership-requests").get(
-  validatePagingOptions,
   validate(
     z.object({
       query: z.object({
+        limit: zLimit,
+        offset: zOffset,
         type: z.enum(["all", "pending", "approved", "rejected"]).optional(),
       }),
     })
@@ -106,16 +108,7 @@ router.route("/account/changepassword").patch(
           password: zPassword(),
           confirmPassword: zPassword("confirmPassword"),
         })
-        .refine(
-          (arg) => {
-            if (arg.confirmPassword !== arg.password) return false;
-            return true;
-          },
-          {
-            message: "The password and confirm password do not match.",
-            path: ["confirmPassword"],
-          }
-        ),
+        .refine(validateConfirmPassword.cb, validateConfirmPassword.message),
     })
   ),
   tryCatch(changeMyAccountPassword)
@@ -271,57 +264,3 @@ router
   .delete(validateParamsV2("followId"), tryCatch(unfollowUser));
 
 export default router;
-
-// .post(
-//   validateBody(
-//     z
-//       .object({
-//         type: zNotificationType,
-//         postId: zIntId("postId").optional(),
-//         commentId: zIntId("commentId").optional(),
-//         receiverId: zIntId("receiverId"),
-//       })
-//       .refine(
-//         (arg) => {
-//           if (
-//             (arg.type === "comment" || arg.type === "replying_comment") &&
-//             isNullOrUndefined(arg.postId)
-//           )
-//             return false;
-//           return true;
-//         },
-//         {
-//           message:
-//             "postId is required for comment and replying_comment notification type",
-//           path: ["postId"],
-//         }
-//       )
-//       .refine(
-//         (arg) => {
-//           if (
-//             arg.type === "liking_comment" &&
-//             isNullOrUndefined(arg.commentId)
-//           )
-//             return false;
-//           return true;
-//         },
-//         {
-//           message:
-//             "commentId is required for liking_comment notification type",
-//           path: ["commentId"],
-//         }
-//       )
-//       .refine(
-//         (arg) => {
-//           if (arg.type === "liking_post" && isNullOrUndefined(arg.postId))
-//             return false;
-//           return true;
-//         },
-//         {
-//           message: "postId is required for liking_post notification type",
-//           path: ["postId"],
-//         }
-//       )
-//   ),
-//   tryCatch(createNotification)
-// );

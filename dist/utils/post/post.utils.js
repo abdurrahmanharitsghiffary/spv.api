@@ -148,11 +148,16 @@ exports.findAllPosts = findAllPosts;
 const findFollowedUserPosts = ({ limit = 20, offset = 0, currentUserId, }) => __awaiter(void 0, void 0, void 0, function* () {
     const posts = yield post_models_1.default.findMany({
         where: Object.assign(Object.assign({ AND: (0, exports.postWhereAndInput)(currentUserId) }, exports.postWhereInput), { author: {
-                followedBy: {
-                    some: {
-                        id: currentUserId,
+                OR: [
+                    { id: currentUserId },
+                    {
+                        followedBy: {
+                            some: {
+                                id: currentUserId,
+                            },
+                        },
                     },
-                },
+                ],
             } }),
         orderBy: { createdAt: "desc" },
         skip: offset,

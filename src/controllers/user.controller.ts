@@ -9,7 +9,17 @@ import {
 import { getPagingObject } from "../utils/paging";
 import { ApiResponse } from "../utils/response";
 import { findPostsByAuthorId } from "../utils/post/post.utils";
-import { ExpressRequestExtended } from "../types/request";
+import {
+  ExpressRequestCloudinary,
+  ExpressRequestExtended,
+} from "../types/request";
+import { cloudinaryUpload, getCloudinaryFileSrc, getFullName } from "../utils";
+import { hash } from "bcrypt";
+import { BCRYPT_SALT, errorsMessage } from "../lib/consts";
+import { RequestError } from "../lib/error";
+import { normalizeUser } from "../utils/user/user.normalize";
+import { selectUser } from "../lib/query/user";
+import Image, { CoverImage } from "../models/image.models";
 
 export const getUser = async (req: express.Request, res: express.Response) => {
   const { userId: currentUserId } = req as ExpressRequestExtended;
@@ -54,8 +64,20 @@ export const updateUser = async (
   req: express.Request,
   res: express.Response
 ) => {
+  const { uploadedImageUrls } = req as ExpressRequestCloudinary;
+  const profileImageSrc = getCloudinaryFileSrc(uploadedImageUrls, "profile");
+  const coverImageSrc = getCloudinaryFileSrc(uploadedImageUrls, "cover");
+
   const { userId } = req.params;
-  const { username, description } = req.body;
+  const {
+    username,
+    description,
+    role,
+    firstName,
+    lastName,
+    gender,
+    birthDate,
+  } = req.body;
 
   await findUserById(Number(userId));
 
@@ -64,21 +86,49 @@ export const updateUser = async (
       id: Number(userId),
     },
     data: {
+      role,
+      firstName,
+      lastName,
+      fullName: getFullName(firstName, lastName),
       username,
     },
+    include: { profile: { select: { id: true } } },
   });
+
+  if (!user) throw new RequestError("Something went wrong!", 400);
 
   await Profile.upsert({
     where: {
       userId: user.email,
     },
     update: {
+      gender,
+      birthDate,
       profileDescription: description,
     },
     create: {
       userId: user.email,
+      profileDescription: description,
+      gender,
+      birthDate,
     },
   });
+
+  if (coverImageSrc) {
+    await CoverImage.upsert({
+      create: { profileId: user.profile?.id, src: coverImageSrc },
+      update: { src: coverImageSrc },
+      where: { profileId: user.profile?.id },
+    });
+  }
+
+  if (profileImageSrc) {
+    await Image.upsert({
+      create: { profileId: user.profile?.id, src: profileImageSrc },
+      update: { src: profileImageSrc },
+      where: { profileId: user.profile?.id },
+    });
+  }
 
   return res
     .status(204)
@@ -130,4 +180,62 @@ export const getUserIsFollowed = async (
   });
 
   return res.status(200).json(new ApiResponse(isFollowed ? true : false, 200));
+};
+
+type EMU = Express.Multer.File | undefined;
+
+export const createUser = async (
+  req: express.Request,
+  res: express.Response
+) => {
+  const { uploadedImageUrls } = req as ExpressRequestCloudinary;
+
+  const coverImageSrc = getCloudinaryFileSrc(uploadedImageUrls, "cover");
+  const profileImageSrc = getCloudinaryFileSrc(uploadedImageUrls, "profile");
+
+  const {
+    email,
+    firstName,
+    lastName,
+    username,
+    password,
+    confirmPassword,
+    role = "user",
+    gender,
+    birthDate,
+  } = req.body;
+
+  if (password !== confirmPassword)
+    throw new RequestError(errorsMessage.FAILED_CONFIRMATION_MESSAGE, 401);
+
+  const hashedPassword = await hash(password, Number(BCRYPT_SALT));
+
+  const createdUser = await User.create({
+    data: {
+      email,
+      firstName,
+      lastName,
+      username,
+      fullName: getFullName(firstName, lastName),
+      hashedPassword,
+      role,
+      profile: {
+        create: {
+          gender,
+          birthDate,
+          avatarImage: profileImageSrc
+            ? { create: { src: profileImageSrc } }
+            : undefined,
+          coverImage: coverImageSrc
+            ? { create: { src: coverImageSrc } }
+            : undefined,
+        },
+      },
+    },
+    select: selectUser,
+  });
+
+  const normalizedUser = await normalizeUser(createdUser);
+
+  return res.status(201).json(new ApiResponse(normalizedUser, 201));
 };

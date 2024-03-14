@@ -54,7 +54,7 @@ router
     ),
     tryCatch(createPost)
   )
-  .get(validatePagingOptions, isAdmin, tryCatch(getAllPosts));
+  .get(isAdmin, validatePagingOptions, tryCatch(getAllPosts));
 
 router
   .route("/following")

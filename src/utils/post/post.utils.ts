@@ -199,11 +199,16 @@ export const findFollowedUserPosts = async ({
       AND: postWhereAndInput(currentUserId),
       ...postWhereInput,
       author: {
-        followedBy: {
-          some: {
-            id: currentUserId,
+        OR: [
+          { id: currentUserId },
+          {
+            followedBy: {
+              some: {
+                id: currentUserId,
+              },
+            },
           },
-        },
+        ],
       },
     },
     orderBy: { createdAt: "desc" },

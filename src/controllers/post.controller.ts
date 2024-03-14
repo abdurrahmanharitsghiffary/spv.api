@@ -309,7 +309,10 @@ export const updatePost = async (
 
     if (images && images.length > 0) {
       await tx.image.createMany({
-        data: images.map((src) => ({ postId: Number(postId), src })),
+        data: (images as string[]).map((src) => ({
+          postId: Number(postId),
+          src,
+        })),
       });
     }
     return;
@@ -339,7 +342,7 @@ export const createPost = async (
 
     if (images && images.length > 0) {
       await tx.image.createMany({
-        data: images.map((src) => ({ postId: post.id, src })),
+        data: (images as string[]).map((src) => ({ postId: post.id, src })),
       });
       (post as any).images = images.map((src) => ({ src }));
     }

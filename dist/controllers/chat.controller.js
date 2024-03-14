@@ -100,7 +100,7 @@ const createChat = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
         senderId: uId,
         message,
         chatRoomId: cRId,
-        images,
+        images: images,
     });
     const normalizedChat = yield (0, chat_normalize_1.normalizeChat)(createdChat);
     createdChat.chatRoom.participants.forEach((participant) => {

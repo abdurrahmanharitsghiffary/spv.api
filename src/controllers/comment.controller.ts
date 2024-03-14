@@ -112,7 +112,7 @@ export const createComment = async (
     comment,
     postId: pId,
     userId: uId,
-    image: imageSrc ? imageSrc : image,
+    image: imageSrc ? imageSrc : (image as string),
     parentId: parentId || parentId === 0 ? prId : null,
   });
 
@@ -150,7 +150,7 @@ export const createReplyComment = async (
     comment,
     postId: currentComment.postId,
     userId: uId,
-    image: imageSrc ? imageSrc : image,
+    image: imageSrc ? imageSrc : (image as string),
     parentId: currentComment.id,
   });
 

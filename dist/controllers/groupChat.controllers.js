@@ -71,7 +71,7 @@ const createGroupChat = (req, res) => __awaiter(void 0, void 0, void 0, function
         currentUserId: uId,
         description,
         title,
-        imageSrc,
+        imageSrc: imageSrc,
     });
     createdGroupChat.participants.forEach((participant) => {
         (0, socket_utils_1.emitSocketEvent)(req, (0, consts_1.Socket_Id)(participant.id, "USER"), event_1.Socket_Event.JOIN_ROOM, createdGroupChat);

@@ -1,6 +1,8 @@
 import express from "express";
-import cloudinary from "../lib/cloudinary";
 import { tryCatchMiddleware } from "./handler.middlewares";
+import { cloudinaryUpload } from "../utils";
+import { UploadedImageUrls } from "../types/request";
+
 export const uploadFilesToCloudinary = tryCatchMiddleware(
   async (
     req: express.Request,
@@ -9,25 +11,27 @@ export const uploadFilesToCloudinary = tryCatchMiddleware(
   ) => {
     const files = req.files;
     const file = req.file;
-    const uploadedImageUrls: string[] = [];
+    const uploadedImageUrls: UploadedImageUrls = [];
     const uploadedFiles: Express.Multer.File[] = [];
-    if (files !== undefined) {
+    if (files !== undefined && files instanceof Array) {
       uploadedFiles.push(...Array.from((files as Express.Multer.File[]) ?? []));
     }
     if (file !== undefined) {
       uploadedFiles.push(file);
     }
 
+    if (typeof files === "object") {
+      uploadedFiles.push(...Object.values(files));
+    }
+
     await Promise.all(
       uploadedFiles.map(async (image: Express.Multer.File) => {
-        const base64 = await convertFileToBase64(image);
-        const uploadedFile = await cloudinary.uploader.upload(base64, {
-          resource_type: "auto",
-          public_id: `${
-            image.originalname.split("." + image.mimetype.split("/")[1])[0]
-          }-${Date.now()}`,
-        });
-        uploadedImageUrls.push(uploadedFile.secure_url);
+        const uploadedFile = await cloudinaryUpload(image);
+        (uploadedImageUrls as any).push(
+          typeof files === "object"
+            ? { fieldName: image.fieldname, src: uploadedFile.secure_url }
+            : uploadedFile.secure_url
+        );
       })
     );
 
@@ -35,14 +39,3 @@ export const uploadFilesToCloudinary = tryCatchMiddleware(
     return next();
   }
 );
-
-export const convertFileToBase64 = (
-  file: Express.Multer.File
-): Promise<string> =>
-  new Promise((resolve) => {
-    {
-      const base64 = Buffer.from(file.buffer).toString("base64");
-      const dataUri = "data:" + file.mimetype + ";base64," + base64;
-      resolve(dataUri);
-    }
-  });

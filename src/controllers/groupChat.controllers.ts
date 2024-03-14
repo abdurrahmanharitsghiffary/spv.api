@@ -47,7 +47,7 @@ export const createGroupChat = async (
     currentUserId: uId,
     description,
     title,
-    imageSrc,
+    imageSrc: imageSrc as string,
   });
 
   createdGroupChat.participants.forEach((participant) => {
@@ -228,14 +228,14 @@ export const updateGroupChat = async (
   if (imageSrc) {
     await Image.upsert({
       create: {
-        src: imageSrc,
+        src: imageSrc as string,
         groupId: updatedChatRoom.id,
       },
       where: {
         groupId: updatedChatRoom.id,
       },
       update: {
-        src: imageSrc,
+        src: imageSrc as string,
       },
     });
 

@@ -18,10 +18,13 @@ const zod_1 = require("zod");
 const schema_1 = require("../schema");
 const cloudinary_middleware_1 = require("../middlewares/cloudinary.middleware");
 const groupChat_controllers_1 = require("../controllers/groupChat.controllers");
+const user_schema_1 = require("../schema/user.schema");
 const router = express_1.default.Router();
 router.use(auth_middlewares_1.verifyToken);
-router.route("/membership-requests").get(validator_middlewares_1.validatePagingOptions, (0, validator_middlewares_1.validate)(zod_1.z.object({
+router.route("/membership-requests").get((0, validator_middlewares_1.validate)(zod_1.z.object({
     query: zod_1.z.object({
+        limit: schema_1.zLimit,
+        offset: schema_1.zOffset,
         type: zod_1.z.enum(["all", "pending", "approved", "rejected"]).optional(),
     }),
 })), (0, handler_middlewares_1.tryCatch)(groupChat_controllers_1.getMembershipRequests));
@@ -46,14 +49,7 @@ router.route("/account/changepassword").patch((0, validator_middlewares_1.valida
         password: (0, schema_1.zPassword)(),
         confirmPassword: (0, schema_1.zPassword)("confirmPassword"),
     })
-        .refine((arg) => {
-        if (arg.confirmPassword !== arg.password)
-            return false;
-        return true;
-    }, {
-        message: "The password and confirm password do not match.",
-        path: ["confirmPassword"],
-    }),
+        .refine(user_schema_1.validateConfirmPassword.cb, user_schema_1.validateConfirmPassword.message),
 })), (0, handler_middlewares_1.tryCatch)(account_controller_1.changeMyAccountPassword));
 router
     .route("/account/images")
@@ -145,56 +141,3 @@ router
     .route("/follow/:followId")
     .delete((0, validator_middlewares_1.validateParamsV2)("followId"), (0, handler_middlewares_1.tryCatch)(follow_controller_1.unfollowUser));
 exports.default = router;
-// .post(
-//   validateBody(
-//     z
-//       .object({
-//         type: zNotificationType,
-//         postId: zIntId("postId").optional(),
-//         commentId: zIntId("commentId").optional(),
-//         receiverId: zIntId("receiverId"),
-//       })
-//       .refine(
-//         (arg) => {
-//           if (
-//             (arg.type === "comment" || arg.type === "replying_comment") &&
-//             isNullOrUndefined(arg.postId)
-//           )
-//             return false;
-//           return true;
-//         },
-//         {
-//           message:
-//             "postId is required for comment and replying_comment notification type",
-//           path: ["postId"],
-//         }
-//       )
-//       .refine(
-//         (arg) => {
-//           if (
-//             arg.type === "liking_comment" &&
-//             isNullOrUndefined(arg.commentId)
-//           )
-//             return false;
-//           return true;
-//         },
-//         {
-//           message:
-//             "commentId is required for liking_comment notification type",
-//           path: ["commentId"],
-//         }
-//       )
-//       .refine(
-//         (arg) => {
-//           if (arg.type === "liking_post" && isNullOrUndefined(arg.postId))
-//             return false;
-//           return true;
-//         },
-//         {
-//           message: "postId is required for liking_post notification type",
-//           path: ["postId"],
-//         }
-//       )
-//   ),
-//   tryCatch(createNotification)
-// );

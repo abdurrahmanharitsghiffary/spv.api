@@ -24,7 +24,7 @@ router
     title: schema_1.zfdTitle,
     content: schema_1.zfdText,
 }))), (0, handler_middlewares_1.tryCatch)(post_controller_1.createPost))
-    .get(validator_middlewares_1.validatePagingOptions, auth_middlewares_1.isAdmin, (0, handler_middlewares_1.tryCatch)(post_controller_1.getAllPosts));
+    .get(auth_middlewares_1.isAdmin, validator_middlewares_1.validatePagingOptions, (0, handler_middlewares_1.tryCatch)(post_controller_1.getAllPosts));
 router
     .route("/following")
     .get(validator_middlewares_1.validatePagingOptions, (0, handler_middlewares_1.tryCatch)(post_controller_1.getFollowedUserPost));
