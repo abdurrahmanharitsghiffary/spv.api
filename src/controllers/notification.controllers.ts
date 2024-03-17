@@ -8,27 +8,27 @@ import { excludeBlockedUser, excludeBlockingUser } from "../lib/query/user";
 import { selectNotificationSimplified } from "../lib/query/notification";
 import { normalizeNotification } from "../utils/notification/notification.normalize";
 
-export const notificationWhereAndInput = (userId?: number | string) =>
+export const notificationWhereAndInput = (userId?: number) =>
   [
     {
       user: {
-        ...excludeBlockingUser(Number(userId)),
-        ...excludeBlockedUser(Number(userId)),
+        ...excludeBlockingUser(userId),
+        ...excludeBlockedUser(userId),
       },
     },
     {
       post: {
         author: {
-          ...excludeBlockingUser(Number(userId)),
-          ...excludeBlockedUser(Number(userId)),
+          ...excludeBlockingUser(userId),
+          ...excludeBlockedUser(userId),
         },
       },
     },
     {
       comment: {
         user: {
-          ...excludeBlockingUser(Number(userId)),
-          ...excludeBlockedUser(Number(userId)),
+          ...excludeBlockingUser(userId),
+          ...excludeBlockedUser(userId),
         },
       },
     },
@@ -62,10 +62,11 @@ export const getAllUserNotifications = async (
 ) => {
   const { offset = 0, limit = 20, order_by = "latest" } = req.query;
   const { userId } = req as ExpressRequestExtended;
+  const uId = Number(userId);
   const notifications = await Notification.findMany({
     where: {
-      receiverId: Number(userId),
-      AND: notificationWhereAndInput(userId),
+      receiverId: uId,
+      AND: notificationWhereAndInput(uId),
     },
     select: {
       ...selectNotificationSimplified,
@@ -78,8 +79,8 @@ export const getAllUserNotifications = async (
   });
   const total_notifications = await Notification.count({
     where: {
-      receiverId: Number(userId),
-      AND: notificationWhereAndInput(userId),
+      receiverId: uId,
+      AND: notificationWhereAndInput(uId),
     },
   });
 

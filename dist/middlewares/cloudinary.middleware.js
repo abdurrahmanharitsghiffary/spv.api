@@ -16,6 +16,7 @@ exports.uploadFilesToCloudinary = (0, handler_middlewares_1.tryCatchMiddleware)(
     var _a;
     const files = req.files;
     const file = req.file;
+    const isObject = typeof files === "object" && files instanceof Array === false;
     const uploadedImageUrls = [];
     const uploadedFiles = [];
     if (files !== undefined && files instanceof Array) {
@@ -24,12 +25,15 @@ exports.uploadFilesToCloudinary = (0, handler_middlewares_1.tryCatchMiddleware)(
     if (file !== undefined) {
         uploadedFiles.push(file);
     }
-    if (typeof files === "object") {
+    console.log(files instanceof Array, "Is Array");
+    console.log(files, "Fillessss");
+    if (isObject) {
+        // @ts-ignore
         uploadedFiles.push(...Object.values(files));
     }
     yield Promise.all(uploadedFiles.map((image) => __awaiter(void 0, void 0, void 0, function* () {
         const uploadedFile = yield (0, utils_1.cloudinaryUpload)(image);
-        uploadedImageUrls.push(typeof files === "object"
+        uploadedImageUrls.push(isObject
             ? { fieldName: image.fieldname, src: uploadedFile.secure_url }
             : uploadedFile.secure_url);
     })));

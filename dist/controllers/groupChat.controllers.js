@@ -618,8 +618,11 @@ const deleteMembershipRequest = (req, res) => __awaiter(void 0, void 0, void 0, 
         where: { id: rId, AND: [{ user: { id: uId } }] },
     });
     const notUserRoleParticipants = yield (0, participants_utils_1.findNotUserRoleParticipant)(apRq.groupId, uId);
-    notUserRoleParticipants.forEach((p) => {
-        (0, socket_utils_1.emitSocketEvent)(req, (0, consts_1.Socket_Id)(p.userId, "USER"), event_1.Socket_Event.DELETE_GAR, {
+    const s = new Set(notUserRoleParticipants.map((n) => n.userId));
+    s.add(uId);
+    console.log(s, "SSSEEETTTTTANNN");
+    Array.from(s).forEach((p) => {
+        (0, socket_utils_1.emitSocketEvent)(req, (0, consts_1.Socket_Id)(p, "USER"), event_1.Socket_Event.DELETE_GAR, {
             roomId: apRq.groupId,
             requestId: rId,
         });

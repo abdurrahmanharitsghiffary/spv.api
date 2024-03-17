@@ -826,8 +826,11 @@ export const deleteMembershipRequest = async (
     uId
   );
 
-  notUserRoleParticipants.forEach((p) => {
-    emitSocketEvent(req, Socket_Id(p.userId, "USER"), Socket_Event.DELETE_GAR, {
+  const s = new Set(notUserRoleParticipants.map((n) => n.userId));
+  s.add(uId);
+  console.log(s, "SSSEEETTTTTANNN");
+  Array.from(s).forEach((p) => {
+    emitSocketEvent(req, Socket_Id(p, "USER"), Socket_Event.DELETE_GAR, {
       roomId: apRq.groupId,
       requestId: rId,
     });

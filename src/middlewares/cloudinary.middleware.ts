@@ -11,6 +11,8 @@ export const uploadFilesToCloudinary = tryCatchMiddleware(
   ) => {
     const files = req.files;
     const file = req.file;
+    const isObject =
+      typeof files === "object" && files instanceof Array === false;
     const uploadedImageUrls: UploadedImageUrls = [];
     const uploadedFiles: Express.Multer.File[] = [];
     if (files !== undefined && files instanceof Array) {
@@ -19,8 +21,10 @@ export const uploadFilesToCloudinary = tryCatchMiddleware(
     if (file !== undefined) {
       uploadedFiles.push(file);
     }
-
-    if (typeof files === "object") {
+    console.log(files instanceof Array, "Is Array");
+    console.log(files, "Fillessss");
+    if (isObject) {
+      // @ts-ignore
       uploadedFiles.push(...Object.values(files));
     }
 
@@ -28,7 +32,7 @@ export const uploadFilesToCloudinary = tryCatchMiddleware(
       uploadedFiles.map(async (image: Express.Multer.File) => {
         const uploadedFile = await cloudinaryUpload(image);
         (uploadedImageUrls as any).push(
-          typeof files === "object"
+          isObject
             ? { fieldName: image.fieldname, src: uploadedFile.secure_url }
             : uploadedFile.secure_url
         );

@@ -21,16 +21,16 @@ const notification_1 = require("../lib/query/notification");
 const notification_normalize_1 = require("../utils/notification/notification.normalize");
 const notificationWhereAndInput = (userId) => [
     {
-        user: Object.assign(Object.assign({}, (0, user_1.excludeBlockingUser)(Number(userId))), (0, user_1.excludeBlockedUser)(Number(userId))),
+        user: Object.assign(Object.assign({}, (0, user_1.excludeBlockingUser)(userId)), (0, user_1.excludeBlockedUser)(userId)),
     },
     {
         post: {
-            author: Object.assign(Object.assign({}, (0, user_1.excludeBlockingUser)(Number(userId))), (0, user_1.excludeBlockedUser)(Number(userId))),
+            author: Object.assign(Object.assign({}, (0, user_1.excludeBlockingUser)(userId)), (0, user_1.excludeBlockedUser)(userId)),
         },
     },
     {
         comment: {
-            user: Object.assign(Object.assign({}, (0, user_1.excludeBlockingUser)(Number(userId))), (0, user_1.excludeBlockedUser)(Number(userId))),
+            user: Object.assign(Object.assign({}, (0, user_1.excludeBlockingUser)(userId)), (0, user_1.excludeBlockedUser)(userId)),
         },
     },
 ];
@@ -58,10 +58,11 @@ const getTimeQuery = (time) => {
 const getAllUserNotifications = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { offset = 0, limit = 20, order_by = "latest" } = req.query;
     const { userId } = req;
+    const uId = Number(userId);
     const notifications = yield notification_models_1.default.findMany({
         where: {
-            receiverId: Number(userId),
-            AND: (0, exports.notificationWhereAndInput)(userId),
+            receiverId: uId,
+            AND: (0, exports.notificationWhereAndInput)(uId),
         },
         select: Object.assign({}, notification_1.selectNotificationSimplified),
         orderBy: {
@@ -72,8 +73,8 @@ const getAllUserNotifications = (req, res) => __awaiter(void 0, void 0, void 0, 
     });
     const total_notifications = yield notification_models_1.default.count({
         where: {
-            receiverId: Number(userId),
-            AND: (0, exports.notificationWhereAndInput)(userId),
+            receiverId: uId,
+            AND: (0, exports.notificationWhereAndInput)(uId),
         },
     });
     const normalizedNotifications = (yield Promise.all(notifications.map((not) => __awaiter(void 0, void 0, void 0, function* () { return yield (0, notification_normalize_1.normalizeNotification)(not); }))));

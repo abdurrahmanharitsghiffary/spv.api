@@ -295,7 +295,7 @@ export const updatePost = async (
   const { title, content } = req.body;
   const { postId } = req.params;
   const images = getCloudinaryImage(req);
-
+  console.log(images, "Images 222");
   await prisma.$transaction(async (tx) => {
     await tx.post.update({
       where: {

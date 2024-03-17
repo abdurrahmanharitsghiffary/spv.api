@@ -63,7 +63,9 @@ exports.isAdmin = (0, handler_middlewares_1.tryCatchMiddleware)((req, res, next)
     throw new error_1.ForbiddenError();
 }));
 exports.verifyRefreshToken = (0, handler_middlewares_1.tryCatchMiddleware)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    const token = req.cookies["x.spv.session"];
+    var _c;
+    const token = (_c = req.cookies["x.spv.session"]) !== null && _c !== void 0 ? _c : req.body.token;
+    console.log(token, "TOOOOKEEENN");
     if (!token)
         throw new error_1.RequestError("You are unauthenticated!", 401);
     // const tokenIsExist = await RefreshToken.findUnique({

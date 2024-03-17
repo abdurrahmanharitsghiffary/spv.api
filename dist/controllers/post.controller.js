@@ -249,6 +249,7 @@ const updatePost = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
     const { title, content } = req.body;
     const { postId } = req.params;
     const images = (0, cloudinary_1.getCloudinaryImage)(req);
+    console.log(images, "Images 222");
     yield prismaClient_1.default.$transaction((tx) => __awaiter(void 0, void 0, void 0, function* () {
         yield tx.post.update({
             where: {
