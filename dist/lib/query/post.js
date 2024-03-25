@@ -41,13 +41,5 @@ exports.selectPost = {
             },
         },
     },
-    comments: {
-        where: {
-            parentId: null,
-        },
-        select: {
-            id: true,
-        },
-    },
     createdAt: true,
 };

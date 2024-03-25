@@ -42,14 +42,6 @@ export const selectPost = {
       },
     },
   },
-  comments: {
-    where: {
-      parentId: null,
-    },
-    select: {
-      id: true,
-    },
-  },
   createdAt: true,
 } satisfies Prisma.PostSelect;
 

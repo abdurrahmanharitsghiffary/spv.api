@@ -20,12 +20,18 @@ const post_normalize_1 = require("./post.normalize");
 const prismaClient_1 = __importDefault(require("../../config/prismaClient"));
 const user_1 = require("../../lib/query/user");
 const messages_1 = require("../../lib/messages");
-const postSelectExtended = (currentUserId) => (Object.assign(Object.assign({}, post_1.selectPost), { comments: Object.assign(Object.assign({}, post_1.selectPost.comments), { where: {
+const postSelectExtended = (currentUserId) => (Object.assign(Object.assign({}, post_1.selectPost), { comments: {
+        select: {
+            id: true,
+        },
+        where: {
             parentId: null,
             user: Object.assign(Object.assign({}, (0, user_1.excludeBlockedUser)(currentUserId)), (0, user_1.excludeBlockingUser)(currentUserId)),
-        }, orderBy: {
+        },
+        orderBy: {
             createdAt: "desc",
-        } }), likes: {
+        },
+    }, likes: {
         select: {
             userId: true,
         },

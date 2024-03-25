@@ -14,6 +14,7 @@ const comment_routes_1 = __importDefault(require("./comment.routes"));
 const me_routes_1 = __importDefault(require("./me.routes"));
 const account_routes_1 = __importDefault(require("./account.routes"));
 const group_routes_1 = __importDefault(require("./group.routes"));
+const report_routes_1 = __importDefault(require("./report.routes"));
 const chat_routes_1 = __importDefault(require("./chat.routes"));
 const auth_controller_1 = require("../controllers/auth.controller");
 const auth_middlewares_1 = require("../middlewares/auth.middlewares");
@@ -36,6 +37,7 @@ function router(app) {
     app.use("/api/chats", chat_routes_1.default);
     app.use("/api/messages", messages_routes_1.default);
     app.use("/api/groups", group_routes_1.default);
+    app.use("/api/report", report_routes_1.default);
     app.get("/api/counts", (0, validator_middlewares_1.validate)(count_schema_1.getCountsValidation), auth_middlewares_1.verifyToken, count_controller_1.getCounts);
     app.get("/api/search", (0, validator_middlewares_1.validate)(zod_1.z.object({
         query: zod_1.z.object({

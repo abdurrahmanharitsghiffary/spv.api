@@ -11,9 +11,11 @@ const validator_middlewares_1 = require("../middlewares/validator.middlewares");
 const zod_1 = require("zod");
 const multer_middlewares_1 = require("../middlewares/multer.middlewares");
 const cloudinary_middleware_1 = require("../middlewares/cloudinary.middleware");
+const schema_1 = require("../schema");
+const zod_form_data_1 = require("zod-form-data");
 const router = express_1.default.Router();
 router.use(auth_middlewares_1.verifyToken);
-router.post("/", multer_middlewares_1.uploadImageV2.array("images"), cloudinary_middleware_1.uploadFilesToCloudinary, (0, validator_middlewares_1.validateBody)(zod_1.z.object({ description: zod_1.z.string() })), (0, handler_middlewares_1.tryCatch)(bugs_controller_1.reportBug));
+router.post("/", multer_middlewares_1.uploadImageV2.array("images[]"), cloudinary_middleware_1.uploadFilesToCloudinary, (0, validator_middlewares_1.validateBody)(zod_form_data_1.zfd.formData(zod_1.z.object({ description: schema_1.zfdText }))), (0, handler_middlewares_1.tryCatch)(bugs_controller_1.reportBug));
 router.use(auth_middlewares_1.isAdmin);
 router.route("/").get(validator_middlewares_1.validatePagingOptions, (0, handler_middlewares_1.tryCatch)(bugs_controller_1.getAllBugs));
 router

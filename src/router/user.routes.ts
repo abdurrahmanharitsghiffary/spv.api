@@ -26,6 +26,7 @@ import { getAllBlockedUsers } from "../controllers/block.controller";
 import { createUserSchema, updateUserSchema } from "../schema/user.schema";
 import { uploadImageV2 } from "../middlewares/multer.middlewares";
 import { uploadFilesToCloudinary } from "../middlewares/cloudinary.middleware";
+import { zfd } from "zod-form-data";
 
 const router = express.Router();
 router.use(verifyToken);
@@ -52,7 +53,7 @@ router
       { name: "cover", maxCount: 1 },
     ]),
     uploadFilesToCloudinary,
-    validateBody(createUserSchema),
+    validateBody(zfd.formData(createUserSchema)),
     tryCatch(createUser)
   );
 
@@ -72,7 +73,7 @@ router
     uploadFilesToCloudinary,
     validate(
       z.object({
-        body: updateUserSchema,
+        body: zfd.formData(updateUserSchema),
         params: z.object({
           userId: zIntOrStringId,
         }),

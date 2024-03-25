@@ -14,6 +14,8 @@ import {
 import { z } from "zod";
 import { uploadImageV2 } from "../middlewares/multer.middlewares";
 import { uploadFilesToCloudinary } from "../middlewares/cloudinary.middleware";
+import { zfdText } from "../schema";
+import { zfd } from "zod-form-data";
 
 const router = express.Router();
 
@@ -21,9 +23,9 @@ router.use(verifyToken);
 
 router.post(
   "/",
-  uploadImageV2.array("images"),
+  uploadImageV2.array("images[]"),
   uploadFilesToCloudinary,
-  validateBody(z.object({ description: z.string() })),
+  validateBody(zfd.formData(z.object({ description: zfdText }))),
   tryCatch(reportBug)
 );
 

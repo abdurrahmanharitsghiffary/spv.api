@@ -11,7 +11,9 @@ const postSelectExtended = (currentUserId?: number) =>
   ({
     ...selectPost,
     comments: {
-      ...selectPost.comments,
+      select: {
+        id: true,
+      },
       where: {
         parentId: null,
         user: {

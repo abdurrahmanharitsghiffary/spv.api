@@ -16,6 +16,7 @@ const block_controller_1 = require("../controllers/block.controller");
 const user_schema_1 = require("../schema/user.schema");
 const multer_middlewares_1 = require("../middlewares/multer.middlewares");
 const cloudinary_middleware_1 = require("../middlewares/cloudinary.middleware");
+const zod_form_data_1 = require("zod-form-data");
 const router = express_1.default.Router();
 router.use(auth_middlewares_1.verifyToken);
 const validateFExtended = (0, validator_middlewares_1.validate)(zod_1.z.object({
@@ -33,7 +34,7 @@ router
     .post(auth_middlewares_1.isAdmin, multer_middlewares_1.uploadImageV2.fields([
     { name: "profile", maxCount: 1 },
     { name: "cover", maxCount: 1 },
-]), cloudinary_middleware_1.uploadFilesToCloudinary, (0, validator_middlewares_1.validateBody)(user_schema_1.createUserSchema), (0, handler_middlewares_1.tryCatch)(user_controller_1.createUser));
+]), cloudinary_middleware_1.uploadFilesToCloudinary, (0, validator_middlewares_1.validateBody)(zod_form_data_1.zfd.formData(user_schema_1.createUserSchema)), (0, handler_middlewares_1.tryCatch)(user_controller_1.createUser));
 router
     .route("/blocked")
     .get(validator_middlewares_1.validatePagingOptions, (0, handler_middlewares_1.tryCatch)(block_controller_1.getAllBlockedUsers));
@@ -44,7 +45,7 @@ router
     { name: "profile", maxCount: 1 },
     { name: "cover", maxCount: 1 },
 ]), cloudinary_middleware_1.uploadFilesToCloudinary, (0, validator_middlewares_1.validate)(zod_1.z.object({
-    body: user_schema_1.updateUserSchema,
+    body: zod_form_data_1.zfd.formData(user_schema_1.updateUserSchema),
     params: zod_1.z.object({
         userId: schema_1.zIntOrStringId,
     }),

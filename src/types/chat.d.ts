@@ -2,9 +2,8 @@ import { $Enums } from "@prisma/client";
 import { Image } from "./profile";
 import { UserSimplified } from "./user";
 
-export type Chat = {
+export type ChatSimplified = {
   id: number;
-  readedBy: (UserSimplified & { readedAt: Date })[] | null;
   message: string | null;
   attachments: Image[];
   isGroupChat: boolean;
@@ -13,6 +12,10 @@ export type Chat = {
   createdAt: Date;
   updatedAt: Date;
 };
+
+export type Chat = {
+  readedBy: (UserSimplified & { readedAt: Date })[] | null;
+} & ChatSimplified;
 
 type ChatRoomParticipant = UserSimplified & {
   role: $Enums.ParticipantRole;

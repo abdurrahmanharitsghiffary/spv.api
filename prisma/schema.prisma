@@ -41,6 +41,8 @@ model User {
   sendedNotifications Notification[] @relation("SendedNotifications")
   notifications Notification[] @relation("ReceivedNotifications")
   posts Post[]
+  report Report[] @relation("Reporter")
+  reportedUser Report[] @relation("ReportedUser")
   reportedBugs Bug[]
   comments Comment[]
   requestedApplication ApplicationRequest[]
@@ -87,6 +89,7 @@ model Post {
   follower SavedPost[]
   tags PostTag[]
 
+  report Report[]
   notification Notification[]
   author User @relation(fields: [authorId] , references: [id], onDelete: Cascade)
 
@@ -131,6 +134,7 @@ model Comment {
   parentComment Comment? @relation("ReplyComment",fields: [parentId],  references: [id], onDelete: Cascade)
   childrenComment Comment[] @relation("ReplyComment")
 
+  report Report[]
   notification Notification[]
   post Post? @relation(fields: [postId],  references: [id], onDelete: Cascade)
   user User @relation(fields: [userId],  references: [id],  onDelete: Cascade)
@@ -170,12 +174,14 @@ model Image {
   profileId Int? @unique
   commentId Int? @unique
   chatId Int?
+  reportId Int?
   // chat Chat[]
   groupId Int? @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   bugId Int? @unique
   bug Bug?  @relation(fields: [bugId], references: [id], onDelete: Cascade)
+  report Report?  @relation(fields: [reportId], references: [id], onDelete: Cascade)
   group ChatRoom? @relation(fields: [groupId], references: [id], onDelete: Cascade)
   chat Chat? @relation("ChatImage", fields: [chatId],references: [id], onDelete: Cascade)
   profile Profile? @relation("ProfileImage",fields: [profileId],  references: [id], onDelete: Cascade)
@@ -231,6 +237,7 @@ model ChatRoom {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  report Report[]
   notification Notification[]
   @@map("chat_rooms")
 }
@@ -277,6 +284,7 @@ model Chat {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  report Report[]
   @@map("chats")
 }
 
@@ -353,6 +361,30 @@ enum ApplicationRequestType {
   group_community
 }
 
+model Report {
+  id Int @default(autoincrement()) @id
+  reporterId Int
+  report String @db.Text
+  images Image[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  type ReportType
+
+  userId Int?
+  postId Int?
+  commentId Int?
+  groupId Int?
+  messageId Int?
+
+  reporter User @relation("Reporter",fields: [reporterId], references: [id], onDelete: Cascade)
+  reportedUser User? @relation("ReportedUser",fields: [userId], references: [id], onDelete: Cascade)
+  post Post? @relation(fields: [postId],  references: [id], onDelete: Cascade)
+  comment Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  group ChatRoom? @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  message Chat? @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+}
+
 model Bug {
   id Int @default(autoincrement()) @id
   description String @db.Text
@@ -364,4 +396,12 @@ model Bug {
   user User @relation(fields: [userId], references: [id],onDelete: Cascade)
 
   @@map("bugs")
+}
+
+enum ReportType {
+  user
+  post
+  comment
+  message
+  group
 }

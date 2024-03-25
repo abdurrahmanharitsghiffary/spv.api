@@ -10,6 +10,7 @@ import {
   zUsername,
 } from ".";
 import { errorsMessage } from "../lib/consts";
+import { zfd } from "zod-form-data";
 
 export const validateConfirmPassword = {
   cb: (arg: { password: string; confirmPassword: string }) => {
@@ -48,26 +49,26 @@ export const userValidationSignInSchema = z.object({
 
 export const createUserSchema = z
   .object({
-    role: z.enum(["user", "admin"]).optional(),
-    username: zUsername,
-    lastName: zLastName,
-    firstName: zFirstName,
-    password: zPassword(),
-    confirmPassword: zPassword("confirmPassword"),
-    email: zEmail,
-    gender: zGender.optional(),
+    role: zfd.text(z.enum(["user", "admin"])).optional(),
+    username: zfd.text(zUsername),
+    lastName: zfd.text(zLastName),
+    firstName: zfd.text(zFirstName),
+    password: zfd.text(zPassword()),
+    confirmPassword: zfd.text(zPassword("confirmPassword")),
+    email: zfd.text(zEmail),
+    gender: zfd.text(zGender).optional(),
     birthDate: zBirthDate.optional(),
   })
   .refine(validateConfirmPassword.cb, validateConfirmPassword.message);
 
 export const updateUserSchema = z.object({
-  role: z.enum(["user", "admin"]).optional(),
-  username: zUsername.optional(),
-  lastName: zLastName.optional(),
-  firstName: zFirstName.optional(),
-  gender: zGender.optional(),
+  role: zfd.text(z.enum(["user", "admin"])).optional(),
+  username: zfd.text(zUsername).optional(),
+  lastName: zfd.text(zLastName).optional(),
+  firstName: zfd.text(zFirstName).optional(),
+  gender: zfd.text(zGender).optional(),
   birthDate: zBirthDate.optional(),
-  description: zText.optional(),
+  description: zfd.text(zText).optional(),
 });
 
 export type UserValidationSchema = z.infer<typeof userValidationSignUpSchema>;
