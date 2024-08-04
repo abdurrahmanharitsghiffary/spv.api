@@ -87,7 +87,7 @@ export const getAllUserNotifications = async (
   const normalizedNotifications = (await Promise.all(
     notifications.map(async (not) => await normalizeNotification(not))
   )) as unknown;
-
+  console.log(normalizedNotifications, "NOTIFICATIONS");
   return res.status(200).json(
     await getPagingObject({
       req,

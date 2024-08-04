@@ -78,6 +78,7 @@ const getAllUserNotifications = (req, res) => __awaiter(void 0, void 0, void 0, 
         },
     });
     const normalizedNotifications = (yield Promise.all(notifications.map((not) => __awaiter(void 0, void 0, void 0, function* () { return yield (0, notification_normalize_1.normalizeNotification)(not); }))));
+    console.log(normalizedNotifications, "NOTIFICATIONS");
     return res.status(200).json(yield (0, paging_1.getPagingObject)({
         req,
         data: normalizedNotifications,
