@@ -7,5 +7,6 @@ const app_1 = __importDefault(require("./app"));
 const consts_1 = require("./lib/consts");
 const PORT = consts_1.PORT || 5000;
 app_1.default.listen(PORT, () => {
+    console.log(process.env, "ENV");
     console.log(`listening on http://localhost:${PORT}`);
 });
