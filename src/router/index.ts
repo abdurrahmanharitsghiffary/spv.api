@@ -38,6 +38,9 @@ export function router(app: Express) {
   app.use("/api/groups", groupRouter);
   app.use("/api/report", reportRouter);
   app.get("/api/counts", validate(getCountsValidation), verifyToken, getCounts);
+  app.get("hello-world", () => {
+    return "Hello world";
+  });
   app.get(
     "/api/search",
     validate(
