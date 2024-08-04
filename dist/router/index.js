@@ -40,7 +40,7 @@ function router(app) {
     app.use("/api/report", report_routes_1.default);
     app.get("/api/counts", (0, validator_middlewares_1.validate)(count_schema_1.getCountsValidation), auth_middlewares_1.verifyToken, count_controller_1.getCounts);
     app.get("/api/hello-world", (req, res) => {
-        return res.json({ message: "Hello World" });
+        return res.json({ message: "Hello World Semuanya" });
     });
     app.get("/api/search", (0, validator_middlewares_1.validate)(zod_1.z.object({
         query: zod_1.z.object({

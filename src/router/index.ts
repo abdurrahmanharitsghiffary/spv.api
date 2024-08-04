@@ -39,7 +39,7 @@ export function router(app: Express) {
   app.use("/api/report", reportRouter);
   app.get("/api/counts", validate(getCountsValidation), verifyToken, getCounts);
   app.get("/api/hello-world", (req: express.Request, res: express.Response) => {
-    return res.json({ message: "Hello World" });
+    return res.json({ message: "Hello World Semuanya" });
   });
   app.get(
     "/api/search",
