@@ -1,4 +1,4 @@
-import { Express } from "express";
+import express, { Express } from "express";
 import userRouter from "./user.routes";
 import bugRouter from "./bugs.routes";
 import authRouter from "./auth.routes";
@@ -38,8 +38,8 @@ export function router(app: Express) {
   app.use("/api/groups", groupRouter);
   app.use("/api/report", reportRouter);
   app.get("/api/counts", validate(getCountsValidation), verifyToken, getCounts);
-  app.get("/api/hello-world", () => {
-    return "Hello world";
+  app.get("/api/hello-world", (req: express.Request, res: express.Response) => {
+    return res.json({ message: "Hello World" });
   });
   app.get(
     "/api/search",
