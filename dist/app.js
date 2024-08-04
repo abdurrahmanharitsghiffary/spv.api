@@ -6,7 +6,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.io = exports.server = void 0;
 const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
-const dotenv_1 = __importDefault(require("dotenv"));
 const middlewares_1 = __importDefault(require("./middlewares"));
 const error_middlewares_1 = require("./middlewares/error.middlewares");
 const cookie_parser_1 = __importDefault(require("cookie-parser"));
@@ -20,7 +19,6 @@ const http_1 = require("http");
 const consts_1 = require("./lib/consts");
 const socket_1 = require("./socket");
 const socket_io_1 = require("socket.io");
-dotenv_1.default.config();
 const allowlist = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",

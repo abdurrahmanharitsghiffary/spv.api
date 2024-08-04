@@ -15,7 +15,6 @@ import { BASE_CLIENT_URL, COOKIE_SECRET } from "./lib/consts";
 import { ioInit } from "./socket";
 import { IoServer } from "./types/socket";
 import { Server } from "socket.io";
-dotenv.config();
 
 const allowlist = [
   "http://localhost:3000",
