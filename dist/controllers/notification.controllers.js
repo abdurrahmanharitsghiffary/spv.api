@@ -62,7 +62,7 @@ const getAllUserNotifications = (req, res) => __awaiter(void 0, void 0, void 0, 
     const notifications = yield notification_models_1.default.findMany({
         where: {
             receiverId: uId,
-            AND: (0, exports.notificationWhereAndInput)(uId),
+            OR: (0, exports.notificationWhereAndInput)(uId),
         },
         select: Object.assign({}, notification_1.selectNotificationSimplified),
         orderBy: {
@@ -74,7 +74,7 @@ const getAllUserNotifications = (req, res) => __awaiter(void 0, void 0, void 0, 
     const total_notifications = yield notification_models_1.default.count({
         where: {
             receiverId: uId,
-            AND: (0, exports.notificationWhereAndInput)(uId),
+            OR: (0, exports.notificationWhereAndInput)(uId),
         },
     });
     const normalizedNotifications = (yield Promise.all(notifications.map((not) => __awaiter(void 0, void 0, void 0, function* () { return yield (0, notification_normalize_1.normalizeNotification)(not); }))));

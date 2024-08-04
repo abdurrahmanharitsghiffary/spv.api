@@ -66,7 +66,7 @@ export const getAllUserNotifications = async (
   const notifications = await Notification.findMany({
     where: {
       receiverId: uId,
-      AND: notificationWhereAndInput(uId),
+      OR: notificationWhereAndInput(uId),
     },
     select: {
       ...selectNotificationSimplified,
@@ -80,7 +80,7 @@ export const getAllUserNotifications = async (
   const total_notifications = await Notification.count({
     where: {
       receiverId: uId,
-      AND: notificationWhereAndInput(uId),
+      OR: notificationWhereAndInput(uId),
     },
   });
 
