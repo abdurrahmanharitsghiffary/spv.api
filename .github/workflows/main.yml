@@ -30,5 +30,6 @@ jobs:
         username: ${{ secrets.REMOTE_USER }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |
+          cp /home/ubuntu/.env /home/ubuntu/spv_api/.env
           cd /home/ubuntu/spv_api
           pm2 reload all  # This command restarts your application
