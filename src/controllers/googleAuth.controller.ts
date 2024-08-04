@@ -111,11 +111,12 @@ export const googleAuthCallback = async (
 
     res.redirect(BASE_CLIENT_URL!);
   } catch (err: any) {
-    const message = err?.message?.includes(
-      "Unique constraint failed on the constraint: `users_email_key`"
-    )
-      ? "Email already registered."
-      : "";
+    console.log(err, "ERROR");
+    console.log(BASE_CLIENT_URL, "BASE CLIENT URL");
+    const message =
+      err?.code === "P2002"
+        ? "Email already registered."
+        : "Something went wrong!";
     res.redirect(`${BASE_CLIENT_URL}/login?err_message=${message}`);
   }
 };

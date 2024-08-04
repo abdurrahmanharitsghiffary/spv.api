@@ -48,7 +48,7 @@ const deleteGoogleAccount = (req, res) => __awaiter(void 0, void 0, void 0, func
 });
 exports.deleteGoogleAccount = deleteGoogleAccount;
 const googleAuthCallback = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, _b, _c, _d;
+    var _a, _b, _c;
     try {
         const userJson = (_b = (_a = req === null || req === void 0 ? void 0 : req.user) === null || _a === void 0 ? void 0 : _a._json) !== null && _b !== void 0 ? _b : {};
         let user = yield user_models_1.default.findUnique({
@@ -100,9 +100,11 @@ const googleAuthCallback = (req, res) => __awaiter(void 0, void 0, void 0, funct
         res.redirect(consts_1.BASE_CLIENT_URL);
     }
     catch (err) {
-        const message = ((_d = err === null || err === void 0 ? void 0 : err.message) === null || _d === void 0 ? void 0 : _d.includes("Unique constraint failed on the constraint: `users_email_key`"))
+        console.log(err, "ERROR");
+        console.log(consts_1.BASE_CLIENT_URL, "BASE CLIENT URL");
+        const message = (err === null || err === void 0 ? void 0 : err.code) === "P2002"
             ? "Email already registered."
-            : "";
+            : "Something went wrong!";
         res.redirect(`${consts_1.BASE_CLIENT_URL}/login?err_message=${message}`);
     }
 });
